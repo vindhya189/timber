@@ -1,0 +1,997 @@
+/* =========================================================
+   SAWMILL DASHBOARD
+========================================================= */
+
+.tm-sawmill-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f8f5;
+}
+
+.tm-sawmill-loading h3 {
+  margin: 14px 0 5px;
+  color: #173321;
+}
+
+.tm-sawmill-loading p {
+  margin: 0;
+  color: #758079;
+  font-size: 13px;
+}
+
+.tm-sawmill-spinner {
+  width: 35px;
+  height: 35px;
+  border: 3px solid #dce9df;
+  border-top-color: #16703c;
+  border-radius: 50%;
+  animation: sawmillSpin .8s linear infinite;
+}
+
+@keyframes sawmillSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tm-refresh-spin {
+  animation: sawmillSpin .8s linear infinite;
+}
+
+/* =========================================================
+   MESSAGES
+========================================================= */
+
+.tm-sawmill-message {
+  padding: 13px 16px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.tm-sawmill-message.success {
+  background: #eaf7ed;
+  border: 1px solid #cde7d3;
+  color: #23663a;
+}
+
+.tm-sawmill-message.error {
+  background: #fff0ef;
+  border: 1px solid #f0d0cc;
+  color: #a33d35;
+}
+
+/* =========================================================
+   WELCOME
+========================================================= */
+
+.tm-sawmill-welcome {
+  padding: 27px;
+  border-radius: 20px;
+  border: 1px solid #dce8df;
+  background: linear-gradient(
+    135deg,
+    #edf7ef,
+    #f9fbf9
+  );
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.tm-sawmill-eyebrow {
+  color: #277142;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+
+.tm-sawmill-welcome h2 {
+  color: #182c1e;
+  font-size: 29px;
+  margin: 7px 0;
+}
+
+.tm-sawmill-welcome p {
+  color: #707c74;
+  max-width: 650px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.tm-sawmill-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 13px;
+  padding: 8px 11px;
+  background: #fff;
+  color: #2c6940;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.tm-sawmill-refresh {
+  border: 0;
+  background: #fff;
+  color: #30473a;
+  padding: 10px 14px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.tm-sawmill-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.tm-sawmill-stat {
+  background: #fff;
+  border: 1px solid #dfe7e1;
+  border-radius: 16px;
+  padding: 19px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  box-shadow: 0 7px 22px rgba(30,60,40,.05);
+}
+
+.tm-sawmill-stat-icon {
+  width: 47px;
+  height: 47px;
+  border-radius: 13px;
+  background: #eaf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tm-sawmill-stat span {
+  display: block;
+  color: #768179;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.tm-sawmill-stat strong {
+  color: #1a2d20;
+  font-size: 25px;
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.tm-sawmill-section {
+  margin-top: 30px;
+}
+
+.tm-sawmill-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+/* =========================================================
+   ACTIONS
+========================================================= */
+
+.tm-sawmill-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.tm-sawmill-action {
+  border: 1px solid #dfe7e1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 18px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.tm-sawmill-action:hover {
+  transform: translateY(-2px);
+  border-color: #9bbba5;
+  box-shadow: 0 8px 25px rgba(25,60,35,.08);
+}
+
+.tm-sawmill-action-icon {
+  width: 47px;
+  height: 47px;
+  flex-shrink: 0;
+  background: #eaf5ed;
+  color: #25703f;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.tm-sawmill-action h3 {
+  margin: 0 0 5px;
+  color: #1c3022;
+  font-size: 14px;
+}
+
+.tm-sawmill-action p {
+  margin: 0;
+  color: #77817b;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.tm-sawmill-green-btn,
+.tm-sawmill-outline-btn {
+  border-radius: 9px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.tm-sawmill-green-btn {
+  border: 0;
+  background: #14713d;
+  color: #fff;
+}
+
+.tm-sawmill-green-btn:hover {
+  background: #105f32;
+}
+
+.tm-sawmill-outline-btn {
+  background: #fff;
+  border: 1px solid #cbdacf;
+  color: #27663e;
+}
+
+/* =========================================================
+   JOB BANNER
+========================================================= */
+
+.tm-sawmill-job-banner {
+  background: #edf7ef;
+  border: 1px solid #d5e7d9;
+  border-radius: 18px;
+  padding: 23px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.tm-sawmill-job-banner span,
+.tm-sawmill-requirement-banner span {
+  color: #287043;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.tm-sawmill-job-banner h2,
+.tm-sawmill-requirement-banner h2 {
+  margin: 5px 0;
+  color: #193023;
+  font-size: 21px;
+}
+
+.tm-sawmill-job-banner p,
+.tm-sawmill-requirement-banner p {
+  margin: 0;
+  color: #727d76;
+  font-size: 12px;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.tm-sawmill-form-card {
+  margin-top: 15px;
+  padding: 23px;
+  background: #fff;
+  border: 1px solid #dfe7e1;
+  border-radius: 18px;
+}
+
+.tm-sawmill-form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.tm-sawmill-form-head h3 {
+  margin: 0 0 4px;
+  color: #1a2e21;
+  font-size: 18px;
+}
+
+.tm-sawmill-form-head p {
+  margin: 0;
+  color: #77817b;
+  font-size: 12px;
+}
+
+.tm-sawmill-close {
+  border: 0;
+  background: #f0f4f1;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tm-sawmill-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.tm-sawmill-field {
+  margin-bottom: 16px;
+}
+
+.tm-sawmill-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #35463b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tm-sawmill-field input,
+.tm-sawmill-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d3ded6;
+  border-radius: 9px;
+  outline: none;
+  padding: 11px 12px;
+  font-size: 13px;
+  background: #fff;
+}
+
+.tm-sawmill-field input {
+  height: 44px;
+}
+
+.tm-sawmill-field textarea {
+  resize: vertical;
+}
+
+.tm-sawmill-field input:focus,
+.tm-sawmill-field textarea:focus {
+  border-color: #277143;
+  box-shadow: 0 0 0 3px rgba(39,113,67,.09);
+}
+
+.tm-sawmill-check-row {
+  display: flex;
+  gap: 22px;
+  flex-wrap: wrap;
+  margin: 2px 0 17px;
+}
+
+.tm-sawmill-check-row label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #536158;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tm-sawmill-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.tm-sawmill-search {
+  height: 45px;
+  border: 1px solid #dce5df;
+  background: #fff;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 0 13px;
+  color: #78827c;
+  margin-bottom: 16px;
+}
+
+.tm-sawmill-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  font-size: 13px;
+}
+
+/* =========================================================
+   JOB CARDS
+========================================================= */
+
+.tm-sawmill-jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.tm-sawmill-job-card {
+  background: #fff;
+  border: 1px solid #dfe7e1;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  gap: 13px;
+}
+
+.tm-job-card-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #edf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tm-job-card-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.tm-job-card-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tm-job-category {
+  color: #2b7044;
+  text-transform: uppercase;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.tm-job-card-content h3 {
+  margin: 4px 0 9px;
+  color: #1a2e20;
+  font-size: 15px;
+}
+
+.tm-icon-delete {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
+  background: #fff0ef;
+  color: #a23d35;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tm-job-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.tm-job-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6e7a73;
+  font-size: 10px;
+}
+
+.tm-job-benefits {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 9px;
+}
+
+.tm-job-benefits span {
+  background: #edf7ef;
+  color: #317045;
+  padding: 4px 7px;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.tm-job-card-content > p {
+  color: #737e77;
+  font-size: 11px;
+  line-height: 1.55;
+  margin: 10px 0;
+}
+
+.tm-job-card-footer {
+  padding-top: 10px;
+  border-top: 1px solid #edf1ee;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tm-job-card-footer > span {
+  color: #7c857f;
+  font-size: 9px;
+}
+
+.tm-view-btn {
+  border: 1px solid #cbdacf;
+  background: #fff;
+  color: #28653e;
+  border-radius: 7px;
+  padding: 6px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+/* =========================================================
+   WORKERS
+========================================================= */
+
+.tm-sawmill-workers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.tm-sawmill-worker-card {
+  border: 1px solid #dfe7e1;
+  background: #fff;
+  border-radius: 16px;
+  padding: 17px;
+  display: flex;
+  gap: 12px;
+}
+
+.tm-worker-avatar {
+  width: 50px;
+  height: 50px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #eaf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tm-worker-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-worker-info {
+  min-width: 0;
+}
+
+.tm-worker-info h3 {
+  margin: 0 0 3px;
+  color: #1b3022;
+  font-size: 14px;
+}
+
+.tm-worker-role {
+  color: #2c7045;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tm-worker-info > div {
+  margin-top: 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #727d76;
+  font-size: 10px;
+}
+
+.tm-worker-info p {
+  color: #78827c;
+  font-size: 10px;
+  line-height: 1.45;
+  margin: 7px 0;
+}
+
+.tm-worker-profile-btn {
+  border: 1px solid #cadacf;
+  background: #fff;
+  color: #28673f;
+  border-radius: 7px;
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+/* =========================================================
+   REQUIREMENTS
+========================================================= */
+
+.tm-sawmill-requirement-banner {
+  padding: 22px;
+  border: 1px solid #dfe7e1;
+  border-radius: 18px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 15px;
+}
+
+.tm-sawmill-requirements {
+  border: 1px solid #dfe7e1;
+  border-radius: 16px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.tm-sawmill-requirement {
+  padding: 17px;
+  display: flex;
+  gap: 13px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.tm-sawmill-requirement:last-child {
+  border-bottom: 0;
+}
+
+.tm-requirement-icon {
+  width: 43px;
+  height: 43px;
+  flex-shrink: 0;
+  border-radius: 11px;
+  background: #eaf5ed;
+  display: grid;
+  place-items: center;
+}
+
+.tm-sawmill-requirement h3 {
+  margin: 0 0 7px;
+  color: #1c3023;
+  font-size: 14px;
+}
+
+.tm-requirement-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tm-requirement-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #727d76;
+  font-size: 10px;
+}
+
+.tm-sawmill-requirement p {
+  margin: 8px 0 0;
+  color: #78827c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   TIMBER
+========================================================= */
+
+.tm-sawmill-timber-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+}
+
+.tm-sawmill-timber-card {
+  background: #fff;
+  border: 1px solid #dfe7e1;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.tm-timber-placeholder {
+  height: 120px;
+  background: #eaf3e7;
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+}
+
+.tm-timber-content {
+  padding: 15px;
+}
+
+.tm-timber-content > span {
+  color: #2d7045;
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+.tm-timber-content h3 {
+  margin: 5px 0 9px;
+  color: #1b2e21;
+  font-size: 14px;
+}
+
+.tm-timber-content p {
+  margin: 6px 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #727d76;
+  font-size: 10px;
+}
+
+.tm-timber-content strong {
+  display: block;
+  margin-top: 10px;
+  color: #176c39;
+  font-size: 15px;
+}
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.tm-sawmill-empty {
+  border: 1px dashed #cbd9cf;
+  border-radius: 17px;
+  background: #fff;
+  text-align: center;
+  padding: 35px 20px;
+}
+
+.tm-sawmill-empty > div {
+  width: 55px;
+  height: 55px;
+  margin: 0 auto 10px;
+  background: #edf5ee;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+}
+
+.tm-sawmill-empty h3 {
+  margin: 0 0 6px;
+  color: #21362a;
+  font-size: 16px;
+}
+
+.tm-sawmill-empty p {
+  max-width: 450px;
+  margin: 0 auto 15px;
+  color: #78827c;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.tm-sawmill-profile {
+  margin-top: 30px;
+  padding: 19px;
+  background: #fff;
+  border: 1px solid #dfe7e1;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tm-sawmill-profile-photo {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #eaf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+}
+
+.tm-sawmill-profile-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-sawmill-profile-info {
+  flex: 1;
+}
+
+.tm-sawmill-profile-info > span {
+  color: #2b7044;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.tm-sawmill-profile-info h3 {
+  margin: 4px 0;
+  color: #1a2e21;
+  font-size: 16px;
+}
+
+.tm-sawmill-profile-info p {
+  margin: 0;
+  color: #77817b;
+  font-size: 10px;
+}
+
+/* =========================================================
+   DISCLAIMER
+========================================================= */
+
+.tm-sawmill-disclaimer {
+  margin-top: 22px;
+  padding: 17px;
+  border: 1px solid #dbe7dd;
+  background: #f0f6f1;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+
+.tm-disclaimer-icon {
+  font-size: 27px;
+}
+
+.tm-sawmill-disclaimer strong {
+  color: #23663b;
+  font-size: 12px;
+}
+
+.tm-sawmill-disclaimer p {
+  margin: 4px 0 0;
+  color: #66736b;
+  font-size: 9px;
+  line-height: 1.5;
+  max-width: 600px;
+}
+
+.tm-disclaimer-points {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px;
+  color: #3e6750;
+  font-size: 9px;
+  font-weight: 650;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1100px) {
+
+  .tm-sawmill-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tm-sawmill-timber-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tm-sawmill-workers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+@media (max-width: 850px) {
+
+  .tm-sawmill-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tm-sawmill-jobs-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-sawmill-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+}
+
+@media (max-width: 650px) {
+
+  .tm-sawmill-welcome {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .tm-sawmill-welcome h2 {
+    font-size: 23px;
+  }
+
+  .tm-sawmill-stats,
+  .tm-sawmill-action-grid,
+  .tm-sawmill-timber-grid,
+  .tm-sawmill-workers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-sawmill-job-banner,
+  .tm-sawmill-requirement-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tm-sawmill-profile {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tm-sawmill-profile .tm-sawmill-outline-btn {
+    width: 100%;
+  }
+
+  .tm-disclaimer-points {
+    margin-left: 0;
+  }
+
+}

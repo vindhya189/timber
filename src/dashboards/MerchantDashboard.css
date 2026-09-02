@@ -1,0 +1,868 @@
+/* =========================================================
+   TIMBERMART MERCHANT DASHBOARD
+========================================================= */
+
+.tm-merchant-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #f5f8f5;
+}
+
+.tm-merchant-loading h3 {
+  margin: 15px 0 5px;
+  color: #183321;
+}
+
+.tm-merchant-loading p {
+  margin: 0;
+  color: #718078;
+  font-size: 13px;
+}
+
+.tm-merchant-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid #dbe8de;
+  border-top-color: #19713d;
+  border-radius: 50%;
+  animation: tmMerchantSpin .8s linear infinite;
+}
+
+@keyframes tmMerchantSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.tm-refresh-spin {
+  animation: tmMerchantSpin .8s linear infinite;
+}
+
+/* =========================================================
+   MESSAGE
+========================================================= */
+
+.tm-merchant-message {
+  border-radius: 11px;
+  padding: 13px 16px;
+  margin-bottom: 18px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.tm-merchant-message.success {
+  color: #21683a;
+  background: #eaf7ed;
+  border: 1px solid #cde7d4;
+}
+
+.tm-merchant-message.error {
+  color: #a23d35;
+  background: #fff0ef;
+  border: 1px solid #f0cfcb;
+}
+
+/* =========================================================
+   WELCOME
+========================================================= */
+
+.tm-merchant-welcome {
+  background: linear-gradient(
+    135deg,
+    #eef8f0,
+    #f8fbf8
+  );
+  border: 1px solid #dce9df;
+  border-radius: 20px;
+  padding: 27px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.tm-merchant-welcome-small {
+  color: #287044;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.tm-merchant-welcome h2 {
+  margin: 7px 0 7px;
+  color: #152a1c;
+  font-size: 29px;
+}
+
+.tm-merchant-welcome p {
+  max-width: 650px;
+  color: #6f7c73;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.tm-merchant-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 13px;
+  padding: 8px 11px;
+  background: #ffffff;
+  color: #306844;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.tm-merchant-refresh {
+  border: 0;
+  background: #ffffff;
+  color: #30483a;
+  padding: 10px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.tm-merchant-refresh:disabled {
+  opacity: .6;
+}
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.tm-merchant-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 17px;
+  margin-bottom: 30px;
+}
+
+.tm-merchant-stat-card {
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 17px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  box-shadow: 0 8px 25px rgba(25, 60, 35, .05);
+}
+
+.tm-merchant-stat-icon {
+  width: 47px;
+  height: 47px;
+  border-radius: 13px;
+  background: #eaf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tm-merchant-stat-card span {
+  display: block;
+  color: #738078;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tm-merchant-stat-card strong {
+  display: block;
+  color: #17291d;
+  font-size: 25px;
+}
+
+/* =========================================================
+   SECTION
+========================================================= */
+
+.tm-merchant-section {
+  margin-top: 29px;
+}
+
+.tm-merchant-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+.tm-merchant-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.tm-merchant-action-card {
+  border: 1px solid #dfe7e1;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.tm-merchant-action-card:hover {
+  transform: translateY(-2px);
+  border-color: #9dbba5;
+  box-shadow: 0 8px 22px rgba(25, 60, 35, .08);
+}
+
+.tm-merchant-action-icon {
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+  background: #eaf5ed;
+  color: #267043;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 21px;
+}
+
+.tm-merchant-action-card h3 {
+  margin: 0 0 5px;
+  color: #1c3023;
+  font-size: 15px;
+}
+
+.tm-merchant-action-card p {
+  margin: 0;
+  color: #77827b;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.tm-merchant-search {
+  height: 47px;
+  margin: 5px 0 17px;
+  padding: 0 14px;
+  background: #ffffff;
+  border: 1px solid #dce5df;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #748078;
+}
+
+.tm-merchant-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+}
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.tm-merchant-green-btn,
+.tm-merchant-outline-btn,
+.tm-merchant-profile-btn {
+  border-radius: 9px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.tm-merchant-green-btn {
+  border: 0;
+  background: #19713d;
+  color: #ffffff;
+}
+
+.tm-merchant-green-btn:hover {
+  background: #145e33;
+}
+
+.tm-merchant-outline-btn {
+  border: 1px solid #cbdacf;
+  background: #ffffff;
+  color: #28653e;
+}
+
+.tm-merchant-outline-btn:hover {
+  background: #f1f7f2;
+}
+
+/* =========================================================
+   TIMBER LIST
+========================================================= */
+
+.tm-merchant-list-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 17px;
+}
+
+.tm-merchant-timber-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 17px;
+  box-shadow: 0 7px 22px rgba(30, 60, 40, .05);
+}
+
+.tm-timber-image-placeholder {
+  height: 145px;
+  background:
+    linear-gradient(
+      135deg,
+      #eaf3e7,
+      #dcebdc
+    );
+  display: grid;
+  place-items: center;
+  font-size: 58px;
+}
+
+.tm-timber-body {
+  padding: 17px;
+}
+
+.tm-timber-category {
+  color: #2c7045;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-weight: 800;
+}
+
+.tm-timber-body h3 {
+  margin: 6px 0 12px;
+  font-size: 17px;
+  color: #1b2d21;
+}
+
+.tm-timber-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6f7b74;
+  font-size: 12px;
+  margin-top: 7px;
+}
+
+.tm-timber-price {
+  color: #176b38;
+  font-size: 17px;
+  font-weight: 800;
+  margin-top: 13px;
+}
+
+.tm-timber-body > p {
+  color: #707b74;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.tm-timber-footer {
+  margin-top: 14px;
+  padding-top: 11px;
+  border-top: 1px solid #edf1ee;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.tm-timber-footer > span {
+  color: #7a847e;
+  font-size: 10px;
+}
+
+.tm-delete-small {
+  border: 0;
+  background: #fff0ef;
+  color: #a13d35;
+  border-radius: 7px;
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   BANNER
+========================================================= */
+
+.tm-merchant-section-banner {
+  background: #edf7ef;
+  border: 1px solid #d4e7d8;
+  border-radius: 18px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.tm-merchant-section-banner.light {
+  background: #ffffff;
+  border-color: #dfe7e1;
+}
+
+.tm-merchant-section-banner > div span {
+  color: #267043;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.tm-merchant-section-banner h2 {
+  margin: 5px 0 5px;
+  color: #193023;
+  font-size: 20px;
+}
+
+.tm-merchant-section-banner p {
+  margin: 0;
+  color: #6f7b73;
+  font-size: 12px;
+}
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.tm-merchant-form-card {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 18px;
+  padding: 23px;
+}
+
+.tm-merchant-form-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.tm-merchant-form-head h3 {
+  margin: 0 0 4px;
+  color: #193023;
+  font-size: 18px;
+}
+
+.tm-merchant-form-head p {
+  margin: 0;
+  color: #758078;
+  font-size: 12px;
+}
+
+.tm-merchant-close {
+  border: 0;
+  background: #f0f4f1;
+  color: #415148;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.tm-merchant-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.tm-merchant-field {
+  margin-bottom: 16px;
+}
+
+.tm-merchant-field label {
+  display: block;
+  color: #35453b;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 7px;
+}
+
+.tm-merchant-field input,
+.tm-merchant-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d4dfd7;
+  border-radius: 10px;
+  padding: 11px 12px;
+  outline: none;
+  font-size: 13px;
+  background: #ffffff;
+}
+
+.tm-merchant-field input {
+  height: 44px;
+}
+
+.tm-merchant-field textarea {
+  resize: vertical;
+}
+
+.tm-merchant-field input:focus,
+.tm-merchant-field textarea:focus {
+  border-color: #277143;
+  box-shadow: 0 0 0 3px rgba(39,113,67,.09);
+}
+
+.tm-merchant-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 4px;
+}
+
+/* =========================================================
+   REQUIREMENTS
+========================================================= */
+
+.tm-merchant-requirement-list {
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.tm-merchant-requirement {
+  padding: 17px;
+  display: flex;
+  gap: 13px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.tm-merchant-requirement:last-child {
+  border-bottom: 0;
+}
+
+.tm-merchant-req-icon {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  background: #eaf5ed;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+}
+
+.tm-merchant-req-main h3 {
+  margin: 0 0 7px;
+  color: #1b3022;
+  font-size: 14px;
+}
+
+.tm-merchant-req-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tm-merchant-req-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6e7a73;
+  font-size: 11px;
+}
+
+.tm-merchant-req-main p {
+  margin: 8px 0 0;
+  color: #758078;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   JOBS
+========================================================= */
+
+.tm-merchant-jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.tm-merchant-job-card {
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  gap: 13px;
+}
+
+.tm-job-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 13px;
+  background: #edf5ed;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+}
+
+.tm-job-content {
+  flex: 1;
+}
+
+.tm-job-content h3 {
+  display: inline-block;
+  margin: 0 8px 7px 0;
+  color: #1a2e21;
+  font-size: 15px;
+}
+
+.tm-job-tag {
+  display: inline-block;
+  padding: 4px 7px;
+  background: #eaf5ed;
+  color: #2b7044;
+  border-radius: 5px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.tm-job-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.tm-job-info span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6e7a73;
+  font-size: 10px;
+}
+
+.tm-job-content p {
+  color: #747f78;
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 9px 0;
+}
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.tm-merchant-empty {
+  background: #ffffff;
+  border: 1px dashed #ccdacf;
+  border-radius: 17px;
+  padding: 35px 20px;
+  text-align: center;
+}
+
+.tm-empty-big-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 11px;
+  border-radius: 16px;
+  background: #edf5ee;
+  display: grid;
+  place-items: center;
+  font-size: 27px;
+}
+
+.tm-merchant-empty h3 {
+  margin: 0 0 6px;
+  color: #21362a;
+  font-size: 16px;
+}
+
+.tm-merchant-empty p {
+  max-width: 480px;
+  margin: 0 auto 16px;
+  color: #78827c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   PROFILE
+========================================================= */
+
+.tm-merchant-profile-banner {
+  margin-top: 30px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #dfe7e1;
+  border-radius: 17px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.tm-merchant-profile-avatar {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  background: #eaf5ed;
+  color: #287044;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+
+.tm-merchant-profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tm-merchant-profile-banner > div:nth-child(2) {
+  flex: 1;
+}
+
+.tm-merchant-profile-banner span {
+  color: #2c7045;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.tm-merchant-profile-banner h3 {
+  margin: 3px 0;
+  font-size: 16px;
+  color: #1b3022;
+}
+
+.tm-merchant-profile-banner p {
+  margin: 0;
+  color: #758078;
+  font-size: 11px;
+}
+
+.tm-merchant-profile-btn {
+  border: 1px solid #cadacf;
+  background: #ffffff;
+  color: #28663e;
+}
+
+/* =========================================================
+   DISCLAIMER
+========================================================= */
+
+.tm-merchant-disclaimer {
+  margin-top: 22px;
+  padding: 17px;
+  border-radius: 14px;
+  background: #f0f6f1;
+  border: 1px solid #dbe7dd;
+  color: #617068;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tm-merchant-disclaimer strong {
+  color: #23663b;
+}
+
+.tm-merchant-disclaimer div {
+  margin-left: auto;
+  display: flex;
+  gap: 15px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 1000px) {
+
+  .tm-merchant-stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tm-merchant-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tm-merchant-list-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+}
+
+@media (max-width: 700px) {
+
+  .tm-merchant-welcome {
+    flex-direction: column;
+    padding: 20px;
+  }
+
+  .tm-merchant-welcome h2 {
+    font-size: 24px;
+  }
+
+  .tm-merchant-stat-grid,
+  .tm-merchant-action-grid,
+  .tm-merchant-list-grid,
+  .tm-merchant-jobs-grid,
+  .tm-merchant-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tm-merchant-section-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .tm-merchant-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tm-merchant-profile-banner {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .tm-merchant-profile-btn {
+    width: 100%;
+  }
+
+  .tm-merchant-disclaimer div {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+}
