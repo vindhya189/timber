@@ -1,131 +1,141 @@
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
-
+import React, { useEffect, useMemo, useState } from "react";
 import {
-  BriefcaseBusiness,
-  ClipboardList,
+  Bell,
+  Briefcase,
+  Building2,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Edit3,
+  Eye,
+  Home,
+  LogOut,
   MapPin,
-  Plus,
+  Menu,
+  MessageCircle,
+  Phone,
   Search,
+  Send,
   Settings,
   Trash2,
   User,
-  X,
-  RefreshCw,
-  Package,
   Users,
-  Eye,
+  X,
 } from "lucide-react";
-
 import { useNavigate } from "react-router-dom";
-
-import {
-  DashboardLayout,
-  SectionTitle,
-} from "./DashboardFrame";
-
 import { supabase } from "../supabaseClient";
-
 import "./SawmillDashboard.css";
 
-/*
-============================================================
- TIMBERMART
- SAWMILL / WOOD BUSINESS DASHBOARD
-============================================================
+const JOB_CATEGORIES = [
+  "Machine Operator",
+  "Saw Mill Operator",
+  "Timber Cutter",
+  "Log Cutter",
+  "Log Loading",
+  "Wood Processing",
+  "Timber Measurement",
+  "Machine Maintenance",
+  "Other",
+];
 
-Flow:
+const JOB_TYPES = [
+  "Full Time",
+  "Part Time",
+  "Project Based",
+];
 
-🏭 Dashboard
-   ↓
-📋 Requirement Wall
-   ↓
-👷 Post Job
-   ↓
-🔎 Find Workers
-   ↓
-🧾 My Jobs
-   ↓
-👤 Profile
-   ↓
-⚙️ Settings
-
-IMPORTANT:
-
-No fake user data is inserted.
-
-All:
-- listings
-- requirements
-- jobs
-- profile information
-
-come from Supabase / user account.
-
-============================================================
-*/
+const EXPERIENCE_OPTIONS = [
+  "Fresher",
+  "1 - 2 Years",
+  "2 - 5 Years",
+  "5 - 8 Years",
+  "8+ Years",
+];
 
 export default function SawmillDashboard() {
   const navigate = useNavigate();
 
-  /* ========================================================
-     USER / PROFILE
-  ======================================================== */
+  /* =====================================================
+     AUTH / PROFILE
+  ===================================================== */
 
-  const [user, setUser] = useState(null);
+  const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
 
-  /* ========================================================
+  /* =====================================================
      DATA
-  ======================================================== */
+  ===================================================== */
 
   const [jobs, setJobs] = useState([]);
-  const [listings, setListings] = useState([]);
-  const [requirements, setRequirements] = useState([]);
   const [workers, setWorkers] = useState([]);
+  const [applications, setApplications] = useState([]);
 
-  /* ========================================================
+  /* =====================================================
      UI
-  ======================================================== */
+  ===================================================== */
 
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
+  const [mobileMenu, setMobileMenu] = useState(false);
 
-  const [searchWorkers, setSearchWorkers] =
-    useState("");
+  const [searchJobs, setSearchJobs] = useState("");
+  const [searchWorkers, setSearchWorkers] = useState("");
 
-  const [searchJobs, setSearchJobs] =
-    useState("");
+  const [activeTab, setActiveTab] = useState("dashboard");
 
-  const [showJobForm, setShowJobForm] =
-    useState(false);
+  /* =====================================================
+     JOB WIZARD
+  ===================================================== */
 
-  /* ========================================================
-     JOB FORM
-  ======================================================== */
+  const [showPostJob, setShowPostJob] = useState(false);
+  const [jobStep, setJobStep] = useState(1);
 
   const [jobForm, setJobForm] = useState({
     title: "",
     category: "",
-    job_type: "",
+    job_type: "Full Time",
     experience: "",
     salary: "",
     location: "",
-    positions: "",
+    positions: "1",
     accommodation: false,
     food: false,
     description: "",
   });
 
-  /* ========================================================
-     INITIAL LOAD
-  ======================================================== */
+  /* =====================================================
+     MODALS
+  ===================================================== */
+
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [showJobDetails, setShowJobDetails] =
+    useState(false);
+
+  const [selectedWorker, setSelectedWorker] =
+    useState(null);
+  const [showWorkerProfile, setShowWorkerProfile] =
+    useState(false);
+
+  const [showMyProfile, setShowMyProfile] =
+    useState(false);
+
+  const [showApplications, setShowApplications] =
+    useState(false);
+
+  /* =====================================================
+     CHAT
+  ===================================================== */
+
+  const [chatUser, setChatUser] = useState(null);
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+
+  /* =====================================================
+     LOAD
+  ===================================================== */
 
   useEffect(() => {
     loadDashboard();
@@ -134,320 +144,373 @@ export default function SawmillDashboard() {
   async function loadDashboard() {
     try {
       setLoading(true);
-      setError("");
 
       const {
-        data: {
-          session,
-        },
+        data: { session: currentSession },
       } = await supabase.auth.getSession();
 
-      if (!session?.user) {
-        navigate("/roles", {
+      if (!currentSession?.user) {
+        navigate("/login", {
           replace: true,
         });
-
         return;
       }
 
-      setUser(session.user);
+      setSession(currentSession);
 
-      /* ==================================================
-         PROFILE
-      ================================================== */
+      let { data: userProfile, error } =
+        await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentSession.user.id)
+          .maybeSingle();
 
-      const {
-        data: profileData,
-        error: profileError,
-      } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq(
-          "id",
-          session.user.id
-        )
-        .maybeSingle();
-
-      if (profileError) {
-        console.error(
-          "Sawmill profile error:",
-          profileError
-        );
+      if (error) {
+        console.error(error);
       }
 
-      setProfile(profileData);
+      if (!userProfile) {
+        const newProfile = {
+          id: currentSession.user.id,
+          name:
+            currentSession.user.user_metadata
+              ?.full_name ||
+            currentSession.user.email?.split(
+              "@"
+            )[0] ||
+            "Sawmill",
+          role: "sawmill",
+          phone:
+            currentSession.user.phone || "",
+          location: "",
+          bio: "",
+          photo_url: "",
+        };
 
-      /* ==================================================
-         JOBS
-      ================================================== */
+        const { data, error: createError } =
+          await supabase
+            .from("profiles")
+            .insert(newProfile)
+            .select()
+            .single();
 
-      await loadJobs();
+        if (createError) {
+          throw createError;
+        }
 
-      /* ==================================================
-         LISTINGS
-      ================================================== */
+        userProfile = data;
+      }
 
-      await loadListings();
+      if (userProfile.role !== "sawmill") {
+        navigate(
+          `/dashboard/${userProfile.role}`,
+          {
+            replace: true,
+          }
+        );
+        return;
+      }
 
-      /* ==================================================
-         REQUIREMENTS
-      ================================================== */
+      setProfile(userProfile);
 
-      await loadRequirements();
-
-      /* ==================================================
-         WORKERS
-      ================================================== */
-
-      await loadWorkers();
-
-    } catch (err) {
+      await Promise.all([
+        loadJobs(currentSession.user.id),
+        loadWorkers(),
+        loadApplications(currentSession.user.id),
+      ]);
+    } catch (error) {
       console.error(
         "Sawmill dashboard error:",
-        err
-      );
-
-      setError(
-        err?.message ||
-          "Unable to load Sawmill Dashboard."
+        error
       );
     } finally {
       setLoading(false);
     }
   }
 
-  /* ========================================================
+  /* =====================================================
      LOAD JOBS
-  ======================================================== */
+  ===================================================== */
 
-  async function loadJobs() {
-    const {
-      data,
-      error: jobsError,
-    } = await supabase
+  async function loadJobs(userId) {
+    const { data, error } = await supabase
       .from("jobs")
-      .select("*")
+      .select(`
+        *,
+        profiles (
+          id,
+          name,
+          role,
+          phone,
+          location,
+          bio,
+          photo_url
+        )
+      `)
       .order("created_at", {
         ascending: false,
       });
 
-    if (jobsError) {
-      throw jobsError;
+    if (error) {
+      console.error("Jobs error:", error);
+      return;
     }
 
     setJobs(data || []);
   }
 
-  /* ========================================================
-     LOAD LISTINGS
-  ======================================================== */
-
-  async function loadListings() {
-    const {
-      data,
-      error: listingsError,
-    } = await supabase
-      .from("listings")
-      .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (listingsError) {
-      throw listingsError;
-    }
-
-    setListings(data || []);
-  }
-
-  /* ========================================================
-     LOAD REQUIREMENTS
-  ======================================================== */
-
-  async function loadRequirements() {
-    const {
-      data,
-      error: requirementsError,
-    } = await supabase
-      .from("requirements")
-      .select("*")
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (requirementsError) {
-      throw requirementsError;
-    }
-
-    setRequirements(data || []);
-  }
-
-  /* ========================================================
+  /* =====================================================
      LOAD WORKERS
-  ======================================================== */
+  ===================================================== */
 
   async function loadWorkers() {
-    const {
-      data,
-      error: workersError,
-    } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "worker")
-      .order("created_at", {
-        ascending: false,
-      });
+    const { data: workerData, error } =
+      await supabase
+        .from("worker_profiles")
+        .select("*")
+        .order("created_at", {
+          ascending: false,
+        });
 
-    if (workersError) {
-      throw workersError;
+    if (error) {
+      console.error(
+        "Worker profiles:",
+        error
+      );
+      return;
     }
 
-    setWorkers(data || []);
-  }
-
-  /* ========================================================
-     REFRESH
-  ======================================================== */
-
-  async function handleRefresh() {
-    try {
-      setRefreshing(true);
-      setError("");
-      setMessage("");
-
-      await Promise.all([
-        loadJobs(),
-        loadListings(),
-        loadRequirements(),
-        loadWorkers(),
-      ]);
-
-      setMessage(
-        "Dashboard refreshed successfully."
-      );
-    } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to refresh dashboard."
-      );
-    } finally {
-      setRefreshing(false);
+    if (!workerData?.length) {
+      setWorkers([]);
+      return;
     }
+
+    const userIds = workerData.map(
+      (item) => item.user_id
+    );
+
+    const { data: profilesData } =
+      await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", userIds);
+
+    const profileMap = {};
+
+    (profilesData || []).forEach((item) => {
+      profileMap[item.id] = item;
+    });
+
+    const merged = workerData.map(
+      (worker) => ({
+        ...worker,
+        profile:
+          profileMap[worker.user_id] || null,
+      })
+    );
+
+    setWorkers(merged);
   }
 
-  /* ========================================================
-     JOB FORM CHANGE
-  ======================================================== */
+  /* =====================================================
+     LOAD APPLICATIONS
+  ===================================================== */
 
-  function handleJobChange(event) {
-    const {
-      name,
-      value,
-      type,
-      checked,
-    } = event.target;
+  async function loadApplications(userId) {
+    const { data: myJobs, error } =
+      await supabase
+        .from("jobs")
+        .select("id")
+        .eq("user_id", userId);
 
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const jobIds =
+      myJobs?.map((job) => job.id) || [];
+
+    if (!jobIds.length) {
+      setApplications([]);
+      return;
+    }
+
+    const { data: applicationData, error: appError } =
+      await supabase
+        .from("job_applications")
+        .select("*")
+        .in("job_id", jobIds)
+        .order("created_at", {
+          ascending: false,
+        });
+
+    if (appError) {
+      console.error(
+        "Application error:",
+        appError
+      );
+      return;
+    }
+
+    if (!applicationData?.length) {
+      setApplications([]);
+      return;
+    }
+
+    const workerIds = [
+      ...new Set(
+        applicationData.map(
+          (item) => item.worker_id
+        )
+      ),
+    ];
+
+    const { data: workerProfiles } =
+      await supabase
+        .from("profiles")
+        .select("*")
+        .in("id", workerIds);
+
+    const profileMap = {};
+
+    (workerProfiles || []).forEach(
+      (person) => {
+        profileMap[person.id] = person;
+      }
+    );
+
+    const jobMap = {};
+
+    (myJobs || []).forEach((job) => {
+      jobMap[job.id] = job;
+    });
+
+    const result = applicationData.map(
+      (application) => ({
+        ...application,
+        worker:
+          profileMap[application.worker_id] ||
+          null,
+      })
+    );
+
+    setApplications(result);
+  }
+
+  /* =====================================================
+     FORM
+  ===================================================== */
+
+  function updateJobForm(name, value) {
     setJobForm((old) => ({
       ...old,
-      [name]:
-        type === "checkbox"
-          ? checked
-          : value,
+      [name]: value,
     }));
-
-    setError("");
-    setMessage("");
   }
 
-  /* ========================================================
+  function resetJobForm() {
+    setJobForm({
+      title: "",
+      category: "",
+      job_type: "Full Time",
+      experience: "",
+      salary: "",
+      location: profile?.location || "",
+      positions: "1",
+      accommodation: false,
+      food: false,
+      description: "",
+    });
+
+    setJobStep(1);
+  }
+
+  /* =====================================================
      POST JOB
-  ======================================================== */
+  ===================================================== */
 
-  async function handlePostJob(event) {
-    event.preventDefault();
-
-    if (!user?.id) {
-      setError(
-        "Your login session was not found."
-      );
+  async function postJob() {
+    if (!session?.user?.id) {
       return;
     }
 
     if (!jobForm.title.trim()) {
-      setError(
-        "Please enter Job Title."
-      );
+      alert("Please enter job title.");
+      setJobStep(1);
       return;
     }
 
-    if (!jobForm.category.trim()) {
-      setError(
-        "Please enter Job Category."
-      );
+    if (!jobForm.category) {
+      alert("Please select job category.");
+      setJobStep(1);
+      return;
+    }
+
+    if (!jobForm.experience) {
+      alert("Please select required experience.");
+      setJobStep(1);
+      return;
+    }
+
+    if (!jobForm.salary.trim()) {
+      alert("Please enter salary.");
+      setJobStep(2);
       return;
     }
 
     if (!jobForm.location.trim()) {
-      setError(
-        "Please enter Job Location."
-      );
+      alert("Please enter location.");
+      setJobStep(2);
       return;
     }
 
     if (!jobForm.description.trim()) {
-      setError(
-        "Please enter Job Description."
-      );
+      alert("Please enter job description.");
+      setJobStep(2);
       return;
     }
 
+    setSaving(true);
+
     try {
-      setError("");
-      setMessage("");
+      const payload = {
+        user_id: session.user.id,
+        title: jobForm.title.trim(),
+        category: jobForm.category,
+        job_type: jobForm.job_type,
+        experience: jobForm.experience,
+        salary: jobForm.salary.trim(),
+        location: jobForm.location.trim(),
+        positions:
+          jobForm.positions || "1",
+        accommodation:
+          jobForm.accommodation,
+        food: jobForm.food,
+        description:
+          jobForm.description.trim(),
+      };
 
-      const {
-        data,
-        error: insertError,
-      } = await supabase
-        .from("jobs")
-        .insert({
-          user_id: user.id,
+      const { data, error } =
+        await supabase
+          .from("jobs")
+          .insert(payload)
+          .select(`
+            *,
+            profiles (
+              id,
+              name,
+              role,
+              phone,
+              location,
+              bio,
+              photo_url
+            )
+          `)
+          .single();
 
-          title:
-            jobForm.title.trim(),
-
-          category:
-            jobForm.category.trim(),
-
-          job_type:
-            jobForm.job_type.trim(),
-
-          experience:
-            jobForm.experience.trim(),
-
-          salary:
-            jobForm.salary.trim(),
-
-          location:
-            jobForm.location.trim(),
-
-          positions:
-            jobForm.positions.trim(),
-
-          accommodation:
-            jobForm.accommodation,
-
-          food:
-            jobForm.food,
-
-          description:
-            jobForm.description.trim(),
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        throw insertError;
+      if (error) {
+        throw error;
       }
 
       setJobs((old) => [
@@ -455,1566 +518,3528 @@ export default function SawmillDashboard() {
         ...old,
       ]);
 
-      setJobForm({
-        title: "",
-        category: "",
-        job_type: "",
-        experience: "",
-        salary: "",
-        location: "",
-        positions: "",
-        accommodation: false,
-        food: false,
-        description: "",
-      });
+      setShowPostJob(false);
+      setJobStep(1);
 
-      setShowJobForm(false);
+      resetJobForm();
 
-      setMessage(
-        "Job posted successfully."
+      alert(
+        "✅ Job posted successfully!"
       );
+    } catch (error) {
+      console.error(error);
 
-    } catch (err) {
-      console.error(
-        "Post job error:",
-        err
-      );
-
-      setError(
-        err?.message ||
+      alert(
+        error.message ||
           "Unable to post job."
       );
+    } finally {
+      setSaving(false);
     }
   }
 
-  /* ========================================================
+  /* =====================================================
      DELETE JOB
-  ======================================================== */
+  ===================================================== */
 
-  async function deleteJob(jobId) {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this job?"
-      );
-
-    if (!confirmed) {
+  async function deleteJob(job) {
+    if (
+      !window.confirm(
+        "Delete this job?"
+      )
+    ) {
       return;
     }
 
-    try {
-      const {
-        error: deleteError,
-      } = await supabase
-        .from("jobs")
-        .delete()
-        .eq("id", jobId)
-        .eq(
-          "user_id",
-          user?.id
-        );
-
-      if (deleteError) {
-        throw deleteError;
-      }
-
-      setJobs((old) =>
-        old.filter(
-          (job) =>
-            job.id !== jobId
-        )
+    const { error } = await supabase
+      .from("jobs")
+      .delete()
+      .eq("id", job.id)
+      .eq(
+        "user_id",
+        session.user.id
       );
 
-      setMessage(
-        "Job deleted successfully."
-      );
-
-    } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to delete job."
-      );
+    if (error) {
+      alert(error.message);
+      return;
     }
+
+    setJobs((old) =>
+      old.filter(
+        (item) => item.id !== job.id
+      )
+    );
+
+    setShowJobDetails(false);
   }
 
-  /* ========================================================
-     FILTER WORKERS
-  ======================================================== */
+  /* =====================================================
+     APPLICATION STATUS
+  ===================================================== */
 
-  const filteredWorkers =
+  async function updateApplication(
+    application,
+    status
+  ) {
+    const { error } =
+      await supabase
+        .from("job_applications")
+        .update({
+          status,
+        })
+        .eq(
+          "id",
+          application.id
+        );
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setApplications((old) =>
+      old.map((item) =>
+        item.id === application.id
+          ? {
+              ...item,
+              status,
+            }
+          : item
+      )
+    );
+  }
+
+  /* =====================================================
+     JOB DETAILS
+  ===================================================== */
+
+  function openJob(job) {
+    setSelectedJob(job);
+    setShowJobDetails(true);
+  }
+
+  /* =====================================================
+     WORKER PROFILE
+  ===================================================== */
+
+  function openWorker(worker) {
+    setSelectedWorker(worker);
+    setShowWorkerProfile(true);
+  }
+
+  /* =====================================================
+     CONTACT
+  ===================================================== */
+
+  function callUser(phone) {
+    if (!phone) {
+      alert(
+        "Phone number is not available."
+      );
+      return;
+    }
+
+    window.location.href =
+      `tel:${phone}`;
+  }
+
+  function whatsappUser(phone) {
+    if (!phone) {
+      alert(
+        "WhatsApp number is not available."
+      );
+      return;
+    }
+
+    let cleanPhone =
+      phone.replace(/\D/g, "");
+
+    if (
+      cleanPhone.length === 10
+    ) {
+      cleanPhone =
+        "91" + cleanPhone;
+    }
+
+    window.open(
+      `https://wa.me/${cleanPhone}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }
+
+  /* =====================================================
+     CHAT
+  ===================================================== */
+
+  async function openChat(user) {
+    if (!user?.id) return;
+
+    if (
+      user.id === session.user.id
+    ) {
+      alert(
+        "You cannot chat with yourself."
+      );
+      return;
+    }
+
+    setChatUser(user);
+
+    await loadMessages(user.id);
+
+    setShowChat(true);
+  }
+
+  async function loadMessages(
+    receiverId
+  ) {
+    const myId =
+      session.user.id;
+
+    const { data, error } =
+      await supabase
+        .from("messages")
+        .select("*")
+        .or(
+          `and(sender_id.eq.${myId},receiver_id.eq.${receiverId}),and(sender_id.eq.${receiverId},receiver_id.eq.${myId})`
+        )
+        .order("created_at", {
+          ascending: true,
+        });
+
+    if (error) {
+      console.error(
+        "Messages:",
+        error
+      );
+
+      setMessages([]);
+      return;
+    }
+
+    setMessages(data || []);
+  }
+
+  useEffect(() => {
+    if (
+      !session?.user?.id ||
+      !chatUser?.id
+    ) {
+      return;
+    }
+
+    const channel =
+      supabase
+        .channel(
+          `sawmill-chat-${chatUser.id}`
+        )
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "messages",
+          },
+          (payload) => {
+            const message =
+              payload.new;
+
+            const belongs =
+              (
+                message.sender_id ===
+                  session.user.id &&
+                message.receiver_id ===
+                  chatUser.id
+              ) ||
+              (
+                message.sender_id ===
+                  chatUser.id &&
+                message.receiver_id ===
+                  session.user.id
+              );
+
+            if (belongs) {
+              setMessages((old) => {
+                if (
+                  old.some(
+                    (item) =>
+                      item.id ===
+                      message.id
+                  )
+                ) {
+                  return old;
+                }
+
+                return [
+                  ...old,
+                  message,
+                ];
+              });
+            }
+          }
+        )
+        .subscribe();
+
+    return () => {
+      supabase.removeChannel(
+        channel
+      );
+    };
+  }, [
+    session?.user?.id,
+    chatUser?.id,
+  ]);
+
+  async function sendMessage(e) {
+    e.preventDefault();
+
+    const body =
+      messageText.trim();
+
+    if (
+      !body ||
+      !chatUser?.id
+    ) {
+      return;
+    }
+
+    const { data, error } =
+      await supabase
+        .from("messages")
+        .insert({
+          sender_id:
+            session.user.id,
+          receiver_id:
+            chatUser.id,
+          body,
+        })
+        .select()
+        .single();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setMessages((old) => [
+      ...old,
+      data,
+    ]);
+
+    setMessageText("");
+  }
+
+  /* =====================================================
+     PROFILE
+  ===================================================== */
+
+  function openMyProfile() {
+    setShowMyProfile(true);
+  }
+
+  /* =====================================================
+     FILTER JOBS
+  ===================================================== */
+
+  const myJobs = useMemo(
+    () =>
+      jobs.filter(
+        (job) =>
+          job.user_id ===
+          session?.user?.id
+      ),
+    [
+      jobs,
+      session?.user?.id,
+    ]
+  );
+
+  const jobWall = useMemo(() => {
+    const value =
+      searchJobs
+        .trim()
+        .toLowerCase();
+
+    if (!value) {
+      return jobs;
+    }
+
+    return jobs.filter(
+      (job) =>
+        [
+          job.title,
+          job.category,
+          job.job_type,
+          job.experience,
+          job.salary,
+          job.location,
+          job.description,
+          job.profiles?.name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(value)
+    );
+  }, [
+    jobs,
+    searchJobs,
+  ]);
+
+  /* =====================================================
+     FILTER WORKERS
+  ===================================================== */
+
+  const workerWall =
     useMemo(() => {
-      const search =
+      const value =
         searchWorkers
           .trim()
           .toLowerCase();
 
-      if (!search) {
+      if (!value) {
         return workers;
       }
 
       return workers.filter(
-        (worker) => {
-          const text = `
-            ${worker.name || ""}
-            ${worker.location || ""}
-            ${worker.bio || ""}
-            ${worker.role || ""}
-          `.toLowerCase();
-
-          return text.includes(
-            search
-          );
-        }
+        (worker) =>
+          [
+            worker.profile?.name,
+            worker.profile?.location,
+            worker.experience,
+            worker.work_type,
+            worker.expected_salary,
+            ...(worker.skills ||
+              []),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase()
+            .includes(value)
       );
     }, [
       workers,
       searchWorkers,
     ]);
 
-  /* ========================================================
-     FILTER JOBS
-  ======================================================== */
+  /* =====================================================
+     LOGOUT
+  ===================================================== */
 
-  const filteredJobs =
-    useMemo(() => {
-      const search =
-        searchJobs
-          .trim()
-          .toLowerCase();
+  async function logout() {
+    await supabase.auth.signOut();
 
-      if (!search) {
-        return jobs;
-      }
+    navigate("/login", {
+      replace: true,
+    });
+  }
 
-      return jobs.filter(
-        (job) => {
-          const text = `
-            ${job.title || ""}
-            ${job.category || ""}
-            ${job.job_type || ""}
-            ${job.location || ""}
-            ${job.description || ""}
-          `.toLowerCase();
-
-          return text.includes(
-            search
-          );
-        }
-      );
-    }, [
-      jobs,
-      searchJobs,
-    ]);
-
-  /* ========================================================
-     MY JOBS
-  ======================================================== */
-
-  const myJobs =
-    jobs.filter(
-      (job) =>
-        job.user_id ===
-        user?.id
-    );
-
-  /* ========================================================
-     MY REQUIREMENTS
-  ======================================================== */
-
-  const myRequirements =
-    requirements.filter(
-      (item) =>
-        item.user_id ===
-        user?.id
-    );
-
-  /* ========================================================
-     MY LISTINGS
-  ======================================================== */
-
-  const myListings =
-    listings.filter(
-      (item) =>
-        item.user_id ===
-        user?.id
-    );
-
-  /* ========================================================
-     DISPLAY NAME
-  ======================================================== */
-
-  const displayName =
-    profile?.name ||
-    user?.user_metadata?.name ||
-    user?.email?.split("@")[0] ||
-    "Sawmill";
-
-  /* ========================================================
+  /* =====================================================
      LOADING
-  ======================================================== */
+  ===================================================== */
 
   if (loading) {
     return (
-      <div className="tm-sawmill-loading">
+      <div className="sawmill-loading">
 
-        <div className="tm-sawmill-spinner" />
+        <div className="sawmill-loading-icon">
+          🏭
+        </div>
 
-        <h3>
-          Loading Sawmill Dashboard...
-        </h3>
+        <h2>
+          Loading TimberMart...
+        </h2>
 
         <p>
-          Please wait.
+          Preparing your Sawmill dashboard
         </p>
 
       </div>
     );
   }
 
-  /* ========================================================
+  /* =====================================================
      MAIN UI
-  ======================================================== */
+  ===================================================== */
 
   return (
-    <DashboardLayout
-      role="sawmill"
-      title="Sawmill / Business Dashboard"
-      description="Post jobs, find workers, manage timber and connect directly."
-    >
+    <div className="sawmill-app">
 
-      {/* ==================================================
-          MESSAGE
-      ================================================== */}
+      {/* =================================================
+          HEADER
+      ================================================= */}
 
-      {error && (
-        <div className="tm-sawmill-message error">
-          {error}
-        </div>
-      )}
-
-      {message && (
-        <div className="tm-sawmill-message success">
-          {message}
-        </div>
-      )}
-
-      {/* ==================================================
-          WELCOME
-      ================================================== */}
-
-      <section className="tm-sawmill-welcome">
-
-        <div>
-
-          <div className="tm-sawmill-eyebrow">
-            🏭 SAWMILL / BUSINESS
-          </div>
-
-          <h2>
-            Hello, {displayName}! 👋
-          </h2>
-
-          <p>
-            Connect with skilled workers,
-            manage your timber business and
-            post opportunities on TimberMart.
-          </p>
-
-          {profile?.location && (
-            <div className="tm-sawmill-location">
-              <MapPin size={15} />
-              {profile.location}
-            </div>
-          )}
-
-        </div>
+      <header className="sawmill-header">
 
         <button
-          type="button"
-          className="tm-sawmill-refresh"
-          onClick={handleRefresh}
-          disabled={refreshing}
+          className="sawmill-menu-btn"
+          onClick={() =>
+            setMobileMenu(
+              (old) => !old
+            )
+          }
         >
-
-          <RefreshCw
-            size={16}
-            className={
-              refreshing
-                ? "tm-refresh-spin"
-                : ""
-            }
-          />
-
-          {refreshing
-            ? "Refreshing..."
-            : "Refresh"}
-
+          {mobileMenu ? (
+            <X size={22} />
+          ) : (
+            <Menu size={22} />
+          )}
         </button>
 
-      </section>
 
-      {/* ==================================================
-          STATS
-      ================================================== */}
+        <div className="sawmill-logo">
+          <span>
+            🌳
+          </span>
 
-      <div className="tm-sawmill-stats">
-
-        <Stat
-          icon="👷"
-          label="Active Jobs"
-          value={myJobs.length}
-        />
-
-        <Stat
-          icon="📋"
-          label="Requirements"
-          value={
-            myRequirements.length
-          }
-        />
-
-        <Stat
-          icon="👥"
-          label="Workers"
-          value={workers.length}
-        />
-
-        <Stat
-          icon="🪵"
-          label="My Listings"
-          value={myListings.length}
-        />
-
-      </div>
-
-      {/* ==================================================
-          MAIN ACTIONS
-      ================================================== */}
-
-      <section className="tm-sawmill-section">
-
-        <SectionTitle
-          title="Sawmill Tools"
-          description="Everything you need to manage your business."
-        />
-
-        <div className="tm-sawmill-action-grid">
-
-          <Action
-            icon={
-              <BriefcaseBusiness size={25} />
-            }
-            title="Post a Job"
-            text="Hire workers for your sawmill."
-            onClick={() =>
-              setShowJobForm(true)
-            }
-          />
-
-          <Action
-            icon={
-              <Users size={25} />
-            }
-            title="Find Workers"
-            text="Search available workers."
-            onClick={() =>
-              document
-                .getElementById(
-                  "sawmill-workers"
-                )
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                })
-            }
-          />
-
-          <Action
-            icon={
-              <ClipboardList size={25} />
-            }
-            title="Requirement Wall"
-            text="View and post requirements."
-            onClick={() =>
-              navigate(
-                "/requirements"
-              )
-            }
-          />
-
-          <Action
-            icon={
-              <Package size={25} />
-            }
-            title="Timber Listings"
-            text="Browse timber and wood listings."
-            onClick={() =>
-              document
-                .getElementById(
-                  "sawmill-timber"
-                )
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                })
-            }
-          />
-
-          <Action
-            icon={
-              <User size={25} />
-            }
-            title="My Profile"
-            text="Update business profile."
-            onClick={() =>
-              navigate("/profile")
-            }
-          />
-
-          <Action
-            icon={<Settings size={25} />}
-            title="Settings"
-            text="Manage your account."
-            onClick={() =>
-              navigate("/settings")
-            }
-          />
-
+          TimberMart
         </div>
 
-      </section>
 
-      {/* ==================================================
-          POST JOB
-      ================================================== */}
+        <div className="sawmill-header-right">
 
-      <section className="tm-sawmill-section">
+          <button className="sawmill-bell">
+            <Bell size={20} />
+          </button>
 
-        <div className="tm-sawmill-job-banner">
-
-          <div>
-
-            <span>
-              👷 HIRE WORKERS
-            </span>
-
-            <h2>
-              Post a Job
-            </h2>
-
-            <p>
-              Find experienced workers for
-              your sawmill / timber business.
-            </p>
-
-          </div>
 
           <button
-            type="button"
-            className="tm-sawmill-green-btn"
-            onClick={() =>
-              setShowJobForm(true)
+            className="sawmill-header-profile"
+            onClick={
+              openMyProfile
             }
           >
-            <Plus size={17} />
-            Post Job
+
+            <span className="sawmill-header-avatar">
+
+              {profile?.photo_url ? (
+                <img
+                  src={
+                    profile.photo_url
+                  }
+                  alt=""
+                />
+              ) : (
+                <Building2
+                  size={18}
+                />
+              )}
+
+            </span>
+
+            <span>
+              {profile?.name ||
+                "Sawmill"}
+            </span>
+
           </button>
 
         </div>
 
-        {showJobForm && (
-          <div className="tm-sawmill-form-card">
+      </header>
 
-            <div className="tm-sawmill-form-head">
+
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
+
+      <aside
+        className={`sawmill-sidebar ${
+          mobileMenu
+            ? "open"
+            : ""
+        }`}
+      >
+
+        <div>
+
+          <div className="sawmill-brand">
+
+            <div>
+              🏭
+            </div>
+
+            <section>
+
+              <strong>
+                TimberMart
+              </strong>
+
+              <span>
+                Sawmill / Business
+              </span>
+
+            </section>
+
+          </div>
+
+
+          <div className="sawmill-business-card">
+
+            <div className="sawmill-business-avatar">
+
+              {profile?.photo_url ? (
+                <img
+                  src={
+                    profile.photo_url
+                  }
+                  alt=""
+                />
+              ) : (
+                <Building2
+                  size={22}
+                />
+              )}
+
+            </div>
+
+            <div>
+
+              <strong>
+                {profile?.name ||
+                  "Sawmill"}
+              </strong>
+
+              <span>
+                {profile?.location ||
+                  "Location not added"}
+              </span>
+
+            </div>
+
+          </div>
+
+
+          <nav className="sawmill-nav">
+
+            <button
+              className={
+                activeTab ===
+                "dashboard"
+                  ? "active"
+                  : ""
+              }
+              onClick={() => {
+                setActiveTab(
+                  "dashboard"
+                );
+
+                setMobileMenu(
+                  false
+                );
+
+                window.scrollTo({
+                  top: 0,
+                  behavior:
+                    "smooth",
+                });
+              }}
+            >
+              <Home size={18} />
+              Dashboard
+            </button>
+
+
+            <button
+              onClick={() => {
+                setJobStep(1);
+
+                setJobForm(
+                  (old) => ({
+                    ...old,
+                    location:
+                      profile?.location ||
+                      "",
+                  })
+                );
+
+                setShowPostJob(
+                  true
+                );
+
+                setMobileMenu(
+                  false
+                );
+              }}
+            >
+              <Briefcase
+                size={18}
+              />
+              Post a Job
+            </button>
+
+
+            <button
+              onClick={() => {
+                document
+                  .getElementById(
+                    "job-wall"
+                  )
+                  ?.scrollIntoView({
+                    behavior:
+                      "smooth",
+                  });
+
+                setMobileMenu(
+                  false
+                );
+              }}
+            >
+              <Search size={18} />
+              Job Wall
+            </button>
+
+
+            <button
+              onClick={() => {
+                document
+                  .getElementById(
+                    "workers"
+                  )
+                  ?.scrollIntoView({
+                    behavior:
+                      "smooth",
+                  });
+
+                setMobileMenu(
+                  false
+                );
+              }}
+            >
+              <Users size={18} />
+              Find Workers
+            </button>
+
+
+            <button
+              onClick={() => {
+                setShowApplications(
+                  true
+                );
+
+                setMobileMenu(
+                  false
+                );
+              }}
+            >
+              <Check size={18} />
+              Job Applications
+            </button>
+
+
+            <button
+              onClick={() => {
+                openMyProfile();
+
+                setMobileMenu(
+                  false
+                );
+              }}
+            >
+              <User size={18} />
+              My Profile
+            </button>
+
+
+            <button
+              onClick={() =>
+                navigate(
+                  "/settings"
+                )
+              }
+            >
+              <Settings
+                size={18}
+              />
+              Settings
+            </button>
+
+          </nav>
+
+        </div>
+
+
+        <div className="sawmill-sidebar-bottom">
+
+          <div className="sawmill-connect-note">
+            🤝 We Connect. You Deal Directly.
+          </div>
+
+          <button
+            className="sawmill-logout"
+            onClick={logout}
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+
+        </div>
+
+      </aside>
+
+
+      {mobileMenu && (
+        <div
+          className="sawmill-overlay"
+          onClick={() =>
+            setMobileMenu(
+              false
+            )
+          }
+        />
+      )}
+
+
+      {/* =================================================
+          MAIN
+      ================================================= */}
+
+      <main className="sawmill-main">
+
+        <div className="sawmill-container">
+
+          {/* =================================================
+              HERO
+          ================================================= */}
+
+          <section className="sawmill-hero">
+
+            <div>
+
+              <span className="sawmill-kicker">
+                🏭 SAWMILL / BUSINESS
+              </span>
+
+              <h1>
+                Hello,{" "}
+                {profile?.name ||
+                  "Business"}!
+              </h1>
+
+              <p>
+                Hire the right workers
+                and connect directly
+                with skilled people
+                nearby.
+              </p>
+
+
+              <div className="sawmill-location">
+
+                <MapPin size={15} />
+
+                {profile?.location ||
+                  "Add your business location"}
+
+              </div>
+
+
+              <div className="sawmill-hero-actions">
+
+                <button
+                  className="sawmill-primary"
+                  onClick={() => {
+                    resetJobForm();
+
+                    setJobForm(
+                      (old) => ({
+                        ...old,
+                        location:
+                          profile?.location ||
+                          "",
+                      })
+                    );
+
+                    setShowPostJob(
+                      true
+                    );
+                  }}
+                >
+                  <Briefcase
+                    size={17}
+                  />
+                  Post a Job
+                </button>
+
+
+                <button
+                  className="sawmill-secondary"
+                  onClick={() =>
+                    document
+                      .getElementById(
+                        "workers"
+                      )
+                      ?.scrollIntoView({
+                        behavior:
+                          "smooth",
+                      })
+                  }
+                >
+                  <Users size={17} />
+                  Find Workers
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div className="sawmill-hero-art">
+
+              <div>
+                🏭
+              </div>
+
+              <span>
+                🪵
+              </span>
+
+            </div>
+
+          </section>
+
+
+          {/* =================================================
+              ACCOUNT BAR
+          ================================================= */}
+
+          <section className="sawmill-account">
+
+            <div className="sawmill-account-left">
+
+              <div className="sawmill-account-photo">
+
+                {profile?.photo_url ? (
+                  <img
+                    src={
+                      profile.photo_url
+                    }
+                    alt=""
+                  />
+                ) : (
+                  <Building2
+                    size={24}
+                  />
+                )}
+
+              </div>
+
 
               <div>
 
-                <h3>
-                  Post a Job
-                </h3>
+                <strong>
+                  {profile?.name ||
+                    "Sawmill / Business"}
+                </strong>
+
+                <span>
+                  Verified TimberMart Business
+                </span>
+
+              </div>
+
+            </div>
+
+
+            <div className="sawmill-verified">
+              ✓ Active Account
+            </div>
+
+          </section>
+
+
+          {/* =================================================
+              STATS
+          ================================================= */}
+
+          <section className="sawmill-stats">
+
+            <div>
+
+              <span className="sawmill-stat-icon">
+                💼
+              </span>
+
+              <strong>
+                {myJobs.length}
+              </strong>
+
+              <small>
+                Active Jobs
+              </small>
+
+            </div>
+
+
+            <div>
+
+              <span className="sawmill-stat-icon">
+                👷
+              </span>
+
+              <strong>
+                {workers.length}
+              </strong>
+
+              <small>
+                Worker Profiles
+              </small>
+
+            </div>
+
+
+            <div>
+
+              <span className="sawmill-stat-icon">
+                📄
+              </span>
+
+              <strong>
+                {applications.length}
+              </strong>
+
+              <small>
+                Applications
+              </small>
+
+            </div>
+
+
+            <div>
+
+              <span className="sawmill-stat-icon">
+                📍
+              </span>
+
+              <strong>
+                {profile?.location ||
+                  "—"}
+              </strong>
+
+              <small>
+                Business Location
+              </small>
+
+            </div>
+
+          </section>
+
+
+          {/* =================================================
+              QUICK ACTIONS
+          ================================================= */}
+
+          <section className="sawmill-section">
+
+            <div className="sawmill-section-heading">
+
+              <div>
+
+                <h2>
+                  Sawmill Tools
+                </h2>
 
                 <p>
-                  Add the job details workers
-                  need to see.
+                  Manage jobs and connect
+                  with workers.
+                </p>
+
+              </div>
+
+            </div>
+
+
+            <div className="sawmill-tools">
+
+              <button
+                onClick={() => {
+                  resetJobForm();
+
+                  setJobForm(
+                    (old) => ({
+                      ...old,
+                      location:
+                        profile?.location ||
+                        "",
+                    })
+                  );
+
+                  setShowPostJob(
+                    true
+                  );
+                }}
+              >
+
+                <span>
+                  📋
+                </span>
+
+                <strong>
+                  Post Job
+                </strong>
+
+                <small>
+                  Find skilled workers
+                </small>
+
+              </button>
+
+
+              <button
+                onClick={() =>
+                  document
+                    .getElementById(
+                      "workers"
+                    )
+                    ?.scrollIntoView({
+                      behavior:
+                        "smooth",
+                    })
+                }
+              >
+
+                <span>
+                  👷
+                </span>
+
+                <strong>
+                  Find Workers
+                </strong>
+
+                <small>
+                  View nearby profiles
+                </small>
+
+              </button>
+
+
+              <button
+                onClick={() =>
+                  document
+                    .getElementById(
+                      "job-wall"
+                    )
+                    ?.scrollIntoView({
+                      behavior:
+                        "smooth",
+                    })
+                }
+              >
+
+                <span>
+                  🔎
+                </span>
+
+                <strong>
+                  Job Wall
+                </strong>
+
+                <small>
+                  View posted jobs
+                </small>
+
+              </button>
+
+
+              <button
+                onClick={() =>
+                  setShowApplications(
+                    true
+                  )
+                }
+              >
+
+                <span>
+                  📄
+                </span>
+
+                <strong>
+                  Applications
+                </strong>
+
+                <small>
+                  Review workers
+                </small>
+
+              </button>
+
+            </div>
+
+          </section>
+
+
+          {/* =================================================
+              MY JOBS
+          ================================================= */}
+
+          <section className="sawmill-section">
+
+            <div className="sawmill-section-heading">
+
+              <div>
+
+                <h2>
+                  My Jobs
+                </h2>
+
+                <p>
+                  Jobs posted by your business.
                 </p>
 
               </div>
 
               <button
-                type="button"
-                className="tm-sawmill-close"
-                onClick={() =>
-                  setShowJobForm(false)
-                }
+                className="sawmill-outline-small"
+                onClick={() => {
+                  resetJobForm();
+
+                  setShowPostJob(
+                    true
+                  );
+                }}
               >
-                <X size={18} />
+                <Briefcase
+                  size={14}
+                />
+                Post Job
               </button>
 
             </div>
 
-            <form
-              onSubmit={
-                handlePostJob
-              }
-            >
 
-              <div className="tm-sawmill-form-grid">
+            {myJobs.length === 0 ? (
 
-                <Field
-                  label="Job Title *"
-                  name="title"
-                  value={
-                    jobForm.title
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Example: Sawmill Machine Operator"
-                />
+              <div className="sawmill-empty">
 
-                <Field
-                  label="Job Category *"
-                  name="category"
-                  value={
-                    jobForm.category
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Example: Machine Operator"
-                />
+                <div>
+                  📋
+                </div>
 
-                <Field
-                  label="Job Type"
-                  name="job_type"
-                  value={
-                    jobForm.job_type
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Full Time / Part Time"
-                />
+                <h3>
+                  No jobs posted yet
+                </h3>
 
-                <Field
-                  label="Experience Required"
-                  name="experience"
-                  value={
-                    jobForm.experience
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Example: 2 - 5 Years"
-                />
-
-                <Field
-                  label="Monthly Salary"
-                  name="salary"
-                  value={
-                    jobForm.salary
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Example: ₹18,000 - ₹25,000"
-                />
-
-                <Field
-                  label="Location *"
-                  name="location"
-                  value={
-                    jobForm.location
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="City / District / State"
-                />
-
-                <Field
-                  label="No. of Positions"
-                  name="positions"
-                  value={
-                    jobForm.positions
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  placeholder="Example: 2"
-                />
-
-              </div>
-
-              <div className="tm-sawmill-check-row">
-
-                <label>
-                  <input
-                    type="checkbox"
-                    name="accommodation"
-                    checked={
-                      jobForm.accommodation
-                    }
-                    onChange={
-                      handleJobChange
-                    }
-                  />
-
-                  Accommodation Available
-                </label>
-
-                <label>
-                  <input
-                    type="checkbox"
-                    name="food"
-                    checked={
-                      jobForm.food
-                    }
-                    onChange={
-                      handleJobChange
-                    }
-                  />
-
-                  Food Available
-                </label>
-
-              </div>
-
-              <div className="tm-sawmill-field">
-
-                <label>
-                  Job Description *
-                </label>
-
-                <textarea
-                  name="description"
-                  value={
-                    jobForm.description
-                  }
-                  onChange={
-                    handleJobChange
-                  }
-                  rows="5"
-                  placeholder="Describe the work, responsibilities and requirements..."
-                />
-
-              </div>
-
-              <div className="tm-sawmill-form-actions">
+                <p>
+                  Create your first job
+                  to connect with workers.
+                </p>
 
                 <button
-                  type="button"
-                  className="tm-sawmill-outline-btn"
-                  onClick={() =>
-                    setShowJobForm(false)
-                  }
-                >
-                  Cancel
-                </button>
+                  onClick={() => {
+                    resetJobForm();
 
-                <button
-                  type="submit"
-                  className="tm-sawmill-green-btn"
+                    setShowPostJob(
+                      true
+                    );
+                  }}
                 >
-                  <BriefcaseBusiness
-                    size={17}
-                  />
-
-                  Post Job
+                  Post Your First Job
                 </button>
 
               </div>
 
-            </form>
+            ) : (
 
-          </div>
-        )}
+              <div className="sawmill-myjobs">
 
-      </section>
+                {myJobs.map((job) => (
 
-      {/* ==================================================
-          MY JOBS
-      ================================================== */}
+                  <article
+                    className="sawmill-myjob"
+                    key={job.id}
+                  >
 
-      <section className="tm-sawmill-section">
+                    <div className="sawmill-myjob-icon">
+                      💼
+                    </div>
 
-        <div className="tm-sawmill-section-head">
+                    <div>
 
-          <SectionTitle
-            title="My Jobs"
-            description="Jobs posted from your Sawmill account."
-          />
+                      <strong>
+                        {job.title}
+                      </strong>
 
-        </div>
+                      <span>
+                        {job.category}
+                        {" • "}
+                        {job.location}
+                      </span>
 
-        {myJobs.length === 0 ? (
+                      <small>
+                        {job.salary ||
+                          "Salary not specified"}
+                      </small>
 
-          <Empty
-            icon="👷"
-            title="No jobs posted yet"
-            text="Post your first worker requirement."
-            button="Post a Job"
-            onClick={() =>
-              setShowJobForm(true)
-            }
-          />
+                    </div>
 
-        ) : (
 
-          <div className="tm-sawmill-jobs-grid">
+                    <button
+                      onClick={() =>
+                        openJob(job)
+                      }
+                    >
+                      <Eye size={15} />
+                      View
+                    </button>
 
-            {myJobs.map(
-              (job) => (
+                  </article>
 
-                <JobCard
-                  key={job.id}
-                  job={job}
-                  own
-                  onDelete={
-                    deleteJob
-                  }
-                />
+                ))}
 
-              )
+              </div>
+
             )}
 
-          </div>
+          </section>
 
-        )}
 
-      </section>
+          {/* =================================================
+              JOB WALL
+          ================================================= */}
 
-      {/* ==================================================
-          JOB WALL
-      ================================================== */}
+          <section
+            className="sawmill-section"
+            id="job-wall"
+          >
 
-      <section className="tm-sawmill-section">
+            <div className="sawmill-section-heading">
 
-        <SectionTitle
-          title="Job Wall"
-          description="See jobs posted across TimberMart."
-        />
+              <div>
 
-        <div className="tm-sawmill-search">
+                <h2>
+                  Job Wall
+                </h2>
 
-          <Search size={17} />
+                <p>
+                  All jobs posted by TimberMart
+                  businesses.
+                </p>
 
-          <input
-            value={searchJobs}
-            onChange={(e) =>
-              setSearchJobs(
-                e.target.value
-              )
-            }
-            placeholder="Search jobs, categories, locations..."
-          />
+              </div>
 
-        </div>
+              <span className="sawmill-count">
+                {jobWall.length} Jobs
+              </span>
 
-        {filteredJobs.length === 0 ? (
+            </div>
 
-          <Empty
-            icon="🔎"
-            title="No jobs found"
-            text="There are no matching jobs yet."
-          />
 
-        ) : (
+            <div className="sawmill-search">
 
-          <div className="tm-sawmill-jobs-grid">
+              <Search size={18} />
 
-            {filteredJobs
-              .slice(0, 8)
-              .map(
-                (job) => (
+              <input
+                value={
+                  searchJobs
+                }
+                onChange={(e) =>
+                  setSearchJobs(
+                    e.target.value
+                  )
+                }
+                placeholder="Search jobs, company, location..."
+              />
 
-                  <JobCard
+            </div>
+
+
+            {jobWall.length === 0 ? (
+
+              <div className="sawmill-empty">
+
+                <div>
+                  🔎
+                </div>
+
+                <h3>
+                  No jobs found
+                </h3>
+
+                <p>
+                  Posted jobs will appear
+                  here automatically.
+                </p>
+
+              </div>
+
+            ) : (
+
+              <div className="sawmill-jobs-grid">
+
+                {jobWall.map((job) => (
+
+                  <article
+                    className="sawmill-job-card"
                     key={job.id}
-                    job={job}
-                    own={
-                      job.user_id ===
-                      user?.id
-                    }
-                    onDelete={
-                      deleteJob
-                    }
-                  />
+                  >
 
-                )
-              )}
+                    <div className="sawmill-job-company">
 
-          </div>
+                      <div className="sawmill-company-avatar">
 
-        )}
+                        {job.profiles
+                          ?.photo_url ? (
+                          <img
+                            src={
+                              job.profiles
+                                .photo_url
+                            }
+                            alt=""
+                          />
+                        ) : (
+                          <Building2
+                            size={19}
+                          />
+                        )}
 
-      </section>
+                      </div>
 
-      {/* ==================================================
-          FIND WORKERS
-      ================================================== */}
 
-      <section
-        id="sawmill-workers"
-        className="tm-sawmill-section"
-      >
+                      <div>
 
-        <SectionTitle
-          title="Nearby / Available Workers"
-          description="Workers who created a TimberMart worker profile."
-        />
+                        <strong>
+                          {job.profiles?.name ||
+                            "Timber Business"}
+                        </strong>
 
-        <div className="tm-sawmill-search">
+                        <span>
+                          {job.location ||
+                            job.profiles
+                              ?.location ||
+                            "Location not added"}
+                        </span>
 
-          <Search size={17} />
+                      </div>
 
-          <input
-            value={
-              searchWorkers
-            }
-            onChange={(e) =>
-              setSearchWorkers(
-                e.target.value
-              )
-            }
-            placeholder="Search workers, skills, location..."
-          />
+                    </div>
 
-        </div>
 
-        {filteredWorkers.length === 0 ? (
+                    <span className="sawmill-job-category">
+                      {job.category ||
+                        "Timber Job"}
+                    </span>
 
-          <Empty
-            icon="👷"
-            title="No workers found"
-            text="Workers will appear here after creating their profiles."
-          />
 
-        ) : (
+                    <h3>
+                      {job.title}
+                    </h3>
 
-          <div className="tm-sawmill-workers-grid">
 
-            {filteredWorkers
-              .slice(0, 12)
-              .map(
-                (worker) => (
+                    <p>
+                      {job.description ||
+                        "No description provided."}
+                    </p>
 
-                  <WorkerCard
-                    key={
-                      worker.id
-                    }
-                    worker={
-                      worker
-                    }
-                  />
 
-                )
-              )}
+                    <div className="sawmill-job-info">
 
-          </div>
+                      <span>
+                        <Briefcase
+                          size={14}
+                        />
+                        {job.job_type ||
+                          "Work Type"}
+                      </span>
 
-        )}
+                      <span>
+                        <Clock3
+                          size={14}
+                        />
+                        {job.experience ||
+                          "Experience"}
+                      </span>
 
-      </section>
+                      <span>
+                        💰
+                        {job.salary ||
+                          "Salary"}
+                      </span>
 
-      {/* ==================================================
-          REQUIREMENT WALL
-      ================================================== */}
+                    </div>
 
-      <section className="tm-sawmill-section">
 
-        <div className="tm-sawmill-requirement-banner">
+                    <div className="sawmill-job-bottom">
 
-          <div>
+                      <small>
+                        {job.positions
+                          ? `${job.positions} Position(s)`
+                          : ""}
+                      </small>
 
-            <span>
-              📋 REQUIREMENT WALL
-            </span>
+                      <button
+                        onClick={() =>
+                          openJob(job)
+                        }
+                      >
+                        <Eye size={15} />
+                        View
+                      </button>
 
-            <h2>
-              Requirements
-            </h2>
+                    </div>
 
-            <p>
-              See what buyers, merchants and
-              businesses are looking for.
-            </p>
+                  </article>
 
-          </div>
+                ))}
 
-          <button
-            type="button"
-            className="tm-sawmill-green-btn"
-            onClick={() =>
-              navigate(
-                "/requirements"
-              )
-            }
+              </div>
+
+            )}
+
+          </section>
+
+
+          {/* =================================================
+              NEARBY WORKERS
+          ================================================= */}
+
+          <section
+            className="sawmill-section"
+            id="workers"
           >
-            <ClipboardList
-              size={17}
-            />
 
-            Open Requirement Wall
-          </button>
+            <div className="sawmill-section-heading">
+
+              <div>
+
+                <h2>
+                  Nearby Workers
+                </h2>
+
+                <p>
+                  Find workers based on
+                  skills and experience.
+                </p>
+
+              </div>
+
+              <span className="sawmill-count">
+                {workerWall.length} Workers
+              </span>
+
+            </div>
+
+
+            <div className="sawmill-search">
+
+              <Search size={18} />
+
+              <input
+                value={
+                  searchWorkers
+                }
+                onChange={(e) =>
+                  setSearchWorkers(
+                    e.target.value
+                  )
+                }
+                placeholder="Search workers, skills, location..."
+              />
+
+            </div>
+
+
+            {workerWall.length === 0 ? (
+
+              <div className="sawmill-empty">
+
+                <div>
+                  👷
+                </div>
+
+                <h3>
+                  No worker profiles found
+                </h3>
+
+                <p>
+                  Workers who create profiles
+                  will appear here.
+                </p>
+
+              </div>
+
+            ) : (
+
+              <div className="sawmill-workers-grid">
+
+                {workerWall.map(
+                  (worker) => (
+
+                    <article
+                      className="sawmill-worker-card"
+                      key={
+                        worker.id
+                      }
+                    >
+
+                      <div className="sawmill-worker-top">
+
+                        <div className="sawmill-worker-avatar">
+
+                          {worker.profile
+                            ?.photo_url ? (
+                            <img
+                              src={
+                                worker
+                                  .profile
+                                  .photo_url
+                              }
+                              alt=""
+                            />
+                          ) : (
+                            <User
+                              size={25}
+                            />
+                          )}
+
+                        </div>
+
+
+                        <div>
+
+                          <strong>
+                            {worker
+                              .profile
+                              ?.name ||
+                              "Worker"}
+                          </strong>
+
+                          <span>
+                            {worker
+                              .skills
+                              ?.slice(
+                                0,
+                                2
+                              )
+                              .join(
+                                " • "
+                              ) ||
+                              "Skilled Worker"}
+                          </span>
+
+                        </div>
+
+
+                        {worker.availability ===
+                          "Available Now" && (
+
+                          <i>
+                            Available
+                          </i>
+
+                        )}
+
+                      </div>
+
+
+                      <div className="sawmill-worker-location">
+
+                        <MapPin
+                          size={13}
+                        />
+
+                        {worker.location ||
+                          worker
+                            .profile
+                            ?.location ||
+                          "Location not added"}
+
+                      </div>
+
+
+                      <div className="sawmill-worker-meta">
+
+                        <span>
+                          Experience
+                          <strong>
+                            {worker.experience ||
+                              "—"}
+                          </strong>
+                        </span>
+
+                        <span>
+                          Work Type
+                          <strong>
+                            {worker.work_type ||
+                              "—"}
+                          </strong>
+                        </span>
+
+                        <span>
+                          Salary
+                          <strong>
+                            {worker.expected_salary ||
+                              "—"}
+                          </strong>
+                        </span>
+
+                      </div>
+
+
+                      <div className="sawmill-worker-skills">
+
+                        {(worker.skills ||
+                          [])
+                          .slice(
+                            0,
+                            5
+                          )
+                          .map(
+                            (skill) => (
+                              <span
+                                key={
+                                  skill
+                                }
+                              >
+                                {skill}
+                              </span>
+                            )
+                          )}
+
+                      </div>
+
+
+                      <button
+                        className="sawmill-view-worker"
+                        onClick={() =>
+                          openWorker(
+                            worker
+                          )
+                        }
+                      >
+                        <User
+                          size={15}
+                        />
+                        View Profile
+                      </button>
+
+                    </article>
+
+                  )
+                )}
+
+              </div>
+
+            )}
+
+          </section>
+
+
+          {/* =================================================
+              FOOTER
+          ================================================= */}
+
+          <footer className="sawmill-footer">
+
+            <div className="sawmill-footer-note">
+
+              <strong>
+                🛡️ TimberMart only connects users.
+              </strong>
+
+              <span>
+                We do not provide payments,
+                transactions, employment,
+                delivery or other arrangements.
+              </span>
+
+            </div>
+
+
+            <div>
+              ✓ No Commission
+            </div>
+
+
+            <div>
+              <Phone size={16} />
+              Direct Contact
+            </div>
+
+
+            <div>
+              <MapPin size={16} />
+              Nearby Connect
+            </div>
+
+
+            <div>
+              🛡️ 100% Secure
+            </div>
+
+
+            <div className="sawmill-footer-direct">
+              🤝
+              <strong>
+                We Connect. You Deal Directly.
+              </strong>
+            </div>
+
+          </footer>
 
         </div>
 
-        {requirements.length === 0 ? (
+      </main>
 
-          <Empty
-            icon="📋"
-            title="No requirements yet"
-            text="User-created requirements will appear here."
-            button="Open Requirement Wall"
-            onClick={() =>
-              navigate(
-                "/requirements"
-              )
-            }
-          />
 
-        ) : (
+      {/* =====================================================
+          POST JOB MODAL
+      ===================================================== */}
 
-          <div className="tm-sawmill-requirements">
+      {showPostJob && (
 
-            {requirements
-              .slice(0, 6)
-              .map(
-                (item) => (
-
-                  <RequirementCard
-                    key={
-                      item.id
-                    }
-                    item={
-                      item
-                    }
-                  />
-
-                )
-              )}
-
-          </div>
-
-        )}
-
-      </section>
-
-      {/* ==================================================
-          TIMBER
-      ================================================== */}
-
-      <section
-        id="sawmill-timber"
-        className="tm-sawmill-section"
-      >
-
-        <SectionTitle
-          title="Timber & Wood Listings"
-          description="Browse timber and wood products available on TimberMart."
-        />
-
-        {listings.length === 0 ? (
-
-          <Empty
-            icon="🪵"
-            title="No timber listings yet"
-            text="Timber listings will appear when users publish them."
-          />
-
-        ) : (
-
-          <div className="tm-sawmill-timber-grid">
-
-            {listings
-              .slice(0, 8)
-              .map(
-                (item) => (
-
-                  <TimberCard
-                    key={
-                      item.id
-                    }
-                    item={
-                      item
-                    }
-                  />
-
-                )
-              )}
-
-          </div>
-
-        )}
-
-      </section>
-
-      {/* ==================================================
-          PROFILE
-      ================================================== */}
-
-      <section className="tm-sawmill-profile">
-
-        <div className="tm-sawmill-profile-photo">
-
-          {profile?.photo_url ? (
-
-            <img
-              src={
-                profile.photo_url
-              }
-              alt="Profile"
-            />
-
-          ) : (
-
-            <span>
-              🏭
-            </span>
-
-          )}
-
-        </div>
-
-        <div className="tm-sawmill-profile-info">
-
-          <span>
-            SAWMILL / BUSINESS PROFILE
-          </span>
-
-          <h3>
-            {displayName}
-          </h3>
-
-          <p>
-            {profile?.location ||
-              "Add your business location from My Profile."}
-          </p>
-
-        </div>
-
-        <button
-          type="button"
-          className="tm-sawmill-outline-btn"
-          onClick={() =>
-            navigate("/profile")
-          }
-        >
-          <User size={16} />
-          Update Profile
-        </button>
-
-      </section>
-
-      {/* ==================================================
-          DISCLAIMER
-      ================================================== */}
-
-      <div className="tm-sawmill-disclaimer">
-
-        <div className="tm-disclaimer-icon">
-          🛡️
-        </div>
-
-        <div>
-
-          <strong>
-            TimberMart connects users directly.
-          </strong>
-
-          <p>
-            We connect businesses, workers,
-            buyers and sellers. Employment,
-            payments and other arrangements
-            are directly between the parties.
-          </p>
-
-        </div>
-
-        <div className="tm-disclaimer-points">
-
-          <span>
-            ✓ No Commission
-          </span>
-
-          <span>
-            ✓ Direct Contact
-          </span>
-
-          <span>
-            ✓ Nearby Connect
-          </span>
-
-          <span>
-            ✓ Secure Account
-          </span>
-
-        </div>
-
-      </div>
-
-    </DashboardLayout>
-  );
-}
-
-/* ============================================================
-   STAT
-============================================================ */
-
-function Stat({
-  icon,
-  label,
-  value,
-}) {
-  return (
-    <div className="tm-sawmill-stat">
-
-      <div className="tm-sawmill-stat-icon">
-        {icon}
-      </div>
-
-      <div>
-
-        <span>
-          {label}
-        </span>
-
-        <strong>
-          {value}
-        </strong>
-
-      </div>
-
-    </div>
-  );
-}
-
-/* ============================================================
-   ACTION
-============================================================ */
-
-function Action({
-  icon,
-  title,
-  text,
-  onClick,
-}) {
-  return (
-    <button
-      type="button"
-      className="tm-sawmill-action"
-      onClick={onClick}
-    >
-
-      <div className="tm-sawmill-action-icon">
-        {icon}
-      </div>
-
-      <div>
-
-        <h3>
-          {title}
-        </h3>
-
-        <p>
-          {text}
-        </p>
-
-      </div>
-
-    </button>
-  );
-}
-
-/* ============================================================
-   FIELD
-============================================================ */
-
-function Field({
-  label,
-  name,
-  value,
-  onChange,
-  placeholder,
-}) {
-  return (
-    <div className="tm-sawmill-field">
-
-      <label>
-        {label}
-      </label>
-
-      <input
-        type="text"
-        name={name}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-      />
-
-    </div>
-  );
-}
-
-/* ============================================================
-   JOB CARD
-============================================================ */
-
-function JobCard({
-  job,
-  own,
-  onDelete,
-}) {
-  return (
-    <article className="tm-sawmill-job-card">
-
-      <div className="tm-job-card-icon">
-        👷
-      </div>
-
-      <div className="tm-job-card-content">
-
-        <div className="tm-job-card-top">
-
-          <div>
-
-            <span className="tm-job-category">
-              {job.category ||
-                "Job"}
-            </span>
-
-            <h3>
-              {job.title}
-            </h3>
-
-          </div>
-
-          {own && (
-            <button
-              type="button"
-              className="tm-icon-delete"
-              onClick={() =>
-                onDelete(
-                  job.id
-                )
-              }
-              title="Delete job"
-            >
-              <Trash2 size={15} />
-            </button>
-          )}
-
-        </div>
-
-        <div className="tm-job-meta">
-
-          {job.location && (
-            <span>
-              <MapPin size={13} />
-              {job.location}
-            </span>
-          )}
-
-          {job.job_type && (
-            <span>
-              💼 {job.job_type}
-            </span>
-          )}
-
-          {job.experience && (
-            <span>
-              🎯 {job.experience}
-            </span>
-          )}
-
-          {job.salary && (
-            <span>
-              💰 {job.salary}
-            </span>
-          )}
-
-          {job.positions && (
-            <span>
-              👥 {job.positions}
-            </span>
-          )}
-
-        </div>
-
-        <div className="tm-job-benefits">
-
-          {job.accommodation && (
-            <span>
-              🏠 Accommodation
-            </span>
-          )}
-
-          {job.food && (
-            <span>
-              🍱 Food
-            </span>
-          )}
-
-        </div>
-
-        {job.description && (
-          <p>
-            {job.description}
-          </p>
-        )}
-
-        <div className="tm-job-card-footer">
-
-          <span>
-            {own
-              ? "Posted by you"
-              : "TimberMart Job"}
-          </span>
-
-          <button
-            type="button"
-            className="tm-view-btn"
-          >
-            <Eye size={14} />
-            View Job
-          </button>
-
-        </div>
-
-      </div>
-
-    </article>
-  );
-}
-
-/* ============================================================
-   WORKER CARD
-============================================================ */
-
-function WorkerCard({
-  worker,
-}) {
-  return (
-    <article className="tm-sawmill-worker-card">
-
-      <div className="tm-worker-avatar">
-
-        {worker.photo_url ? (
-
-          <img
-            src={
-              worker.photo_url
-            }
-            alt={
-              worker.name ||
-              "Worker"
-            }
-          />
-
-        ) : (
-
-          <span>
-            👷
-          </span>
-
-        )}
-
-      </div>
-
-      <div className="tm-worker-info">
-
-        <h3>
-          {worker.name ||
-            "Worker"}
-        </h3>
-
-        <span className="tm-worker-role">
-          Worker / Job Seeker
-        </span>
-
-        {worker.location && (
-          <div>
-            <MapPin size={13} />
-            {worker.location}
-          </div>
-        )}
-
-        {worker.bio && (
-          <p>
-            {worker.bio}
-          </p>
-        )}
-
-        <button
-          type="button"
-          className="tm-worker-profile-btn"
-          onClick={() =>
-            window.alert(
-              "Worker profile details can be connected to a dedicated worker profile page."
+        <div
+          className="sawmill-modal-overlay"
+          onMouseDown={() =>
+            !saving &&
+            setShowPostJob(
+              false
             )
           }
         >
-          <User size={14} />
-          View Profile
-        </button>
 
-      </div>
+          <div
+            className="sawmill-modal sawmill-post-modal"
+            onMouseDown={(e) =>
+              e.stopPropagation()
+            }
+          >
 
-    </article>
-  );
-}
+            <div className="sawmill-modal-header">
 
-/* ============================================================
-   REQUIREMENT CARD
-============================================================ */
+              <div>
 
-function RequirementCard({
-  item,
-}) {
-  return (
-    <article className="tm-sawmill-requirement">
+                <span>
+                  POST A JOB
+                </span>
 
-      <div className="tm-requirement-icon">
-        📋
-      </div>
+                <h2>
+                  {jobStep === 1 &&
+                    "Job Details"}
 
-      <div>
+                  {jobStep === 2 &&
+                    "Requirements"}
 
-        <h3>
-          {item.title}
-        </h3>
+                  {jobStep === 3 &&
+                    "Preview Job"}
 
-        <div className="tm-requirement-meta">
+                </h2>
 
-          {item.category && (
-            <span>
-              {item.category}
-            </span>
-          )}
+                <p>
+                  Find the right worker
+                  for your business.
+                </p>
 
-          {item.location && (
-            <span>
-              <MapPin size={12} />
-              {item.location}
-            </span>
-          )}
+              </div>
 
-          {item.quantity && (
-            <span>
-              📦 {item.quantity}
-            </span>
-          )}
 
-          {item.budget && (
-            <span>
-              💰 {item.budget}
-            </span>
-          )}
+              <button
+                onClick={() =>
+                  setShowPostJob(
+                    false
+                  )
+                }
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+
+            <div className="sawmill-job-steps">
+
+              {[
+                "Job Info",
+                "Requirements",
+                "Preview",
+              ].map(
+                (item, index) => {
+
+                  const step =
+                    index + 1;
+
+                  return (
+                    <div
+                      key={item}
+                      className={
+                        jobStep >=
+                        step
+                          ? "active"
+                          : ""
+                      }
+                    >
+
+                      <span>
+                        {step}
+                      </span>
+
+                      <small>
+                        {item}
+                      </small>
+
+                    </div>
+                  );
+                }
+              )}
+
+            </div>
+
+
+            <div className="sawmill-post-body">
+
+              {/* =================================================
+                  STEP 1
+              ================================================= */}
+
+              {jobStep === 1 && (
+
+                <div>
+
+                  <label>
+                    Job Title *
+                  </label>
+
+                  <input
+                    className="sawmill-input"
+                    value={
+                      jobForm.title
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "title",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Example: Sawmill Machine Operator"
+                  />
+
+
+                  <label>
+                    Job Category *
+                  </label>
+
+                  <select
+                    className="sawmill-input"
+                    value={
+                      jobForm.category
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "category",
+                        e.target.value
+                      )
+                    }
+                  >
+
+                    <option value="">
+                      Select category
+                    </option>
+
+                    {JOB_CATEGORIES.map(
+                      (category) => (
+                        <option
+                          key={
+                            category
+                          }
+                        >
+                          {category}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+
+                  <label>
+                    Job Type *
+                  </label>
+
+                  <select
+                    className="sawmill-input"
+                    value={
+                      jobForm.job_type
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "job_type",
+                        e.target.value
+                      )
+                    }
+                  >
+
+                    {JOB_TYPES.map(
+                      (type) => (
+                        <option
+                          key={type}
+                        >
+                          {type}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+
+                  <label>
+                    Experience Required *
+                  </label>
+
+                  <select
+                    className="sawmill-input"
+                    value={
+                      jobForm.experience
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "experience",
+                        e.target.value
+                      )
+                    }
+                  >
+
+                    <option value="">
+                      Select experience
+                    </option>
+
+                    {EXPERIENCE_OPTIONS.map(
+                      (experience) => (
+                        <option
+                          key={
+                            experience
+                          }
+                        >
+                          {experience}
+                        </option>
+                      )
+                    )}
+
+                  </select>
+
+
+                  <label>
+                    No. of Positions
+                  </label>
+
+                  <input
+                    className="sawmill-input"
+                    type="number"
+                    min="1"
+                    value={
+                      jobForm.positions
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "positions",
+                        e.target.value
+                      )
+                    }
+                  />
+
+
+                  <div className="sawmill-modal-buttons">
+
+                    <button
+                      className="primary"
+                      onClick={() => {
+
+                        if (
+                          !jobForm.title.trim()
+                        ) {
+                          alert(
+                            "Enter job title."
+                          );
+                          return;
+                        }
+
+                        if (
+                          !jobForm.category
+                        ) {
+                          alert(
+                            "Select job category."
+                          );
+                          return;
+                        }
+
+                        if (
+                          !jobForm.experience
+                        ) {
+                          alert(
+                            "Select experience."
+                          );
+                          return;
+                        }
+
+                        setJobStep(
+                          2
+                        );
+                      }}
+                    >
+                      Next
+                      <ChevronRight
+                        size={17}
+                      />
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )}
+
+
+              {/* =================================================
+                  STEP 2
+              ================================================= */}
+
+              {jobStep === 2 && (
+
+                <div>
+
+                  <label>
+                    Monthly Salary / Wage *
+                  </label>
+
+                  <input
+                    className="sawmill-input"
+                    value={
+                      jobForm.salary
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "salary",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Example: ₹18,000 - ₹25,000 / Month"
+                  />
+
+
+                  <label>
+                    Location *
+                  </label>
+
+                  <div className="sawmill-input-icon">
+
+                    <MapPin size={17} />
+
+                    <input
+                      value={
+                        jobForm.location
+                      }
+                      onChange={(e) =>
+                        updateJobForm(
+                          "location",
+                          e.target.value
+                        )
+                      }
+                      placeholder="Rajahmundry, Andhra Pradesh"
+                    />
+
+                  </div>
+
+
+                  <div className="sawmill-switch-row">
+
+                    <div>
+
+                      <strong>
+                        Accommodation
+                      </strong>
+
+                      <small>
+                        Provide accommodation
+                        for the worker
+                      </small>
+
+                    </div>
+
+
+                    <button
+                      type="button"
+                      className={
+                        jobForm.accommodation
+                          ? "on"
+                          : ""
+                      }
+                      onClick={() =>
+                        updateJobForm(
+                          "accommodation",
+                          !jobForm.accommodation
+                        )
+                      }
+                    >
+                      <span />
+                    </button>
+
+                  </div>
+
+
+                  <div className="sawmill-switch-row">
+
+                    <div>
+
+                      <strong>
+                        Food
+                      </strong>
+
+                      <small>
+                        Food facility available
+                      </small>
+
+                    </div>
+
+
+                    <button
+                      type="button"
+                      className={
+                        jobForm.food
+                          ? "on"
+                          : ""
+                      }
+                      onClick={() =>
+                        updateJobForm(
+                          "food",
+                          !jobForm.food
+                        )
+                      }
+                    >
+                      <span />
+                    </button>
+
+                  </div>
+
+
+                  <label>
+                    Job Description *
+                  </label>
+
+                  <textarea
+                    className="sawmill-input"
+                    rows="6"
+                    maxLength="500"
+                    value={
+                      jobForm.description
+                    }
+                    onChange={(e) =>
+                      updateJobForm(
+                        "description",
+                        e.target.value
+                      )
+                    }
+                    placeholder="Describe the work, responsibilities and requirements..."
+                  />
+
+
+                  <div className="sawmill-character-count">
+                    {
+                      jobForm.description
+                        .length
+                    }
+                    / 500
+                  </div>
+
+
+                  <div className="sawmill-modal-buttons">
+
+                    <button
+                      onClick={() =>
+                        setJobStep(
+                          1
+                        )
+                      }
+                    >
+                      <ChevronLeft
+                        size={16}
+                      />
+                      Back
+                    </button>
+
+
+                    <button
+                      className="primary"
+                      onClick={() => {
+
+                        if (
+                          !jobForm.salary.trim()
+                        ) {
+                          alert(
+                            "Enter salary."
+                          );
+                          return;
+                        }
+
+                        if (
+                          !jobForm.location.trim()
+                        ) {
+                          alert(
+                            "Enter location."
+                          );
+                          return;
+                        }
+
+                        if (
+                          !jobForm.description.trim()
+                        ) {
+                          alert(
+                            "Enter job description."
+                          );
+                          return;
+                        }
+
+                        setJobStep(
+                          3
+                        );
+                      }}
+                    >
+                      Preview
+                      <ChevronRight
+                        size={17}
+                      />
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )}
+
+
+              {/* =================================================
+                  STEP 3
+              ================================================= */}
+
+              {jobStep === 3 && (
+
+                <div>
+
+                  <div className="sawmill-preview-card">
+
+                    <div className="sawmill-preview-icon">
+                      💼
+                    </div>
+
+                    <h3>
+                      {jobForm.title}
+                    </h3>
+
+                    <span className="sawmill-preview-category">
+                      {jobForm.category}
+                    </span>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Job Type
+                      </span>
+
+                      <strong>
+                        {jobForm.job_type}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Experience
+                      </span>
+
+                      <strong>
+                        {jobForm.experience}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Salary
+                      </span>
+
+                      <strong>
+                        {jobForm.salary}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Positions
+                      </span>
+
+                      <strong>
+                        {jobForm.positions}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Location
+                      </span>
+
+                      <strong>
+                        {jobForm.location}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Accommodation
+                      </span>
+
+                      <strong>
+                        {jobForm.accommodation
+                          ? "Available"
+                          : "Not Available"}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-row">
+                      <span>
+                        Food
+                      </span>
+
+                      <strong>
+                        {jobForm.food
+                          ? "Available"
+                          : "Not Available"}
+                      </strong>
+                    </div>
+
+
+                    <div className="sawmill-preview-description">
+
+                      <strong>
+                        Description
+                      </strong>
+
+                      <p>
+                        {jobForm.description}
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  <div className="sawmill-modal-buttons">
+
+                    <button
+                      onClick={() =>
+                        setJobStep(
+                          2
+                        )
+                      }
+                    >
+                      <ChevronLeft
+                        size={16}
+                      />
+                      Back
+                    </button>
+
+
+                    <button
+                      className="primary"
+                      disabled={
+                        saving
+                      }
+                      onClick={
+                        postJob
+                      }
+                    >
+                      {saving
+                        ? "Posting..."
+                        : "Post Job"}
+                    </button>
+
+                  </div>
+
+                </div>
+
+              )}
+
+            </div>
+
+          </div>
 
         </div>
 
-        {item.description && (
-          <p>
-            {item.description}
-          </p>
-        )}
-
-      </div>
-
-    </article>
-  );
-}
-
-/* ============================================================
-   TIMBER CARD
-============================================================ */
-
-function TimberCard({
-  item,
-}) {
-  return (
-    <article className="tm-sawmill-timber-card">
-
-      <div className="tm-timber-placeholder">
-        🌲
-      </div>
-
-      <div className="tm-timber-content">
-
-        <span>
-          {item.product_type ||
-            item.wood_type ||
-            "Timber"}
-        </span>
-
-        <h3>
-          {item.title}
-        </h3>
-
-        {item.wood_type && (
-          <p>
-            🌳 {item.wood_type}
-          </p>
-        )}
-
-        {item.quantity && (
-          <p>
-            📦 {item.quantity}
-          </p>
-        )}
-
-        {item.location && (
-          <p>
-            <MapPin size={13} />
-            {item.location}
-          </p>
-        )}
-
-        {item.price && (
-          <strong>
-            {item.price}
-          </strong>
-        )}
-
-      </div>
-
-    </article>
-  );
-}
-
-/* ============================================================
-   EMPTY
-============================================================ */
-
-function Empty({
-  icon,
-  title,
-  text,
-  button,
-  onClick,
-}) {
-  return (
-    <div className="tm-sawmill-empty">
-
-      <div>
-        {icon}
-      </div>
-
-      <h3>
-        {title}
-      </h3>
-
-      <p>
-        {text}
-      </p>
-
-      {button && (
-        <button
-          type="button"
-          className="tm-sawmill-green-btn"
-          onClick={onClick}
-        >
-          <Plus size={15} />
-          {button}
-        </button>
       )}
+
+
+      {/* =====================================================
+          JOB DETAILS MODAL
+      ===================================================== */}
+
+      {showJobDetails &&
+        selectedJob && (
+
+          <div
+            className="sawmill-modal-overlay"
+            onMouseDown={() =>
+              setShowJobDetails(
+                false
+              )
+            }
+          >
+
+            <div
+              className="sawmill-modal sawmill-job-details-modal"
+              onMouseDown={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="sawmill-modal-header">
+
+                <div>
+
+                  <span>
+                    JOB DETAILS
+                  </span>
+
+                  <h2>
+                    {selectedJob.title}
+                  </h2>
+
+                  <p>
+                    {selectedJob.profiles
+                      ?.name ||
+                      "Timber Business"}
+                  </p>
+
+                </div>
+
+
+                <button
+                  onClick={() =>
+                    setShowJobDetails(
+                      false
+                    )
+                  }
+                >
+                  <X size={20} />
+                </button>
+
+              </div>
+
+
+              <div className="sawmill-job-detail-body">
+
+                <div className="sawmill-job-company large">
+
+                  <div className="sawmill-company-avatar large">
+
+                    {selectedJob
+                      .profiles
+                      ?.photo_url ? (
+                      <img
+                        src={
+                          selectedJob
+                            .profiles
+                            .photo_url
+                        }
+                        alt=""
+                      />
+                    ) : (
+                      <Building2
+                        size={27}
+                      />
+                    )}
+
+                  </div>
+
+
+                  <div>
+
+                    <strong>
+                      {selectedJob
+                        .profiles
+                        ?.name ||
+                        "Timber Business"}
+                    </strong>
+
+                    <span>
+                      {selectedJob.location ||
+                        selectedJob
+                          .profiles
+                          ?.location ||
+                        "Location not added"}
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                <div className="sawmill-detail-grid">
+
+                  <div>
+                    <span>
+                      Category
+                    </span>
+
+                    <strong>
+                      {selectedJob.category ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Work Type
+                    </span>
+
+                    <strong>
+                      {selectedJob.job_type ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Experience
+                    </span>
+
+                    <strong>
+                      {selectedJob.experience ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Salary
+                    </span>
+
+                    <strong>
+                      {selectedJob.salary ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Positions
+                    </span>
+
+                    <strong>
+                      {selectedJob.positions ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Accommodation
+                    </span>
+
+                    <strong>
+                      {selectedJob.accommodation
+                        ? "Available"
+                        : "Not Available"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Food
+                    </span>
+
+                    <strong>
+                      {selectedJob.food
+                        ? "Available"
+                        : "Not Available"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Location
+                    </span>
+
+                    <strong>
+                      {selectedJob.location ||
+                        "—"}
+                    </strong>
+                  </div>
+
+                </div>
+
+
+                <div className="sawmill-description">
+
+                  <h4>
+                    Job Description
+                  </h4>
+
+                  <p>
+                    {selectedJob.description ||
+                      "No description provided."}
+                  </p>
+
+                </div>
+
+
+                <div className="sawmill-contact-buttons">
+
+                  <button
+                    onClick={() =>
+                      callUser(
+                        selectedJob
+                          .profiles
+                          ?.phone
+                      )
+                    }
+                  >
+                    <Phone size={17} />
+                    Call
+                  </button>
+
+
+                  <button
+                    onClick={() =>
+                      whatsappUser(
+                        selectedJob
+                          .profiles
+                          ?.phone
+                      )
+                    }
+                  >
+                    <MessageCircle
+                      size={17}
+                    />
+                    WhatsApp
+                  </button>
+
+
+                  <button
+                    onClick={() =>
+                      openChat(
+                        selectedJob
+                          .profiles
+                      )
+                    }
+                  >
+                    <MessageCircle
+                      size={17}
+                    />
+                    Chat
+                  </button>
+
+                </div>
+
+
+                {selectedJob.user_id ===
+                  session.user.id && (
+
+                  <button
+                    className="sawmill-delete-job"
+                    onClick={() =>
+                      deleteJob(
+                        selectedJob
+                      )
+                    }
+                  >
+                    <Trash2
+                      size={16}
+                    />
+                    Delete Job
+                  </button>
+
+                )}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+      {/* =====================================================
+          WORKER PROFILE
+      ===================================================== */}
+
+      {showWorkerProfile &&
+        selectedWorker && (
+
+          <div
+            className="sawmill-modal-overlay"
+            onMouseDown={() =>
+              setShowWorkerProfile(
+                false
+              )
+            }
+          >
+
+            <div
+              className="sawmill-modal sawmill-worker-profile-modal"
+              onMouseDown={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="sawmill-profile-cover">
+                🌳
+              </div>
+
+
+              <button
+                className="sawmill-profile-close"
+                onClick={() =>
+                  setShowWorkerProfile(
+                    false
+                  )
+                }
+              >
+                <X size={20} />
+              </button>
+
+
+              <div className="sawmill-worker-profile-body">
+
+                <div className="sawmill-big-worker-avatar">
+
+                  {selectedWorker
+                    .profile
+                    ?.photo_url ? (
+                    <img
+                      src={
+                        selectedWorker
+                          .profile
+                          .photo_url
+                      }
+                      alt=""
+                    />
+                  ) : (
+                    <User
+                      size={39}
+                    />
+                  )}
+
+                </div>
+
+
+                <h2>
+                  {selectedWorker
+                    .profile
+                    ?.name ||
+                    "Worker"}
+                </h2>
+
+
+                <span className="sawmill-profile-role">
+                  {selectedWorker
+                    .skills?.[0] ||
+                    "Skilled Worker"}
+                </span>
+
+
+                <p className="sawmill-profile-location">
+                  <MapPin size={15} />
+                  {selectedWorker
+                    .location ||
+                    selectedWorker
+                      .profile
+                      ?.location ||
+                    "Location not added"}
+                </p>
+
+
+                <div className="sawmill-profile-availability">
+
+                  <span
+                    className={
+                      selectedWorker
+                        .availability ===
+                      "Available Now"
+                        ? "green"
+                        : ""
+                    }
+                  />
+
+                  {selectedWorker
+                    .availability ||
+                    "Availability not specified"}
+
+                </div>
+
+
+                <div className="sawmill-worker-profile-info">
+
+                  <div>
+                    <span>
+                      Experience
+                    </span>
+
+                    <strong>
+                      {selectedWorker
+                        .experience ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Work Type
+                    </span>
+
+                    <strong>
+                      {selectedWorker
+                        .work_type ||
+                        "—"}
+                    </strong>
+                  </div>
+
+
+                  <div>
+                    <span>
+                      Expected Salary
+                    </span>
+
+                    <strong>
+                      {selectedWorker
+                        .expected_salary ||
+                        "—"}
+                    </strong>
+                  </div>
+
+                </div>
+
+
+                <div className="sawmill-profile-skills">
+
+                  <h4>
+                    Skills
+                  </h4>
+
+                  <div>
+
+                    {(selectedWorker
+                      .skills ||
+                      []
+                    ).map(
+                      (skill) => (
+                        <span
+                          key={skill}
+                        >
+                          {skill}
+                        </span>
+                      )
+                    )}
+
+                  </div>
+
+                </div>
+
+
+                {selectedWorker
+                  .experience_details && (
+
+                  <div className="sawmill-profile-about">
+
+                    <h4>
+                      About / Experience
+                    </h4>
+
+                    <p>
+                      {
+                        selectedWorker
+                          .experience_details
+                      }
+                    </p>
+
+                  </div>
+
+                )}
+
+
+                <div className="sawmill-contact-buttons">
+
+                  <button
+                    onClick={() =>
+                      callUser(
+                        selectedWorker
+                          .profile
+                          ?.phone
+                      )
+                    }
+                  >
+                    <Phone size={17} />
+                    Call
+                  </button>
+
+
+                  <button
+                    onClick={() =>
+                      whatsappUser(
+                        selectedWorker
+                          .profile
+                          ?.phone
+                      )
+                    }
+                  >
+                    <MessageCircle
+                      size={17}
+                    />
+                    WhatsApp
+                  </button>
+
+
+                  <button
+                    onClick={() =>
+                      openChat(
+                        selectedWorker
+                          .profile
+                      )
+                    }
+                  >
+                    <MessageCircle
+                      size={17}
+                    />
+                    Chat
+                  </button>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+      {/* =====================================================
+          MY PROFILE
+      ===================================================== */}
+
+      {showMyProfile &&
+        profile && (
+
+          <div
+            className="sawmill-modal-overlay"
+            onMouseDown={() =>
+              setShowMyProfile(
+                false
+              )
+            }
+          >
+
+            <div
+              className="sawmill-modal sawmill-worker-profile-modal"
+              onMouseDown={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="sawmill-profile-cover">
+                🏭
+              </div>
+
+
+              <button
+                className="sawmill-profile-close"
+                onClick={() =>
+                  setShowMyProfile(
+                    false
+                  )
+                }
+              >
+                <X size={20} />
+              </button>
+
+
+              <div className="sawmill-worker-profile-body">
+
+                <div className="sawmill-big-worker-avatar">
+
+                  {profile.photo_url ? (
+                    <img
+                      src={
+                        profile.photo_url
+                      }
+                      alt=""
+                    />
+                  ) : (
+                    <Building2
+                      size={39}
+                    />
+                  )}
+
+                </div>
+
+
+                <h2>
+                  {profile.name ||
+                    "Sawmill"}
+                </h2>
+
+
+                <span className="sawmill-profile-role">
+                  Sawmill / Business
+                </span>
+
+
+                <p className="sawmill-profile-location">
+
+                  <MapPin size={15} />
+
+                  {profile.location ||
+                    "Location not added"}
+
+                </p>
+
+
+                {profile.bio && (
+
+                  <div className="sawmill-profile-about">
+
+                    <h4>
+                      About Business
+                    </h4>
+
+                    <p>
+                      {profile.bio}
+                    </p>
+
+                  </div>
+
+                )}
+
+
+                <button
+                  className="sawmill-edit-profile"
+                  onClick={() =>
+                    navigate(
+                      "/profile"
+                    )
+                  }
+                >
+                  <Edit3
+                    size={16}
+                  />
+                  Edit Profile
+                </button>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        )}
+
+
+      {/* =====================================================
+          APPLICATIONS
+      ===================================================== */}
+
+      {showApplications && (
+
+        <div
+          className="sawmill-modal-overlay"
+          onMouseDown={() =>
+            setShowApplications(
+              false
+            )
+          }
+        >
+
+          <div
+            className="sawmill-modal sawmill-applications-modal"
+            onMouseDown={(e) =>
+              e.stopPropagation()
+            }
+          >
+
+            <div className="sawmill-modal-header">
+
+              <div>
+
+                <span>
+                  WORKERS
+                </span>
+
+                <h2>
+                  Job Applications
+                </h2>
+
+                <p>
+                  Review workers who applied
+                  to your jobs.
+                </p>
+
+              </div>
+
+
+              <button
+                onClick={() =>
+                  setShowApplications(
+                    false
+                  )
+                }
+              >
+                <X size={20} />
+              </button>
+
+            </div>
+
+
+            <div className="sawmill-applications-body">
+
+              {applications.length ===
+              0 ? (
+
+                <div className="sawmill-empty">
+
+                  <div>
+                    📄
+                  </div>
+
+                  <h3>
+                    No applications yet
+                  </h3>
+
+                  <p>
+                    Worker applications
+                    will appear here.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                <div className="sawmill-application-list">
+
+                  {applications.map(
+                    (application) => (
+
+                      <div
+                        className="sawmill-application"
+                        key={
+                          application.id
+                        }
+                      >
+
+                        <div className="sawmill-application-avatar">
+
+                          {application.worker
+                            ?.photo_url ? (
+                            <img
+                              src={
+                                application
+                                  .worker
+                                  .photo_url
+                              }
+                              alt=""
+                            />
+                          ) : (
+                            <User
+                              size={22}
+                            />
+                          )}
+
+                        </div>
+
+
+                        <div className="sawmill-application-info">
+
+                          <strong>
+                            {application
+                              .worker
+                              ?.name ||
+                              "Worker"}
+                          </strong>
+
+                          <span>
+                            Application
+                            Status:{" "}
+                            {application.status ||
+                              "Applied"}
+                          </span>
+
+                        </div>
+
+
+                        <button
+                          onClick={() =>
+                            openWorker(
+                              {
+                                profile:
+                                  application.worker,
+                                user_id:
+                                  application.worker_id,
+                                skills:
+                                  [],
+                                experience:
+                                  "",
+                                work_type:
+                                  "",
+                                expected_salary:
+                                  "",
+                                availability:
+                                  "Available",
+                              }
+                            )
+                          }
+                        >
+                          <Eye
+                            size={15}
+                          />
+                          Profile
+                        </button>
+
+
+                        <button
+                          onClick={() =>
+                            callUser(
+                              application
+                                .worker
+                                ?.phone
+                            )
+                          }
+                        >
+                          <Phone
+                            size={15}
+                          />
+                          Call
+                        </button>
+
+
+                        <button
+                          onClick={() =>
+                            openChat(
+                              application.worker
+                            )
+                          }
+                        >
+                          <MessageCircle
+                            size={15}
+                          />
+                          Chat
+                        </button>
+
+
+                        <select
+                          value={
+                            application.status ||
+                            "Applied"
+                          }
+                          onChange={(e) =>
+                            updateApplication(
+                              application,
+                              e.target.value
+                            )
+                          }
+                        >
+                          <option>
+                            Applied
+                          </option>
+
+                          <option>
+                            Shortlisted
+                          </option>
+
+                          <option>
+                            Selected
+                          </option>
+
+                          <option>
+                            Rejected
+                          </option>
+                        </select>
+
+                      </div>
+
+                    )
+                  )}
+
+                </div>
+
+              )}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      )}
+
+
+      {/* =====================================================
+          CHAT MODAL
+      ===================================================== */}
+
+      {showChat &&
+        chatUser && (
+
+          <div
+            className="sawmill-modal-overlay"
+            onMouseDown={() =>
+              setShowChat(
+                false
+              )
+            }
+          >
+
+            <div
+              className="sawmill-chat"
+              onMouseDown={(e) =>
+                e.stopPropagation()
+              }
+            >
+
+              <div className="sawmill-chat-header">
+
+                <div>
+
+                  <div className="sawmill-chat-avatar">
+
+                    {chatUser.photo_url ? (
+                      <img
+                        src={
+                          chatUser.photo_url
+                        }
+                        alt=""
+                      />
+                    ) : (
+                      <User
+                        size={18}
+                      />
+                    )}
+
+                  </div>
+
+
+                  <div>
+
+                    <strong>
+                      {chatUser.name ||
+                        "TimberMart User"}
+                    </strong>
+
+                    <span>
+                      {chatUser.role ||
+                        "Worker"}
+                    </span>
+
+                  </div>
+
+                </div>
+
+
+                <button
+                  onClick={() =>
+                    setShowChat(
+                      false
+                    )
+                  }
+                >
+                  <X size={20} />
+                </button>
+
+              </div>
+
+
+              <div className="sawmill-chat-messages">
+
+                {messages.length ===
+                0 ? (
+
+                  <div className="sawmill-chat-empty">
+
+                    <MessageCircle
+                      size={35}
+                    />
+
+                    <h3>
+                      Start Conversation
+                    </h3>
+
+                    <p>
+                      Send a message to{" "}
+                      {chatUser.name ||
+                        "this worker"}.
+                    </p>
+
+                  </div>
+
+                ) : (
+
+                  messages.map(
+                    (message) => {
+
+                      const mine =
+                        message.sender_id ===
+                        session.user.id;
+
+                      return (
+                        <div
+                          key={
+                            message.id
+                          }
+                          className={
+                            mine
+                              ? "sawmill-message mine"
+                              : "sawmill-message"
+                          }
+                        >
+                          {message.body}
+                        </div>
+                      );
+                    }
+                  )
+
+                )}
+
+              </div>
+
+
+              <form
+                className="sawmill-chat-form"
+                onSubmit={
+                  sendMessage
+                }
+              >
+
+                <input
+                  value={
+                    messageText
+                  }
+                  onChange={(e) =>
+                    setMessageText(
+                      e.target.value
+                    )
+                  }
+                  placeholder="Type a message..."
+                />
+
+                <button type="submit">
+                  <Send size={18} />
+                </button>
+
+              </form>
+
+            </div>
+
+          </div>
+
+        )}
 
     </div>
   );

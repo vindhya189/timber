@@ -1,0 +1,905 @@
+/* =========================================================
+   TIMBERMART SETTINGS PAGE
+   Light + Dark Mode
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.settings-page {
+  min-height: 100vh;
+  width: 100%;
+  background: #f5f8f5;
+  color: #17251c;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 42px;
+
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e2e9e3;
+
+  backdrop-filter: blur(14px);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease;
+}
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+.settings-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+
+  padding: 10px 15px;
+
+  border: 1px solid #dce5de;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #31523d;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.settings-back:hover {
+  background: #eef7f0;
+  border-color: #bcd3c2;
+  color: #1d6b36;
+  transform: translateX(-2px);
+}
+
+.settings-back:active {
+  transform: translateX(0);
+}
+
+/* =========================================================
+   HEADER TITLE
+   ========================================================= */
+
+.settings-header-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.settings-title-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #eaf6ed;
+  color: #25733a;
+}
+
+.settings-header-title h1 {
+  margin: 0;
+
+  font-size: 22px;
+  line-height: 1.2;
+
+  font-weight: 750;
+  letter-spacing: -0.3px;
+
+  color: #18261d;
+}
+
+.settings-header-title p {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+  color: #718076;
+}
+
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
+
+.settings-container {
+  width: min(920px, calc(100% - 40px));
+
+  margin: 0 auto;
+
+  padding: 36px 0 70px;
+}
+
+/* =========================================================
+   SETTINGS CARD
+   ========================================================= */
+
+.settings-card {
+  margin-bottom: 22px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e9e3;
+  border-radius: 18px;
+
+  overflow: hidden;
+
+  box-shadow:
+    0 5px 20px rgba(24, 54, 33, 0.055);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
+
+.settings-card-header {
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+
+  padding: 22px 24px;
+
+  border-bottom: 1px solid #edf1ed;
+}
+
+.settings-card-icon {
+  flex: 0 0 auto;
+
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #edf8ef;
+  color: #2d7b42;
+}
+
+.settings-card-icon.appearance-icon {
+  background: #eef5ff;
+  color: #3e70b4;
+}
+
+.settings-card-header h2 {
+  margin: 0;
+
+  font-size: 17px;
+  font-weight: 750;
+
+  color: #203026;
+}
+
+.settings-card-header p {
+  margin: 5px 0 0;
+
+  font-size: 13px;
+  line-height: 1.5;
+
+  color: #78857d;
+}
+
+/* =========================================================
+   SETTINGS ROW
+   ========================================================= */
+
+.settings-row {
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 18px 24px;
+
+  border-bottom: 1px solid #edf1ed;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.25s ease;
+}
+
+.settings-row:last-child {
+  border-bottom: none;
+}
+
+.settings-row:hover {
+  background: #fafcfb;
+}
+
+/* =========================================================
+   ROW LEFT
+   ========================================================= */
+
+.settings-row-left {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 14px;
+}
+
+.settings-row-icon {
+  flex: 0 0 auto;
+
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: #f1f5f2;
+  color: #54705d;
+}
+
+.settings-row-text {
+  min-width: 0;
+}
+
+.settings-row-text h3 {
+  margin: 0;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  color: #26362c;
+}
+
+.settings-row-text p {
+  margin: 4px 0 0;
+
+  font-size: 12.5px;
+  line-height: 1.45;
+
+  color: #7b877f;
+}
+
+/* =========================================================
+   SWITCH
+   ========================================================= */
+
+.settings-switch {
+  position: relative;
+
+  flex: 0 0 auto;
+
+  width: 52px;
+  height: 30px;
+
+  padding: 0;
+
+  border: none;
+  border-radius: 999px;
+
+  background: #d6ded8;
+
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.settings-switch span {
+  position: absolute;
+
+  top: 4px;
+  left: 4px;
+
+  width: 22px;
+  height: 22px;
+
+  border-radius: 50%;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.16);
+
+  transition:
+    transform 0.25s ease;
+}
+
+.settings-switch.on {
+  background: #2f8244;
+
+  box-shadow:
+    0 0 0 3px rgba(47, 130, 68, 0.10);
+}
+
+.settings-switch.on span {
+  transform: translateX(22px);
+}
+
+.settings-switch:focus-visible {
+  outline: 3px solid rgba(47, 130, 68, 0.22);
+  outline-offset: 3px;
+}
+
+/* =========================================================
+   ACCOUNT SECURITY
+   ========================================================= */
+
+.settings-account-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding: 22px 24px;
+}
+
+.settings-account-info {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 6px;
+}
+
+.settings-account-info span {
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.9px;
+
+  color: #8a968e;
+}
+
+.settings-account-info strong {
+  max-width: 100%;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 14px;
+  font-weight: 650;
+
+  color: #26372c;
+}
+
+/* =========================================================
+   CHANGE PASSWORD BUTTON
+   ========================================================= */
+
+.settings-password-button {
+  flex: 0 0 auto;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  min-height: 40px;
+
+  padding: 0 16px;
+
+  border: 1px solid #d5e0d7;
+  border-radius: 10px;
+
+  background: #ffffff;
+  color: #31523d;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.settings-password-button:hover {
+  background: #eff8f1;
+  border-color: #b9d2bf;
+  color: #236c38;
+  transform: translateY(-1px);
+}
+
+.settings-password-button:active {
+  transform: translateY(0);
+}
+
+/* =========================================================
+   SAVE AREA
+   ========================================================= */
+
+.settings-save-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 16px;
+
+  margin-top: 8px;
+
+  padding: 18px 0;
+}
+
+/* =========================================================
+   SUCCESS MESSAGE
+   ========================================================= */
+
+.settings-success {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 10px 13px;
+
+  border: 1px solid #cbe4d0;
+  border-radius: 10px;
+
+  background: #eef9f0;
+  color: #28733c;
+
+  font-size: 13px;
+  font-weight: 650;
+
+  animation: settingsSuccessIn 0.25s ease;
+}
+
+@keyframes settingsSuccessIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   SAVE BUTTON
+   ========================================================= */
+
+.settings-save-button {
+  min-width: 160px;
+  min-height: 44px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 0 19px;
+
+  border: none;
+  border-radius: 11px;
+
+  background: #28763d;
+  color: #ffffff;
+
+  font-size: 14px;
+  font-weight: 750;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 5px 14px rgba(40, 118, 61, 0.18);
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.settings-save-button:hover:not(:disabled) {
+  background: #206733;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 7px 18px rgba(40, 118, 61, 0.24);
+}
+
+.settings-save-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.settings-save-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   LOADING SPINNER
+   ========================================================= */
+
+.settings-spin {
+  animation: settingsSpin 0.9s linear infinite;
+}
+
+@keyframes settingsSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   GLOBAL DARK MODE
+   ========================================================= */
+
+html.timber-dark {
+  color-scheme: dark;
+}
+
+body.timber-dark-body {
+  background: #0b1510;
+  color: #e8f2eb;
+}
+
+body.timber-dark-body .settings-page {
+  background:
+    radial-gradient(
+      circle at top right,
+      rgba(45, 105, 62, 0.10),
+      transparent 34%
+    ),
+    #0b1510;
+
+  color: #e8f2eb;
+}
+
+/* =========================================================
+   DARK HEADER
+   ========================================================= */
+
+body.timber-dark-body .settings-header {
+  background: rgba(11, 21, 16, 0.94);
+  border-bottom-color: #263b30;
+}
+
+body.timber-dark-body .settings-back {
+  background: #122019;
+  border-color: #30473a;
+  color: #c8dbce;
+}
+
+body.timber-dark-body .settings-back:hover {
+  background: #192b21;
+  border-color: #42604d;
+  color: #9de0ad;
+}
+
+body.timber-dark-body .settings-title-icon {
+  background: #173322;
+  color: #8bd39b;
+}
+
+body.timber-dark-body .settings-header-title h1 {
+  color: #f1f7f3;
+}
+
+body.timber-dark-body .settings-header-title p {
+  color: #8fa398;
+}
+
+/* =========================================================
+   DARK CARDS
+   ========================================================= */
+
+body.timber-dark-body .settings-card {
+  background: #122019;
+  border-color: #263b30;
+
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+body.timber-dark-body .settings-card-header {
+  border-bottom-color: #263b30;
+}
+
+body.timber-dark-body .settings-card-icon {
+  background: #173322;
+  color: #8bd39b;
+}
+
+body.timber-dark-body .settings-card-icon.appearance-icon {
+  background: #172b3e;
+  color: #8ebcf1;
+}
+
+body.timber-dark-body .settings-card-header h2 {
+  color: #eef6f0;
+}
+
+body.timber-dark-body .settings-card-header p {
+  color: #8fa398;
+}
+
+/* =========================================================
+   DARK ROWS
+   ========================================================= */
+
+body.timber-dark-body .settings-row {
+  border-bottom-color: #263b30;
+}
+
+body.timber-dark-body .settings-row:hover {
+  background: #16271e;
+}
+
+body.timber-dark-body .settings-row-icon {
+  background: #192b21;
+  color: #9ab9a3;
+}
+
+body.timber-dark-body .settings-row-text h3 {
+  color: #e6f0e8;
+}
+
+body.timber-dark-body .settings-row-text p {
+  color: #899c91;
+}
+
+/* =========================================================
+   DARK SWITCH
+   ========================================================= */
+
+body.timber-dark-body .settings-switch {
+  background: #3a4a40;
+}
+
+body.timber-dark-body .settings-switch.on {
+  background: #3c9a55;
+}
+
+body.timber-dark-body .settings-switch span {
+  background: #f3f7f4;
+}
+
+/* =========================================================
+   DARK ACCOUNT
+   ========================================================= */
+
+body.timber-dark-body .settings-account-info span {
+  color: #7f9387;
+}
+
+body.timber-dark-body .settings-account-info strong {
+  color: #e5efe8;
+}
+
+body.timber-dark-body .settings-password-button {
+  background: #14241c;
+  border-color: #30473a;
+  color: #c7d9cc;
+}
+
+body.timber-dark-body .settings-password-button:hover {
+  background: #1a3024;
+  border-color: #42604d;
+  color: #9de0ad;
+}
+
+/* =========================================================
+   DARK SUCCESS
+   ========================================================= */
+
+body.timber-dark-body .settings-success {
+  background: #14301d;
+  border-color: #2b5b37;
+  color: #9de0ad;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .settings-header {
+    padding: 15px 18px;
+
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 14px;
+  }
+
+  .settings-header-title {
+    order: -1;
+  }
+
+  .settings-back {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .settings-container {
+    width: min(100% - 24px, 920px);
+
+    padding-top: 24px;
+    padding-bottom: 45px;
+  }
+
+  .settings-card {
+    border-radius: 15px;
+  }
+
+  .settings-card-header {
+    padding: 18px;
+  }
+
+  .settings-row {
+    padding: 17px 18px;
+  }
+
+  .settings-account-row {
+    padding: 18px;
+
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-password-button {
+    width: 100%;
+  }
+
+  .settings-save-area {
+    flex-direction: column;
+    align-items: stretch;
+
+    gap: 12px;
+  }
+
+  .settings-save-button {
+    width: 100%;
+  }
+
+  .settings-success {
+    justify-content: center;
+  }
+}
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .settings-header-title {
+    gap: 10px;
+  }
+
+  .settings-title-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  .settings-header-title h1 {
+    font-size: 19px;
+  }
+
+  .settings-header-title p {
+    font-size: 12px;
+  }
+
+  .settings-card-header {
+    align-items: flex-start;
+  }
+
+  .settings-card-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .settings-card-header h2 {
+    font-size: 16px;
+  }
+
+  .settings-row {
+    align-items: flex-start;
+  }
+
+  .settings-row-left {
+    align-items: flex-start;
+  }
+
+  .settings-row-text h3 {
+    font-size: 13.5px;
+  }
+
+  .settings-row-text p {
+    font-size: 12px;
+  }
+
+  .settings-switch {
+    width: 48px;
+    height: 28px;
+  }
+
+  .settings-switch span {
+    width: 20px;
+    height: 20px;
+  }
+
+  .settings-switch.on span {
+    transform: translateX(20px);
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-page,
+  .settings-header,
+  .settings-card,
+  .settings-row,
+  .settings-switch,
+  .settings-switch span,
+  .settings-back,
+  .settings-password-button,
+  .settings-save-button {
+    transition: none !important;
+  }
+
+  .settings-spin {
+    animation: none !important;
+  }
+}

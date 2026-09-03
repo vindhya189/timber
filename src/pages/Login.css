@@ -1,0 +1,1174 @@
+/* ============================================================
+   TIMBERMART LOGIN PAGE
+   ============================================================ */
+
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  background:
+    radial-gradient(
+      circle at 15% 15%,
+      rgba(22, 163, 74, 0.08),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 85% 80%,
+      rgba(34, 197, 94, 0.07),
+      transparent 30%
+    ),
+    #f6faf7;
+
+  color: #14251a;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  box-sizing: border-box;
+}
+
+.login-page *,
+.login-page *::before,
+.login-page *::after {
+  box-sizing: border-box;
+}
+
+
+/* ============================================================
+   NAVBAR
+   ============================================================ */
+
+.login-navbar {
+  height: 74px;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 6%;
+
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #e4eee7;
+
+  position: relative;
+  z-index: 10;
+}
+
+.login-brand {
+  border: 0;
+  background: transparent;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  font-size: 22px;
+  font-weight: 800;
+
+  color: #16351f;
+  cursor: pointer;
+}
+
+.login-brand-icon {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 12px;
+
+  background: #e9f7ed;
+  font-size: 23px;
+}
+
+.change-role-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  border: 1px solid #d5e2d9;
+  background: white;
+
+  color: #31513b;
+
+  border-radius: 10px;
+
+  padding: 10px 15px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.change-role-btn:hover {
+  background: #f0f8f2;
+  border-color: #a9cbb2;
+}
+
+
+/* ============================================================
+   MAIN
+   ============================================================ */
+
+.login-main {
+  width: min(1180px, 92%);
+  margin: 0 auto;
+
+  min-height: calc(100vh - 140px);
+
+  display: grid;
+  grid-template-columns: 1fr 520px;
+  gap: 70px;
+
+  align-items: center;
+
+  padding: 55px 0;
+}
+
+
+/* ============================================================
+   LEFT
+   ============================================================ */
+
+.login-left {
+  padding: 20px 0;
+}
+
+.selected-role-icon {
+  width: 74px;
+  height: 74px;
+
+  display: grid;
+  place-items: center;
+
+  border-radius: 22px;
+
+  background: white;
+
+  border: 1px solid #dce9df;
+
+  box-shadow:
+    0 14px 35px rgba(25, 80, 40, 0.08);
+
+  font-size: 40px;
+
+  margin-bottom: 22px;
+}
+
+.selected-label {
+  color: #3f8a53;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+
+  margin-bottom: 10px;
+}
+
+.login-left h1 {
+  margin: 0;
+
+  font-size: clamp(42px, 5vw, 68px);
+
+  line-height: 1.02;
+
+  letter-spacing: -2.5px;
+
+  color: #102219;
+}
+
+.login-left h1 span {
+  color: #087b3d;
+}
+
+.role-description {
+  max-width: 520px;
+
+  margin: 22px 0 28px;
+
+  font-size: 18px;
+  line-height: 1.65;
+
+  color: #5b6d61;
+}
+
+.benefit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  color: #31483a;
+
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.benefit-item svg {
+  color: #079447;
+  flex-shrink: 0;
+}
+
+
+/* ============================================================
+   RIGHT
+   ============================================================ */
+
+.login-right {
+  width: 100%;
+}
+
+.login-card {
+  width: 100%;
+
+  background: rgba(255, 255, 255, 0.98);
+
+  border: 1px solid #dce8df;
+
+  border-radius: 28px;
+
+  padding: 34px;
+
+  box-shadow:
+    0 25px 70px rgba(26, 72, 38, 0.10);
+
+  overflow: hidden;
+}
+
+
+/* ============================================================
+   CARD HEADER
+   ============================================================ */
+
+.login-card-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 25px;
+}
+
+.login-card-logo {
+  width: 48px;
+  height: 48px;
+
+  display: grid;
+  place-items: center;
+
+  background: #eaf7ed;
+
+  border-radius: 14px;
+
+  font-size: 26px;
+}
+
+.login-card-header h2 {
+  margin: 0 0 5px;
+
+  color: #14251a;
+
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.login-card-header p {
+  margin: 0;
+
+  color: #718076;
+
+  font-size: 14px;
+}
+
+
+/* ============================================================
+   ALERTS
+   ============================================================ */
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+
+  padding: 12px 14px;
+
+  border-radius: 12px;
+
+  margin-bottom: 17px;
+
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.alert-error {
+  background: #fff2f2;
+  border: 1px solid #ffd4d4;
+  color: #a52222;
+}
+
+.alert-success {
+  background: #effaf2;
+  border: 1px solid #ccebd4;
+  color: #19733a;
+}
+
+
+/* ============================================================
+   GOOGLE BUTTON
+   ============================================================ */
+
+.google-btn {
+  width: 100%;
+  height: 52px;
+
+  border: 1px solid #d8e0db;
+
+  border-radius: 12px;
+
+  background: white;
+
+  color: #1f2b23;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 11px;
+
+  font-size: 15px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.google-btn:hover:not(:disabled) {
+  background: #fafcfb;
+
+  box-shadow:
+    0 7px 20px rgba(0, 0, 0, 0.07);
+
+  transform: translateY(-1px);
+}
+
+.google-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.google-letter {
+  width: 25px;
+  height: 25px;
+
+  display: grid;
+  place-items: center;
+
+  font-size: 18px;
+  font-weight: 800;
+
+  color: #4285f4;
+}
+
+
+/* ============================================================
+   OR DIVIDER
+   ============================================================ */
+
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin: 23px 0;
+}
+
+.or-divider span {
+  height: 1px;
+  flex: 1;
+
+  background: #e5ebe7;
+}
+
+.or-divider b {
+  color: #87938b;
+
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+
+/* ============================================================
+   FORM
+   ============================================================ */
+
+.login-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-card label {
+  color: #304338;
+
+  font-size: 13px;
+  font-weight: 750;
+
+  margin: 0 0 7px;
+}
+
+.login-card label:not(:first-child) {
+  margin-top: 16px;
+}
+
+
+/* ============================================================
+   INPUT
+   ============================================================ */
+
+.input-box {
+  width: 100%;
+  min-height: 50px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 0 14px;
+
+  border: 1px solid #d6e1d9;
+
+  background: #fbfdfb;
+
+  border-radius: 11px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.input-box:focus-within {
+  background: white;
+
+  border-color: #159447;
+
+  box-shadow:
+    0 0 0 4px rgba(21, 148, 71, 0.09);
+}
+
+.input-box > svg {
+  color: #718077;
+  flex-shrink: 0;
+}
+
+.input-box input {
+  min-width: 0;
+  width: 100%;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: #17261d;
+
+  font-size: 14px;
+
+  padding: 14px 0;
+}
+
+.input-box input::placeholder {
+  color: #9aa69e;
+}
+
+.password-toggle {
+  border: 0;
+  background: transparent;
+
+  color: #6e7c74;
+
+  padding: 5px;
+
+  display: grid;
+  place-items: center;
+
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   FORGOT
+   ============================================================ */
+
+.forgot-row {
+  display: flex;
+  justify-content: flex-end;
+
+  margin: 9px 0 18px;
+}
+
+.forgot-row button {
+  border: 0;
+  background: transparent;
+
+  color: #087b3d;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  padding: 3px 0;
+}
+
+.forgot-row button:hover {
+  text-decoration: underline;
+}
+
+
+/* ============================================================
+   PRIMARY BUTTON
+   ============================================================ */
+
+.primary-btn {
+  width: 100%;
+  min-height: 52px;
+
+  border: 0;
+
+  border-radius: 12px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #087d3d,
+      #09934a
+    );
+
+  color: white;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+
+  font-size: 15px;
+  font-weight: 800;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 10px 24px rgba(8, 125, 61, 0.20);
+
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.primary-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 14px 28px rgba(8, 125, 61, 0.25);
+}
+
+.primary-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+
+/* ============================================================
+   SWITCH ACCOUNT
+   ============================================================ */
+
+.switch-account {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+
+  margin-top: 20px;
+
+  color: #65746b;
+
+  font-size: 13px;
+}
+
+.switch-account button {
+  border: 0;
+  background: transparent;
+
+  color: #087b3d;
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.switch-account button:hover {
+  text-decoration: underline;
+}
+
+
+/* ============================================================
+   ROLE BOTTOM
+   ============================================================ */
+
+.role-bottom {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  margin-top: 25px;
+
+  padding: 13px;
+
+  border-radius: 14px;
+
+  background: #f4f9f5;
+
+  border: 1px solid #e1eee4;
+}
+
+.role-bottom-icon {
+  width: 38px;
+  height: 38px;
+
+  display: grid;
+  place-items: center;
+
+  background: white;
+
+  border-radius: 11px;
+
+  font-size: 21px;
+
+  flex-shrink: 0;
+}
+
+.role-bottom-text {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+  flex: 1;
+}
+
+.role-bottom-text small {
+  color: #77847c;
+
+  font-size: 10px;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.7px;
+}
+
+.role-bottom-text strong {
+  color: #203329;
+
+  font-size: 13px;
+
+  margin-top: 2px;
+}
+
+.role-bottom > button {
+  border: 0;
+  background: transparent;
+
+  color: #087b3d;
+
+  font-size: 12px;
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+
+/* ============================================================
+   PRIVACY
+   ============================================================ */
+
+.privacy-text {
+  margin: 17px 0 0;
+
+  color: #98a39c;
+
+  font-size: 10px;
+
+  line-height: 1.5;
+
+  text-align: center;
+}
+
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.login-footer {
+  min-height: 66px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  padding: 15px 20px;
+
+  color: #7c8b81;
+
+  font-size: 12px;
+}
+
+.login-footer strong {
+  color: #41614b;
+}
+
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+
+.login-loading-page {
+  min-height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  background: #f6faf7;
+
+  color: #2d4937;
+
+  font-family:
+    Inter,
+    system-ui,
+    sans-serif;
+}
+
+.login-loading-page p {
+  margin: 0;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.login-spin {
+  animation: loginSpin 0.8s linear infinite;
+}
+
+@keyframes loginSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+
+/* ============================================================
+   FORGOT PASSWORD
+   ============================================================ */
+
+.forgot-container {
+  min-height: calc(100vh - 140px);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 20px;
+}
+
+.forgot-card {
+  width: min(470px, 100%);
+
+  background: white;
+
+  border: 1px solid #dce8df;
+
+  border-radius: 25px;
+
+  padding: 36px;
+
+  box-shadow:
+    0 25px 65px rgba(26, 72, 38, 0.10);
+}
+
+.forgot-icon {
+  width: 62px;
+  height: 62px;
+
+  display: grid;
+  place-items: center;
+
+  background: #eaf7ed;
+
+  border-radius: 18px;
+
+  font-size: 30px;
+
+  margin-bottom: 20px;
+}
+
+.forgot-card h1 {
+  margin: 0 0 9px;
+
+  font-size: 30px;
+
+  color: #14251a;
+}
+
+.forgot-card > p {
+  margin: 0 0 25px;
+
+  color: #718077;
+
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.forgot-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+.forgot-card label {
+  margin-bottom: 7px;
+
+  font-size: 13px;
+  font-weight: 750;
+
+  color: #304338;
+}
+
+.forgot-card .primary-btn {
+  margin-top: 20px;
+}
+
+.back-login-btn {
+  width: 100%;
+
+  margin-top: 13px;
+
+  min-height: 45px;
+
+  border: 1px solid #d9e5dc;
+
+  border-radius: 11px;
+
+  background: white;
+
+  color: #365340;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  font-weight: 700;
+
+  cursor: pointer;
+}
+
+.back-login-btn:hover {
+  background: #f5faf6;
+}
+
+
+/* ============================================================
+   TABLET
+   ============================================================ */
+
+@media (max-width: 950px) {
+
+  .login-main {
+    grid-template-columns: 1fr;
+
+    gap: 25px;
+
+    width: min(620px, 92%);
+
+    padding: 40px 0;
+  }
+
+  .login-left {
+    text-align: center;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .login-left h1 {
+    font-size: 50px;
+  }
+
+  .role-description {
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .benefit-list {
+    width: fit-content;
+
+    text-align: left;
+  }
+
+  .login-right {
+    width: 100%;
+  }
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+  .login-navbar {
+    height: 64px;
+
+    padding: 0 16px;
+  }
+
+  .login-brand {
+    font-size: 18px;
+  }
+
+  .login-brand-icon {
+    width: 34px;
+    height: 34px;
+
+    font-size: 20px;
+  }
+
+  .change-role-btn {
+    padding: 8px 10px;
+
+    font-size: 12px;
+  }
+
+  .login-main {
+    width: 100%;
+
+    min-height: auto;
+
+    padding: 28px 15px 25px;
+
+    gap: 24px;
+  }
+
+  .login-left {
+    padding: 5px 5px 0;
+  }
+
+  .selected-role-icon {
+    width: 62px;
+    height: 62px;
+
+    font-size: 32px;
+
+    border-radius: 18px;
+
+    margin-bottom: 16px;
+  }
+
+  .selected-label {
+    font-size: 10px;
+
+    margin-bottom: 7px;
+  }
+
+  .login-left h1 {
+    font-size: 38px;
+
+    letter-spacing: -1.5px;
+  }
+
+  .role-description {
+    font-size: 14px;
+
+    line-height: 1.55;
+
+    margin: 13px 0 18px;
+  }
+
+  .benefit-list {
+    width: 100%;
+
+    gap: 9px;
+  }
+
+  .benefit-item {
+    font-size: 12px;
+
+    gap: 7px;
+  }
+
+  .benefit-item svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .login-card {
+    border-radius: 20px;
+
+    padding: 22px 17px;
+
+    box-shadow:
+      0 15px 40px rgba(26, 72, 38, 0.09);
+  }
+
+  .login-card-header {
+    gap: 11px;
+
+    margin-bottom: 19px;
+  }
+
+  .login-card-logo {
+    width: 42px;
+    height: 42px;
+
+    font-size: 22px;
+
+    border-radius: 12px;
+  }
+
+  .login-card-header h2 {
+    font-size: 22px;
+  }
+
+  .login-card-header p {
+    font-size: 12px;
+  }
+
+  .google-btn {
+    height: 49px;
+
+    font-size: 13px;
+  }
+
+  .or-divider {
+    margin: 18px 0;
+  }
+
+  .login-card label {
+    font-size: 12px;
+  }
+
+  .input-box {
+    min-height: 48px;
+
+    padding: 0 12px;
+  }
+
+  .input-box input {
+    font-size: 13px;
+  }
+
+  .primary-btn {
+    min-height: 49px;
+
+    font-size: 14px;
+  }
+
+  .switch-account {
+    flex-wrap: wrap;
+
+    font-size: 12px;
+
+    margin-top: 17px;
+  }
+
+  .role-bottom {
+    margin-top: 19px;
+
+    padding: 10px;
+  }
+
+  .role-bottom-text strong {
+    font-size: 11px;
+  }
+
+  .privacy-text {
+    font-size: 9px;
+
+    margin-top: 13px;
+  }
+
+  .login-footer {
+    min-height: 55px;
+
+    flex-direction: column;
+
+    gap: 2px;
+
+    font-size: 10px;
+  }
+
+  .forgot-card {
+    padding: 25px 19px;
+
+    border-radius: 20px;
+  }
+
+  .forgot-card h1 {
+    font-size: 25px;
+  }
+}
+
+
+/* ============================================================
+   VERY SMALL MOBILE
+   ============================================================ */
+
+@media (max-width: 380px) {
+
+  .login-main {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .login-left h1 {
+    font-size: 33px;
+  }
+
+  .login-card {
+    padding: 19px 14px;
+  }
+
+  .change-role-btn {
+    padding: 7px 8px;
+  }
+
+  .change-role-btn svg {
+    width: 14px;
+  }
+
+  .benefit-item {
+    font-size: 11px;
+  }
+}

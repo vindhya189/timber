@@ -1,440 +1,2099 @@
-.farmer-welcome {
+/* =========================================================
+   FARMER DASHBOARD
+========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+.farmer-dashboard {
+  min-height: 100vh;
+  background: #f5f8f5;
+  color: #183b26;
   display: flex;
-  justify-content: space-between;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+
+/* =========================================================
+   SIDEBAR
+========================================================= */
+
+.farmer-sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background: #ffffff;
+  border-right: 1px solid #e5ebe6;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.farmer-brand {
+  height: 78px;
+  padding: 17px 19px;
+  display: flex;
   align-items: center;
-  gap: 24px;
-  margin-bottom: 25px;
+  gap: 11px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.farmer-brand-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+  background: #eaf6ed;
+  color: #247a3c;
+  display: grid;
+  place-items: center;
+}
+
+.farmer-brand h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #183c27;
+}
+
+.farmer-brand span {
+  display: block;
+  margin-top: 2px;
+  color: #839088;
+  font-size: 11px;
+}
+
+.farmer-nav {
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.farmer-nav button {
+  border: 0;
+  background: transparent;
+  min-height: 46px;
+  padding: 0 13px;
+  border-radius: 11px;
+  color: #65756b;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.farmer-nav button:hover {
+  background: #f2f7f3;
+  color: #247a3c;
+}
+
+.farmer-nav button.active {
+  background: #eaf6ed;
+  color: #21783a;
+}
+
+.farmer-sidebar-bottom {
+  margin-top: auto;
+  padding: 14px 12px 18px;
+}
+
+.farmer-logout {
+  width: 100%;
+  min-height: 45px;
+  border: 0;
+  border-radius: 11px;
+  background: #fff4f3;
+  color: #bd4b45;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 0 13px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.farmer-main {
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  min-width: 0;
+}
+
+.farmer-topbar {
+  height: 78px;
+  background: #fff;
+  border-bottom: 1px solid #e5ebe6;
+  padding: 0 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+}
+
+.farmer-top-left {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.farmer-top-left h1 {
+  margin: 0;
+  font-size: 20px;
+  color: #193d28;
+}
+
+.farmer-top-left p {
+  margin: 3px 0 0;
+  color: #859189;
+  font-size: 12px;
+}
+
+.farmer-menu-button {
+  display: none;
+}
+
+.farmer-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.farmer-icon-button {
+  width: 40px;
+  height: 40px;
+  border: 1px solid #e2e9e3;
+  border-radius: 11px;
+  background: #fff;
+  color: #607067;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.farmer-profile-button {
+  min-height: 40px;
+  border: 1px solid #e1e8e2;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px 10px 4px 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #294534;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.farmer-profile-button img {
+  width: 31px;
+  height: 31px;
+  object-fit: cover;
+  border-radius: 9px;
+}
+
+
+/* =========================================================
+   CONTENT
+========================================================= */
+
+.farmer-content {
+  max-width: 1450px;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.farmer-welcome {
+  background: linear-gradient(
+    135deg,
+    #eaf7ed,
+    #f7fbf7
+  );
+  border: 1px solid #dcebe0;
+  border-radius: 20px;
+  padding: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.farmer-welcome-label {
+  color: #31834a;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .farmer-welcome h2 {
-  margin: 0 0 8px;
-  font-size: 30px;
-  color: #163524;
+  margin: 5px 0 5px;
+  font-size: 28px;
+  color: #183c27;
 }
 
 .farmer-welcome p {
   margin: 0;
-  color: #66756b;
-  font-size: 15px;
-}
-
-.farmer-location {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 14px;
-  padding: 8px 13px;
-  border-radius: 30px;
-  background: #eaf5ed;
-  color: #27623c;
-  font-size: 13px;
-  font-weight: 650;
-}
-
-.tm-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 17px;
-}
-
-.tm-stat-card {
-  background: white;
-  border: 1px solid #e2e9e3;
-  border-radius: 18px;
-  padding: 20px;
-  box-shadow: 0 8px 25px rgba(25, 55, 35, .06);
-}
-
-.tm-stat-icon {
-  width: 45px;
-  height: 45px;
-  border-radius: 14px;
-  background: #eaf5ed;
-  display: grid;
-  place-items: center;
-  font-size: 21px;
-  margin-bottom: 15px;
-}
-
-.tm-stat-card strong {
-  display: block;
-  font-size: 28px;
-  color: #14251b;
-}
-
-.tm-stat-card .small-value {
-  font-size: 16px;
-  min-height: 34px;
-  display: flex;
-  align-items: center;
-}
-
-.tm-stat-card span {
-  display: block;
-  margin-top: 5px;
   color: #718078;
   font-size: 13px;
 }
 
-.tm-section {
-  margin-top: 32px;
+.farmer-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 13px;
+  border-radius: 11px;
+  background: #fff;
+  color: #58705f;
+  font-size: 12px;
+  border: 1px solid #e2ebe4;
 }
 
-.farmer-tool-grid {
+
+/* =========================================================
+   STATS
+========================================================= */
+
+.farmer-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  gap: 15px;
+  margin-top: 20px;
 }
 
-.farmer-tool {
-  border: 1px solid #e0e8e2;
-  background: white;
-  border-radius: 17px;
-  padding: 21px;
-  text-align: left;
-  cursor: pointer;
-  transition: .2s;
+.farmer-stat-card {
+  background: #fff;
+  border: 1px solid #e5ebe6;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
 }
 
-.farmer-tool:hover {
-  transform: translateY(-3px);
-  border-color: #a9cdb3;
-  box-shadow: 0 10px 25px rgba(30,70,40,.09);
-}
-
-.farmer-tool-icon {
-  width: 45px;
-  height: 45px;
-  border-radius: 13px;
-  background: #eaf5ed;
-  color: #28663d;
+.farmer-stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #edf7ef;
+  color: #2b8145;
   display: grid;
   place-items: center;
-  margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
-.farmer-tool strong {
+.farmer-stat-card strong {
   display: block;
-  font-size: 15px;
-  color: #15271b;
+  font-size: 21px;
+  color: #1c4029;
 }
 
-.farmer-tool span {
+.farmer-stat-card span {
   display: block;
-  margin-top: 6px;
-  color: #758179;
+  margin-top: 2px;
+  color: #819087;
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.farmer-section-heading {
+  margin-top: 30px;
+  margin-bottom: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farmer-section-heading h2 {
+  margin: 0;
+  font-size: 19px;
+  color: #1d402a;
+}
+
+.farmer-section-heading p {
+  margin: 4px 0 0;
+  color: #849088;
   font-size: 12px;
+}
+
+.farmer-view-all {
+  border: 0;
+  background: transparent;
+  color: #287d40;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   QUICK ACTIONS
+========================================================= */
+
+.farmer-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px;
+}
+
+.farmer-action-card {
+  min-height: 91px;
+  border: 1px solid #e3eae4;
+  background: #fff;
+  border-radius: 15px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.farmer-action-card:hover {
+  transform: translateY(-2px);
+  border-color: #b6d3bc;
+  box-shadow: 0 8px 25px rgba(28, 67, 39, 0.07);
+}
+
+.farmer-action-card > div:nth-child(2) {
+  flex: 1;
+}
+
+.farmer-action-card strong {
+  display: block;
+  color: #294735;
+  font-size: 13px;
+}
+
+.farmer-action-card span {
+  display: block;
+  margin-top: 4px;
+  color: #89958e;
+  font-size: 11px;
+}
+
+.farmer-action-icon {
+  width: 45px;
+  height: 45px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.farmer-action-icon.tree {
+  background: #e9f6ec;
+  color: #25803e;
+}
+
+.farmer-action-icon.requirement {
+  background: #eef4ff;
+  color: #5276ad;
+}
+
+.farmer-action-icon.profile {
+  background: #fff3e6;
+  color: #bc7432;
+}
+
+.farmer-action-icon.settings {
+  background: #f0effb;
+  color: #6d67a5;
+}
+
+
+/* =========================================================
+   SEARCH
+========================================================= */
+
+.farmer-search-box {
+  margin-top: 27px;
+  height: 48px;
+  border: 1px solid #e1e8e2;
+  border-radius: 13px;
+  background: #fff;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #819088;
+}
+
+.farmer-search-box input {
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #294534;
+  font: inherit;
+  font-size: 13px;
+}
+
+.farmer-search-box button {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: #78867d;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   REQUIREMENTS
+========================================================= */
+
+.farmer-requirements-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.farmer-requirement-card {
+  background: #fff;
+  border: 1px solid #e4eae5;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.farmer-card-top {
+  padding: 14px 15px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.farmer-user-mini {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.farmer-user-mini img,
+.farmer-avatar {
+  width: 35px;
+  height: 35px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.farmer-avatar {
+  background: #eaf4ec;
+  color: #347847;
+  display: grid;
+  place-items: center;
+}
+
+.farmer-user-mini strong {
+  display: block;
+  color: #304638;
+  font-size: 12px;
+}
+
+.farmer-user-mini span {
+  display: block;
+  margin-top: 2px;
+  color: #89948e;
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.farmer-delete-mini {
+  width: 31px;
+  height: 31px;
+  border: 0;
+  border-radius: 9px;
+  background: #fff1f0;
+  color: #c1534c;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.farmer-card-body-button,
+.farmer-listing-open {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0 15px 15px;
+  cursor: pointer;
+}
+
+.farmer-card-body-button h3,
+.farmer-listing-open h3 {
+  margin: 0 0 10px;
+  color: #1f412b;
+  font-size: 15px;
+}
+
+.farmer-card-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.farmer-card-info span,
+.farmer-listing-open span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #728078;
+  font-size: 11px;
+}
+
+.farmer-card-body-button p {
+  margin: 11px 0 0;
+  color: #829087;
+  font-size: 11px;
   line-height: 1.5;
 }
 
-.tm-alert {
-  padding: 13px 15px;
-  border-radius: 11px;
-  margin-bottom: 18px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.tm-alert-success {
-  background: #eaf7ed;
-  color: #23673b;
-  border: 1px solid #cce8d3;
-}
-
-.tm-alert-error {
-  background: #fff0ef;
-  color: #a43c35;
-  border: 1px solid #f3d0cd;
-}
-
-.farmer-form-card {
-  background: white;
-  border: 1px solid #dfe7e1;
-  border-radius: 20px;
-  padding: 25px;
-  box-shadow: 0 10px 30px rgba(30,60,40,.08);
-}
-
-.farmer-form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 22px;
-}
-
-.farmer-form-header h2 {
-  margin: 0 0 5px;
-  color: #173724;
-}
-
-.farmer-form-header p {
-  margin: 0;
-  color: #758078;
-  font-size: 13px;
-}
-
-.farmer-form {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.form-two {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 17px;
-}
-
-.tm-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.tm-form-group label {
-  font-size: 13px;
-  font-weight: 650;
-  color: #34443a;
-}
-
-.tm-form-group input,
-.tm-form-group textarea {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid #d7e1da;
-  border-radius: 11px;
-  padding: 12px 13px;
-  outline: none;
-  font: inherit;
-  font-size: 14px;
-}
-
-.tm-form-group input:focus,
-.tm-form-group textarea:focus {
-  border-color: #2d7145;
-  box-shadow: 0 0 0 3px rgba(45,113,69,.1);
-}
-
-.tm-form-group textarea {
-  resize: vertical;
-}
-
-.farmer-form-buttons {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-}
-
-.farmer-listing-grid {
+.farmer-card-actions {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
+  border-top: 1px solid #edf1ee;
 }
 
-.farmer-listing-card {
-  background: white;
-  border: 1px solid #e0e7e1;
-  border-radius: 18px;
-  overflow: hidden;
-  box-shadow: 0 7px 20px rgba(30,60,40,.05);
-}
-
-.listing-top {
-  padding: 18px;
+.farmer-card-actions button {
+  min-height: 39px;
+  border: 0;
+  border-right: 1px solid #edf1ee;
+  background: #fff;
+  color: #4c6655;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  border-bottom: 1px solid #edf1ee;
-}
-
-.listing-label {
-  color: #327047;
-  font-size: 10px;
-  font-weight: 750;
-}
-
-.listing-top h3 {
-  margin: 6px 0 0;
-  font-size: 17px;
-  color: #18271d;
-}
-
-.listing-status {
-  height: fit-content;
-  padding: 5px 9px;
-  border-radius: 30px;
-  background: #e8f6eb;
-  color: #23703a;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
   font-size: 10px;
   font-weight: 700;
 }
 
-.listing-details {
-  padding: 17px;
+.farmer-card-actions button:last-child {
+  border-right: 0;
+}
+
+.farmer-card-actions button:hover {
+  background: #f5f9f5;
+  color: #267d40;
+}
+
+.farmer-card-actions button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+
+/* =========================================================
+   LISTINGS
+========================================================= */
+
+.farmer-listings-grid {
   display: grid;
-  gap: 13px;
-}
-
-.listing-details div {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.listing-details span {
-  color: #78837d;
-  font-size: 12px;
-}
-
-.listing-details strong {
-  color: #26362c;
-  font-size: 12px;
-  text-align: right;
-}
-
-.listing-description {
-  padding: 0 17px 16px;
-  margin: 0;
-  color: #69766f;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.listing-footer {
-  padding: 13px 17px;
-  border-top: 1px solid #edf1ee;
-}
-
-.delete-btn {
-  border: 0;
-  background: #fff0ef;
-  color: #ae4038;
-  border-radius: 9px;
-  padding: 8px 11px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 650;
-}
-
-.farmer-profile-summary {
-  background: linear-gradient(
-    135deg,
-    #eff8f1,
-    white
-  );
-  border: 1px solid #dce9df;
-  border-radius: 19px;
-  padding: 21px;
-  display: flex;
-  align-items: center;
+  grid-template-columns: repeat(3, 1fr);
   gap: 15px;
 }
 
-.profile-summary-avatar {
-  width: 58px;
-  height: 58px;
+.farmer-listing-card {
+  background: #fff;
+  border: 1px solid #e4eae5;
   border-radius: 16px;
   overflow: hidden;
-  background: #e5f2e8;
-  color: #2d7145;
-  display: grid;
-  place-items: center;
 }
 
-.profile-summary-avatar img {
+.farmer-listing-image {
+  height: 190px;
+  background: #edf3ee;
+  position: relative;
+  overflow: hidden;
+}
+
+.farmer-listing-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.farmer-profile-summary h3 {
-  margin: 0 0 3px;
+.farmer-no-image {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  color: #829187;
 }
 
-.farmer-profile-summary p {
-  margin: 2px 0;
-  color: #718078;
+.farmer-no-image span {
+  font-size: 11px;
+}
+
+.farmer-own-badge {
+  position: absolute;
+  left: 11px;
+  top: 11px;
+  padding: 5px 9px;
+  border-radius: 7px;
+  background: #1e7339;
+  color: white;
+  font-size: 9px;
+  font-weight: 800;
+}
+
+.farmer-listing-content {
+  padding-top: 13px;
+}
+
+.farmer-listing-open strong {
+  display: block;
+  margin-top: 10px;
+  color: #267b3e;
   font-size: 12px;
 }
 
-.farmer-profile-summary .tm-btn {
-  margin-left: auto;
+
+/* =========================================================
+   EMPTY
+========================================================= */
+
+.farmer-empty {
+  background: #fff;
+  border: 1px dashed #d6e1d8;
+  border-radius: 17px;
+  min-height: 190px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 25px;
+  color: #829088;
 }
 
-.tm-empty {
+.farmer-empty svg {
+  color: #4d8c5c;
+}
+
+.farmer-empty h3 {
+  margin: 9px 0 4px;
+  color: #31503c;
+  font-size: 15px;
+}
+
+.farmer-empty p {
+  margin: 0;
+  max-width: 380px;
+  color: #89958e;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.farmer-empty button {
+  margin-top: 13px;
+  border: 0;
+  border-radius: 9px;
+  background: #267d40;
+  color: white;
+  padding: 9px 13px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   DISCLAIMER
+========================================================= */
+
+.farmer-disclaimer {
+  margin-top: 30px;
+  padding: 17px 19px;
+  border-radius: 13px;
+  background: #f0f5f1;
+  border: 1px solid #e0e9e1;
+}
+
+.farmer-disclaimer strong {
+  color: #3b5b45;
+  font-size: 12px;
+}
+
+.farmer-disclaimer p {
+  margin: 5px 0 0;
+  color: #7d8b82;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   MODALS
+========================================================= */
+
+.farmer-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 8000;
+  background: rgba(15, 25, 19, 0.58);
+  backdrop-filter: blur(5px);
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.farmer-modal {
+  width: min(650px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  background: #fff;
+  border-radius: 21px;
+  padding: 25px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.24);
+}
+
+.farmer-modal-close {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  width: 37px;
+  height: 37px;
+  border: 0;
+  border-radius: 10px;
+  background: #f3f6f3;
+  color: #617067;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.farmer-modal-label {
+  color: #328248;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.farmer-modal h2 {
+  margin: 7px 45px 20px 0;
+  color: #193d28;
+  font-size: 24px;
+}
+
+.farmer-modal-images {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.farmer-modal-images img {
+  width: 100%;
+  height: 130px;
+  object-fit: cover;
+  border-radius: 11px;
+}
+
+.farmer-modal-details {
+  border: 1px solid #e5ebe6;
+  border-radius: 13px;
+  overflow: hidden;
+}
+
+.farmer-detail-row {
+  min-height: 46px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.farmer-detail-row:last-child {
+  border-bottom: 0;
+}
+
+.farmer-detail-row span {
+  color: #819087;
+  font-size: 11px;
+}
+
+.farmer-detail-row strong {
+  color: #304a38;
+  font-size: 12px;
+  text-align: right;
+}
+
+.farmer-description {
+  padding: 15px;
+  border-top: 1px solid #edf1ee;
+}
+
+.farmer-description strong {
+  color: #334c3b;
+  font-size: 12px;
+}
+
+.farmer-description p {
+  margin: 6px 0 0;
+  color: #738078;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.farmer-modal-owner {
+  margin-top: 17px;
+  padding: 12px;
+  border: 1px solid #e4ebe5;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.farmer-modal-owner img,
+.farmer-avatar.large {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  object-fit: cover;
+}
+
+.farmer-modal-owner strong {
+  display: block;
+  color: #304a38;
+  font-size: 12px;
+}
+
+.farmer-modal-owner span {
+  display: block;
+  margin-top: 3px;
+  color: #839088;
+  font-size: 10px;
+}
+
+.farmer-modal-actions,
+.farmer-profile-actions {
+  margin-top: 15px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.farmer-modal-actions button,
+.farmer-profile-actions button {
+  min-height: 43px;
+  border: 1px solid #dfe8e1;
+  background: #f9fbf9;
+  border-radius: 10px;
+  color: #365642;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.farmer-modal-actions button:hover,
+.farmer-profile-actions button:hover {
+  background: #edf7ef;
+  color: #25783d;
+}
+
+.farmer-modal-actions button:disabled,
+.farmer-profile-actions button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.farmer-danger-button {
+  margin-top: 15px;
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: #fff1f0;
+  color: #bb4a43;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.farmer-profile-modal {
+  width: min(390px, 100%);
+  position: relative;
   background: white;
-  border: 1px dashed #cbd8ce;
-  border-radius: 18px;
-  padding: 45px 20px;
+  border-radius: 22px;
+  padding: 30px;
   text-align: center;
 }
 
-.tm-empty-icon {
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 13px;
-  border-radius: 17px;
-  background: #eaf5ed;
-  color: #2d7145;
+.farmer-profile-modal-photo {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: #eaf5ec;
+  color: #367b48;
+  display: grid;
+  place-items: center;
+  margin: 5px auto 14px;
+  overflow: hidden;
+}
+
+.farmer-profile-modal-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.farmer-profile-modal h2 {
+  margin: 0;
+  color: #1d402a;
+  font-size: 21px;
+}
+
+.farmer-profile-role {
+  display: inline-block;
+  margin-top: 6px;
+  color: #338049;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.farmer-profile-location {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  color: #7d8b83;
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   SELL TREE MODAL
+========================================================= */
+
+.sell-tree-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  padding: 20px;
+  background: rgba(13, 25, 17, 0.67);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sell-tree-modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 40px);
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 90px rgba(0,0,0,.28);
+}
+
+
+/* =========================================================
+   SELL HEADER
+========================================================= */
+
+.sell-tree-header {
+  min-height: 73px;
+  padding: 13px 22px;
+  border-bottom: 1px solid #e6ece7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.sell-tree-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.sell-tree-brand-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+  background: #eaf6ed;
+  color: #267d40;
   display: grid;
   place-items: center;
 }
 
-.tm-empty h3 {
-  margin: 0 0 7px;
+.sell-tree-brand strong {
+  display: block;
+  color: #183d28;
+  font-size: 18px;
 }
 
-.tm-empty p {
-  margin: 0 auto 17px;
-  color: #758078;
+.sell-tree-brand span {
+  display: block;
+  color: #829088;
+  margin-top: 2px;
+  font-size: 11px;
+}
+
+.sell-tree-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 11px;
+  background: #f3f6f3;
+  color: #627067;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   SELL PROGRESS
+========================================================= */
+
+.sell-progress {
+  padding: 17px 28px;
+  background: #fbfcfb;
+  border-bottom: 1px solid #e9eeea;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.sell-progress-item {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #9aa49e;
+  font-size: 11px;
+}
+
+.sell-progress-item span {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #edf0ee;
+  color: #7e8982;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.sell-progress-item.active {
+  color: #267d40;
+}
+
+.sell-progress-item.active span {
+  background: #267d40;
+  color: white;
+}
+
+.sell-progress-item.current strong {
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   SELL BODY
+========================================================= */
+
+.sell-tree-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 30px;
+}
+
+.sell-step {
+  width: min(900px, 100%);
+  margin: 0 auto;
+}
+
+.sell-step-heading {
+  margin-bottom: 24px;
+}
+
+.sell-step-heading > span {
+  color: #2d8247;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.sell-step-heading h2 {
+  margin: 7px 0 6px;
+  color: #193d28;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.sell-step-heading p {
+  margin: 0;
+  color: #748179;
   font-size: 13px;
-  max-width: 430px;
+  line-height: 1.55;
 }
 
-@media (max-width: 1100px) {
-  .tm-stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
 
-  .farmer-tool-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* =========================================================
+   CATEGORY CARDS
+========================================================= */
 
-  .farmer-listing-grid {
-    grid-template-columns: repeat(2, 1fr);
+.sell-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.sell-category-card {
+  position: relative;
+  min-height: 170px;
+  border: 1.5px solid #e0e8e2;
+  border-radius: 17px;
+  padding: 20px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: .2s ease;
+}
+
+.sell-category-card:hover {
+  border-color: #a8caae;
+  transform: translateY(-2px);
+}
+
+.sell-category-card.selected {
+  border-color: #278143;
+  background: #f1faf3;
+  box-shadow: 0 8px 25px rgba(39,129,67,.09);
+}
+
+.sell-category-icon {
+  font-size: 36px;
+  margin-bottom: 14px;
+}
+
+.sell-category-content strong {
+  display: block;
+  color: #23442f;
+  font-size: 15px;
+}
+
+.sell-category-content p {
+  margin: 7px 0 0;
+  color: #7d8982;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.sell-category-check {
+  position: absolute;
+  right: 15px;
+  top: 15px;
+  color: #288145;
+}
+
+
+/* =========================================================
+   DYNAMIC TYPE
+========================================================= */
+
+.sell-dependent-box {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f7faf7;
+  border: 1px solid #e0e9e1;
+  border-radius: 16px;
+}
+
+.sell-dependent-heading {
+  margin-bottom: 16px;
+}
+
+.sell-dependent-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sell-dependent-heading > div > span {
+  font-size: 27px;
+}
+
+.sell-dependent-heading small {
+  display: block;
+  color: #8a958e;
+  font-size: 10px;
+}
+
+.sell-dependent-heading strong {
+  display: block;
+  margin-top: 3px;
+  color: #2d4b37;
+  font-size: 13px;
+}
+
+.sell-dependent-box label,
+.sell-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #354b3d;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sell-dependent-box label span,
+.sell-field label span {
+  color: #cf4848;
+  margin-left: 2px;
+}
+
+.sell-dependent-box select,
+.sell-field input,
+.sell-field select,
+.sell-field textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #d9e3db;
+  border-radius: 10px;
+  background: #fff;
+  color: #273c30;
+  outline: none;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.sell-dependent-box select:focus,
+.sell-field input:focus,
+.sell-field select:focus,
+.sell-field textarea:focus {
+  border-color: #4c9b60;
+  box-shadow: 0 0 0 3px rgba(76,155,96,.10);
+}
+
+.sell-special-note {
+  margin-top: 13px;
+  padding: 12px 14px;
+  border-radius: 11px;
+  background: #eef8f0;
+  display: flex;
+  gap: 9px;
+  color: #3d6848;
+}
+
+.sell-special-note > span {
+  font-size: 18px;
+}
+
+.sell-special-note strong {
+  display: block;
+  font-size: 11px;
+}
+
+.sell-special-note p {
+  margin: 3px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   SELECTED SUMMARY
+========================================================= */
+
+.sell-selected-summary {
+  margin-bottom: 20px;
+  padding: 13px 15px;
+  background: #f3f8f4;
+  border: 1px solid #dfebe1;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.sell-summary-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 11px;
+  background: #e5f3e8;
+  display: grid;
+  place-items: center;
+  font-size: 25px;
+}
+
+.sell-selected-summary small {
+  display: block;
+  color: #849088;
+  font-size: 10px;
+}
+
+.sell-selected-summary strong {
+  display: block;
+  margin-top: 3px;
+  color: #2a4935;
+  font-size: 13px;
+}
+
+
+/* =========================================================
+   FORM
+========================================================= */
+
+.sell-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 17px;
+}
+
+.sell-full {
+  grid-column: 1 / -1;
+}
+
+.sell-field small {
+  display: block;
+  margin-top: 5px;
+  color: #8a958e;
+  font-size: 10px;
+}
+
+.sell-input-with-icon {
+  position: relative;
+}
+
+.sell-input-with-icon svg {
+  position: absolute;
+  left: 13px;
+  top: 14px;
+  color: #718479;
+}
+
+.sell-input-with-icon input {
+  padding-left: 39px;
+}
+
+.sell-important-field {
+  background: #f5fbf6;
+  padding: 12px;
+  border-radius: 11px;
+  border: 1px solid #dcebe0;
+}
+
+.sell-acres-input {
+  position: relative;
+}
+
+.sell-acres-input input {
+  padding-right: 55px;
+}
+
+.sell-acres-input span {
+  position: absolute;
+  right: 12px;
+  top: 14px;
+  color: #5f7466;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sell-field textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   PHOTOS
+========================================================= */
+
+.sell-photo-upload {
+  min-height: 225px;
+  border: 2px dashed #b8d1bd;
+  border-radius: 18px;
+  background: #f8fbf8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  padding: 25px;
+}
+
+.sell-photo-upload input {
+  display: none;
+}
+
+.sell-photo-upload-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 17px;
+  background: #e7f4e9;
+  color: #2a8144;
+  display: grid;
+  place-items: center;
+  margin-bottom: 12px;
+}
+
+.sell-photo-upload strong {
+  color: #2a4935;
+  font-size: 14px;
+}
+
+.sell-photo-upload span {
+  margin-top: 5px;
+  color: #7f8c84;
+  font-size: 11px;
+}
+
+.sell-photo-upload small {
+  margin-top: 5px;
+  color: #9aa49e;
+  font-size: 10px;
+}
+
+.sell-photo-grid {
+  margin-top: 17px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 11px;
+}
+
+.sell-photo-preview {
+  position: relative;
+  aspect-ratio: 1.15;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #edf1ee;
+}
+
+.sell-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sell-photo-preview button {
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0,0,0,.65);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sell-photo-preview span {
+  position: absolute;
+  bottom: 7px;
+  left: 7px;
+  padding: 4px 7px;
+  border-radius: 5px;
+  background: rgba(26,61,39,.85);
+  color: #fff;
+  font-size: 9px;
+}
+
+.sell-photo-tip {
+  margin-top: 17px;
+  padding: 14px;
+  border-radius: 12px;
+  background: #f4f8f4;
+  color: #607168;
+  display: flex;
+  gap: 10px;
+}
+
+.sell-photo-tip svg {
+  flex-shrink: 0;
+  color: #2c8145;
+}
+
+.sell-photo-tip strong {
+  color: #344e3d;
+  font-size: 11px;
+}
+
+.sell-photo-tip p {
+  margin: 4px 0 0;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+
+/* =========================================================
+   REVIEW
+========================================================= */
+
+.sell-review-card {
+  border: 1px solid #e0e8e2;
+  border-radius: 17px;
+  overflow: hidden;
+}
+
+.sell-review-top {
+  padding: 18px;
+  background: #f5faf6;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid #e2ebe4;
+}
+
+.sell-review-category-icon {
+  width: 51px;
+  height: 51px;
+  border-radius: 14px;
+  background: #e6f3e9;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+
+.sell-review-top small {
+  color: #7e8b83;
+  font-size: 10px;
+}
+
+.sell-review-top h3 {
+  margin: 3px 0;
+  color: #1f422b;
+  font-size: 17px;
+}
+
+.sell-review-top strong {
+  color: #2d8246;
+  font-size: 11px;
+}
+
+.sell-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: #e6ece8;
+  gap: 1px;
+}
+
+.sell-review-item {
+  padding: 13px;
+  background: #fff;
+}
+
+.sell-review-item span {
+  display: block;
+  color: #8a958e;
+  font-size: 9px;
+  margin-bottom: 4px;
+}
+
+.sell-review-item strong {
+  color: #304a38;
+  font-size: 11px;
+}
+
+.sell-review-description {
+  padding: 16px;
+}
+
+.sell-review-description strong {
+  color: #304a38;
+  font-size: 11px;
+}
+
+.sell-review-description p {
+  margin: 5px 0 0;
+  color: #728078;
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.sell-publish-note {
+  margin-top: 15px;
+  padding: 13px;
+  border-radius: 11px;
+  background: #eef8f0;
+  color: #42674b;
+  display: flex;
+  gap: 9px;
+}
+
+.sell-publish-note svg {
+  flex-shrink: 0;
+  color: #2b8447;
+}
+
+.sell-publish-note p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.sell-error {
+  margin-top: 15px;
+  padding: 12px 14px;
+  background: #fff1f1;
+  border: 1px solid #f0d2d2;
+  border-radius: 10px;
+  color: #b33131;
+  font-size: 11px;
+}
+
+
+/* =========================================================
+   SUCCESS
+========================================================= */
+
+.sell-success {
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.sell-success-icon {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: #e7f6ea;
+  color: #278143;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+}
+
+.sell-success h2 {
+  margin: 0;
+  color: #193d28;
+  font-size: 27px;
+}
+
+.sell-success p {
+  margin: 8px 0 0;
+  color: #748078;
+  font-size: 12px;
+}
+
+.sell-success-summary {
+  margin-top: 21px;
+  padding: 11px 17px;
+  border-radius: 11px;
+  background: #f1f7f2;
+  color: #317344;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sell-success small {
+  margin-top: 10px;
+  color: #8a958e;
+  font-size: 10px;
+}
+
+.sell-success-close {
+  margin-top: 20px;
+  min-height: 43px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 10px;
+  background: #267d40;
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   SELL FOOTER
+========================================================= */
+
+.sell-tree-footer {
+  min-height: 70px;
+  padding: 12px 25px;
+  border-top: 1px solid #e6ece7;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.sell-back-button,
+.sell-next-button,
+.sell-publish-button {
+  min-height: 44px;
+  padding: 0 17px;
+  border-radius: 10px;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.sell-back-button {
+  background: #f2f5f2;
+  color: #5c6b62;
+}
+
+.sell-back-icon {
+  transform: rotate(180deg);
+}
+
+.sell-next-button,
+.sell-publish-button {
+  background: #267d40;
+  color: #fff;
+}
+
+.sell-next-button:hover,
+.sell-publish-button:hover {
+  background: #1f6d36;
+}
+
+.sell-next-button:disabled,
+.sell-publish-button:disabled {
+  opacity: .65;
+  cursor: not-allowed;
+}
+
+.sell-button-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: sellButtonSpin .7s linear infinite;
+}
+
+@keyframes sellButtonSpin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-@media (max-width: 700px) {
-  .farmer-welcome {
-    flex-direction: column;
-    align-items: flex-start;
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+.farmer-overlay {
+  display: none;
+}
+
+@media (max-width: 1050px) {
+
+  .farmer-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .tm-stat-grid,
-  .farmer-tool-grid,
-  .farmer-listing-grid,
-  .form-two {
+  .farmer-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .farmer-requirements-grid,
+  .farmer-listings-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .sell-category-grid {
     grid-template-columns: 1fr;
   }
 
-  .farmer-profile-summary {
-    align-items: flex-start;
-    flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+
+  .farmer-sidebar {
+    width: 260px;
+    transform: translateX(-100%);
+    transition: transform .25s ease;
+    box-shadow: 10px 0 30px rgba(0,0,0,.08);
   }
 
-  .farmer-profile-summary .tm-btn {
+  .farmer-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .farmer-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.35);
+    z-index: 900;
+  }
+
+  .farmer-main {
     margin-left: 0;
+    width: 100%;
   }
 
-  .farmer-form-buttons {
+  .farmer-topbar {
+    height: 68px;
+    padding: 0 14px;
+  }
+
+  .farmer-menu-button {
+    width: 39px;
+    height: 39px;
+    border: 1px solid #e2e8e3;
+    border-radius: 10px;
+    background: #fff;
+    display: grid;
+    place-items: center;
+    color: #50645a;
+    cursor: pointer;
+  }
+
+  .farmer-top-left h1 {
+    font-size: 17px;
+  }
+
+  .farmer-top-left p {
+    display: none;
+  }
+
+  .farmer-icon-button {
+    display: none;
+  }
+
+  .farmer-profile-button span {
+    display: none;
+  }
+
+  .farmer-content {
+    padding: 16px;
+  }
+
+  .farmer-welcome {
+    padding: 19px;
+    align-items: flex-start;
     flex-direction: column;
   }
 
-  .farmer-form-buttons button {
+  .farmer-welcome h2 {
+    font-size: 23px;
+  }
+
+  .farmer-location {
     width: 100%;
   }
+
+  .farmer-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .farmer-stat-card {
+    padding: 13px;
+  }
+
+  .farmer-stat-icon {
+    width: 37px;
+    height: 37px;
+  }
+
+  .farmer-stat-card strong {
+    font-size: 18px;
+  }
+
+  .farmer-stat-card span {
+    font-size: 9px;
+  }
+
+  .farmer-actions-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .farmer-requirements-grid,
+  .farmer-listings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .farmer-section-heading {
+    margin-top: 24px;
+  }
+
+  .farmer-section-heading h2 {
+    font-size: 17px;
+  }
+
+  .farmer-modal-backdrop {
+    padding: 0;
+  }
+
+  .farmer-modal {
+    max-height: 100vh;
+    height: 100%;
+    border-radius: 0;
+    padding: 20px 16px;
+  }
+
+  .farmer-modal-images {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .farmer-modal-images img {
+    height: 110px;
+  }
+
+  .farmer-modal-actions,
+  .farmer-profile-actions {
+    grid-template-columns: 1fr;
+  }
+
+  /* SELL MOBILE */
+
+  .sell-tree-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .sell-tree-modal {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .sell-tree-header {
+    padding: 11px 14px;
+  }
+
+  .sell-progress {
+    padding: 12px 14px;
+    gap: 5px;
+  }
+
+  .sell-progress-item {
+    justify-content: center;
+  }
+
+  .sell-progress-item strong {
+    display: none;
+  }
+
+  .sell-tree-body {
+    padding: 21px 15px;
+  }
+
+  .sell-step-heading h2 {
+    font-size: 23px;
+  }
+
+  .sell-category-card {
+    min-height: 105px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .sell-category-icon {
+    margin: 0;
+    font-size: 30px;
+  }
+
+  .sell-category-content {
+    padding-right: 20px;
+  }
+
+  .sell-form-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .sell-full {
+    grid-column: auto;
+  }
+
+  .sell-photo-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sell-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-tree-footer {
+    padding: 10px 14px;
+  }
+
+  .sell-back-button,
+  .sell-next-button,
+  .sell-publish-button {
+    min-height: 43px;
+  }
+
 }

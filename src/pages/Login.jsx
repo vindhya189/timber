@@ -1,1535 +1,1874 @@
 import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   ArrowLeft,
+  ArrowRight,
   Eye,
   EyeOff,
-  LockKeyhole,
-  LogIn,
+  Loader2,
+  Lock,
   Mail,
-  UserPlus,
   Phone,
-  KeyRound,
+  User,
+  CheckCircle2,
+  AlertCircle,
 } from "lucide-react";
-
-import {
-  useNavigate,
-  useSearchParams,
-} from "react-router-dom";
 
 import { supabase } from "../supabaseClient";
 
-/* =========================================================
-   ROLE DETAILS
-========================================================= */
+import "./Login.css";
 
-const roles = {
+/* =========================================================
+   ROLE INFORMATION
+   ========================================================= */
+
+const ROLE_INFO = {
   farmer: {
-    icon: "🌳",
+    emoji: "🌳",
     title: "Farmer",
-    description:
-      "Sell timber and connect with timber buyers.",
+    description: "Sell your timber and connect with buyers.",
   },
 
   merchant: {
-    icon: "🪵",
+    emoji: "🪵",
     title: "Timber Merchant",
-    description:
-      "Buy, sell and manage timber business requirements.",
+    description: "Buy and sell timber products.",
   },
 
   sawmill: {
-    icon: "🏭",
+    emoji: "🏭",
     title: "Sawmill / Wood Business",
-    description:
-      "Manage wood processing and business opportunities.",
+    description: "Manage timber, workers and job opportunities.",
   },
 
   carpenter: {
-    icon: "🛠️",
+    emoji: "🛠️",
     title: "Carpenter / Service Provider",
-    description:
-      "Offer carpentry and wood-related services.",
+    description: "Show your skills and find work.",
   },
 
   worker: {
-    icon: "👷",
+    emoji: "👷",
     title: "Worker / Job Seeker",
-    description:
-      "Find jobs and connect with employers.",
+    description: "Find suitable timber industry jobs.",
   },
 
   buyer: {
-    icon: "🏠",
+    emoji: "🏠",
     title: "Buyer / Homeowner",
-    description:
-      "Find timber, wood products and services.",
+    description: "Find timber, carpenters and services.",
   },
 };
 
-
 /* =========================================================
-   SAVE USER FOR OLD DASHBOARDS
-========================================================= */
+   NORMALIZE ROLE
+   ========================================================= */
 
-function syncLegacyUser(
-  user,
-  profile,
-  fallbackRole
-) {
-  if (!user?.id) {
-    return;
-  }
+function normalizeRole(role) {
+  if (!role) return null;
 
-  const finalRole =
-    profile?.role ||
-    user.user_metadata?.role ||
-    fallbackRole ||
-    "buyer";
-
-  const finalName =
-    profile?.name ||
-    user.user_metadata?.name ||
-    user.email?.split("@")[0] ||
-    "User";
-
-  const finalPhone =
-    profile?.phone ||
-    user.user_metadata?.phone ||
-    "";
-
-  const legacyUser = {
-    id: user.id,
-
-    name: finalName,
-
-    email:
-      user.email || "",
-
-    phone: finalPhone,
-
-    role: finalRole,
-
-    location:
-      profile?.location || "",
-
-    bio:
-      profile?.bio || "",
-
-    photo_url:
-      profile?.photo_url || "",
-
-    createdAt:
-      profile?.created_at ||
-      new Date().toISOString(),
-  };
-
-
-  /* =======================================================
-     CURRENT USER
-  ======================================================= */
-
-  localStorage.setItem(
-    "timbermart_current_user",
-    JSON.stringify(legacyUser)
-  );
-
-
-  /* =======================================================
-     USERS LIST
-  ======================================================= */
-
-  let oldUsers = [];
+  let value = String(role).toLowerCase().trim();
 
   try {
-    oldUsers = JSON.parse(
-      localStorage.getItem(
-        "timbermart_users"
-      ) || "[]"
-    );
+    const parsed = JSON.parse(value);
 
-    if (!Array.isArray(oldUsers)) {
-      oldUsers = [];
+    if (typeof parsed === "string") {
+      value = parsed.toLowerCase().trim();
+    } else if (parsed?.role) {
+      value = String(parsed.role).toLowerCase().trim();
+    } else if (parsed?.id) {
+      value = String(parsed.id).toLowerCase().trim();
     }
   } catch {
-    oldUsers = [];
+    // Normal string
   }
 
+  const roleMap = {
+    farmer: "farmer",
+    farmers: "farmer",
 
-  const existingIndex =
-    oldUsers.findIndex(
-      (item) =>
-        item.id === user.id ||
-        item.email === user.email
-    );
+    merchant: "merchant",
+    "timber merchant": "merchant",
+    timbermerchant: "merchant",
 
+    sawmill: "sawmill",
+    "sawmill / wood business": "sawmill",
+    woodbusiness: "sawmill",
 
-  if (existingIndex >= 0) {
-    oldUsers[existingIndex] = {
-      ...oldUsers[existingIndex],
-      ...legacyUser,
-    };
-  } else {
-    oldUsers.push(
-      legacyUser
-    );
-  }
+    carpenter: "carpenter",
+    "carpenter / service provider": "carpenter",
+    serviceprovider: "carpenter",
 
+    worker: "worker",
+    "worker / job seeker": "worker",
+    "worker / labor": "worker",
+    jobseeker: "worker",
 
-  localStorage.setItem(
-    "timbermart_users",
-    JSON.stringify(oldUsers)
-  );
-
-
-  console.log(
-    "✅ Legacy user synced:",
-    legacyUser
-  );
-
-  return legacyUser;
-}
-
-
-/* =========================================================
-   CREATE / UPDATE PROFILE
-========================================================= */
-
-async function createProfile(
-  user,
-  profileRole,
-  profileName,
-  profilePhone
-) {
-  if (!user?.id) {
-    return null;
-  }
-
-  const finalRole =
-    roles[profileRole]
-      ? profileRole
-      : "buyer";
-
-  const finalName =
-    profileName?.trim() ||
-    user.user_metadata?.name ||
-    user.email?.split("@")[0] ||
-    "User";
-
-  const finalPhone =
-    profilePhone?.trim() ||
-    user.user_metadata?.phone ||
-    "";
-
-
-  const profileData = {
-    id: user.id,
-
-    name: finalName,
-
-    role: finalRole,
-
-    phone: finalPhone,
-
-    location: "",
-
-    bio: "",
-
-    photo_url: "",
+    buyer: "buyer",
+    "buyer / homeowner": "buyer",
+    homeowner: "buyer",
   };
 
-
-  const {
-    data,
-    error,
-  } = await supabase
-    .from("profiles")
-    .upsert(
-      profileData,
-      {
-        onConflict: "id",
-      }
-    )
-    .select()
-    .single();
-
-
-  if (error) {
-    console.error(
-      "❌ Profile creation error:",
-      error
-    );
-
-    return null;
-  }
-
-
-  console.log(
-    "✅ Profile created:",
-    data
-  );
-
-  return data;
+  return roleMap[value] || null;
 }
 
+/* =========================================================
+   GET ROLE FROM URL FIRST
+   ========================================================= */
+
+function getRoleFromUrl(search) {
+  const params = new URLSearchParams(search);
+
+  return normalizeRole(
+    params.get("role")
+  );
+}
+
+/* =========================================================
+   GET ROLE FROM LOCAL STORAGE
+   ========================================================= */
+
+function getRoleFromStorage() {
+  const keys = [
+    "timbermart_selected_role",
+    "selectedRole",
+    "selected_role",
+    "timbermart_role",
+  ];
+
+  for (const key of keys) {
+    const value = localStorage.getItem(key);
+
+    if (!value) continue;
+
+    const role = normalizeRole(value);
+
+    if (role) {
+      return role;
+    }
+  }
+
+  return null;
+}
 
 /* =========================================================
    LOGIN COMPONENT
-========================================================= */
+   ========================================================= */
 
 export default function Login() {
-  const navigate =
-    useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-  const [searchParams] =
-    useSearchParams();
+  /* -------------------------------------------------------
+     MODE
+     ------------------------------------------------------- */
 
+  const [mode, setMode] = useState("login");
 
-  const selectedRole =
-    searchParams.get("role");
+  /* -------------------------------------------------------
+     SELECTED ROLE
+     ------------------------------------------------------- */
 
+  const [selectedRole, setSelectedRole] = useState(null);
 
-  const role =
-    roles[selectedRole] ||
-    roles.buyer;
+  /* -------------------------------------------------------
+     FORM
+     ------------------------------------------------------- */
 
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
 
-  const [mode, setMode] =
-    useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
+  const [showPassword, setShowPassword] = useState(false);
 
-  const [name, setName] =
-    useState("");
+  /* -------------------------------------------------------
+     STATES
+     ------------------------------------------------------- */
 
+  const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
 
-  const [email, setEmail] =
-    useState("");
+  const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
 
-
-  const [phone, setPhone] =
-    useState("");
-
-
-  const [password, setPassword] =
-    useState("");
-
-
-  const [
-    showPassword,
-    setShowPassword,
-  ] = useState(false);
-
-
-  const [loading, setLoading] =
-    useState(false);
-
-
-  const [error, setError] =
-    useState("");
-
-
-  const [info, setInfo] =
-    useState("");
-
+  const [forgotMode, setForgotMode] = useState(false);
 
   /* =======================================================
-     CHECK SELECTED ROLE
-  ======================================================= */
+     LOAD SELECTED ROLE
+     ======================================================= */
 
   useEffect(() => {
-    if (
-      !selectedRole ||
-      !roles[selectedRole]
-    ) {
-      navigate(
-        "/roles",
-        {
-          replace: true,
-        }
-      );
+    // First priority = URL
+    const urlRole = getRoleFromUrl(
+      location.search
+    );
+
+    // Second priority = localStorage
+    const savedRole = getRoleFromStorage();
+
+    const role = urlRole || savedRole;
+
+    if (!role) {
+      navigate("/roles", {
+        replace: true,
+      });
+
+      return;
     }
+
+    // Save selected role
+    localStorage.setItem(
+      "timbermart_selected_role",
+      role
+    );
+
+    setSelectedRole(role);
   }, [
-    selectedRole,
+    location.search,
     navigate,
   ]);
 
-
   /* =======================================================
-     SWITCH MODE
-  ======================================================= */
+     CLEAR MESSAGES
+     ======================================================= */
 
-  function switchMode(
-    newMode
-  ) {
-    setMode(newMode);
-
+  const clearMessages = () => {
     setError("");
-
-    setInfo("");
-
-    setPassword("");
-  }
-
+    setMessage("");
+  };
 
   /* =======================================================
-     PHONE VALIDATION
-  ======================================================= */
+     SAVE PROFILE TO SUPABASE
+     ======================================================= */
 
-  function cleanPhoneNumber(
-    value
-  ) {
-    return value
-      .replace(/\D/g, "")
-      .slice(0, 12);
-  }
+  const saveProfile = async (
+    user,
+    role,
+    extra = {}
+  ) => {
+    const normalizedRole =
+      normalizeRole(role);
 
-
-  function isValidPhone(
-    value
-  ) {
-    const phoneNumber =
-      cleanPhoneNumber(value);
-
-    return (
-      phoneNumber.length >= 10 &&
-      phoneNumber.length <= 12
-    );
-  }
-
-
-  /* =======================================================
-     LOGIN
-  ======================================================= */
-
-  async function handleLogin() {
-    const cleanEmail =
-      email
-        .trim()
-        .toLowerCase();
-
-
-    if (!cleanEmail) {
-      setError(
-        "Email enter cheyyandi."
+    if (!user?.id) {
+      throw new Error(
+        "User information is missing."
       );
-
-      return;
     }
 
+    if (!normalizedRole) {
+      throw new Error(
+        "Invalid TimberMart role."
+      );
+    }
+
+    const metadata =
+      user.user_metadata || {};
+
+    const finalName =
+      extra.name ||
+      metadata.full_name ||
+      metadata.name ||
+      user.email?.split("@")[0] ||
+      "TimberMart User";
+
+    const finalPhone =
+      extra.phone ||
+      metadata.phone ||
+      "";
+
+    const photo =
+      metadata.avatar_url ||
+      metadata.picture ||
+      null;
+
+    const {
+      data,
+      error,
+    } = await supabase
+      .from("profiles")
+      .upsert(
+        {
+          id: user.id,
+          name: finalName,
+          role: normalizedRole,
+          phone: finalPhone,
+          location:
+            extra.location || null,
+          bio: extra.bio || null,
+          photo_url: photo,
+        },
+        {
+          onConflict: "id",
+        }
+      )
+      .select()
+      .single();
+
+    if (error) {
+      console.error(
+        "Profile error:",
+        error
+      );
+
+      throw new Error(
+        error.message
+      );
+    }
+
+    return data;
+  };
+
+  /* =======================================================
+     SAVE LOCAL USER
+     ======================================================= */
+
+  const saveLocalUser = (
+    user,
+    profile
+  ) => {
+    const localUser = {
+      id: user.id,
+
+      email:
+        user.email || "",
+
+      name:
+        profile?.name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "",
+
+      phone:
+        profile?.phone || "",
+
+      role:
+        profile?.role || "",
+
+      location:
+        profile?.location || "",
+
+      bio:
+        profile?.bio || "",
+
+      photo_url:
+        profile?.photo_url ||
+        user.user_metadata?.avatar_url ||
+        user.user_metadata?.picture ||
+        "",
+    };
+
+    localStorage.setItem(
+      "timbermart_current_user",
+      JSON.stringify(localUser)
+    );
+
+    localStorage.setItem(
+      "timbermart_selected_role",
+      profile?.role ||
+        selectedRole ||
+        ""
+    );
+  };
+
+  /* =======================================================
+     OPEN DASHBOARD
+     ======================================================= */
+
+  const openDashboard = (
+    profile,
+    user
+  ) => {
+    const role =
+      normalizeRole(
+        profile?.role
+      );
+
+    if (!role) {
+      throw new Error(
+        "User role is missing."
+      );
+    }
+
+    saveLocalUser(
+      user,
+      profile
+    );
+
+    navigate(
+      `/dashboard/${role}`,
+      {
+        replace: true,
+      }
+    );
+  };
+
+  /* =======================================================
+     EMAIL LOGIN
+     ======================================================= */
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+
+    clearMessages();
+
+    if (!email.trim()) {
+      setError(
+        "Please enter your email."
+      );
+      return;
+    }
 
     if (!password) {
       setError(
-        "Password enter cheyyandi."
+        "Please enter your password."
       );
-
       return;
     }
 
-
-    setLoading(true);
-
-    setError("");
-
-    setInfo("");
-
+    if (!selectedRole) {
+      setError(
+        "Please select your role."
+      );
+      return;
+    }
 
     try {
+      setLoading(true);
 
-      /* ===================================================
+      /* ---------------------------------------------------
          SUPABASE LOGIN
-      =================================================== */
+         --------------------------------------------------- */
 
       const {
         data,
-        error:
-          loginError,
+        error: loginError,
       } =
         await supabase.auth.signInWithPassword(
           {
-            email:
-              cleanEmail,
-
-            password:
-              password,
+            email: email.trim(),
+            password,
           }
         );
 
-
       if (loginError) {
-        console.error(
-          "❌ LOGIN ERROR:",
-          loginError
-        );
-
         throw loginError;
       }
 
-
       if (!data?.user) {
         throw new Error(
-          "Login session create avvaledu."
+          "Login failed."
         );
       }
 
+      const user = data.user;
 
-      console.log(
-        "✅ LOGIN SUCCESS:",
-        data.user
-      );
-
-
-      /* ===================================================
+      /* ---------------------------------------------------
          GET PROFILE
-      =================================================== */
+         --------------------------------------------------- */
 
       let {
         data: profile,
-        error:
-          profileError,
+        error: profileError,
       } =
         await supabase
           .from("profiles")
           .select("*")
-          .eq(
-            "id",
-            data.user.id
-          )
+          .eq("id", user.id)
           .maybeSingle();
-
 
       if (profileError) {
         console.error(
-          "❌ PROFILE FETCH ERROR:",
+          "Profile fetch error:",
           profileError
         );
       }
 
-
-      /* ===================================================
-         PROFILE NOT FOUND
-      =================================================== */
+      /* ---------------------------------------------------
+         CREATE PROFILE IF NOT EXISTS
+         --------------------------------------------------- */
 
       if (!profile) {
+        profile =
+          await saveProfile(
+            user,
+            selectedRole,
+            {
+              name:
+                user.user_metadata
+                  ?.full_name ||
+                user.user_metadata
+                  ?.name ||
+                user.email?.split(
+                  "@"
+                )[0],
 
-        const metadata =
-          data.user
-            .user_metadata ||
-          {};
+              phone:
+                user.user_metadata
+                  ?.phone || "",
+            }
+          );
+      }
 
+      /* ---------------------------------------------------
+         IMPORTANT:
+         LOGIN ROLE SHOULD BE SELECTED ROLE
+         --------------------------------------------------- */
 
-        const profileRole =
-          metadata.role &&
-          roles[
-            metadata.role
-          ]
-            ? metadata.role
-            : selectedRole;
+      const profileRole =
+        normalizeRole(
+          profile.role
+        );
 
+      if (
+        profileRole &&
+        profileRole !== selectedRole
+      ) {
+        /*
+          User selected a different role.
 
-        const profileName =
-          metadata.name ||
-          data.user.email?.split(
-            "@"
-          )[0] ||
-          "User";
+          Update profile role to the role
+          selected on the Role Select page.
+        */
 
+        const {
+          data: updatedProfile,
+          error: updateError,
+        } =
+          await supabase
+            .from("profiles")
+            .update({
+              role: selectedRole,
+            })
+            .eq("id", user.id)
+            .select()
+            .single();
 
-        const profilePhone =
-          metadata.phone ||
-          "";
-
+        if (updateError) {
+          throw updateError;
+        }
 
         profile =
-          await createProfile(
-            data.user,
-            profileRole,
-            profileName,
-            profilePhone
-          );
-
-
-        /*
-         * If profile still unavailable,
-         * create local fallback.
-         */
-
-        if (!profile) {
-          profile = {
-            id:
-              data.user.id,
-
-            name:
-              profileName,
-
-            role:
-              roles[
-                profileRole
-              ]
-                ? profileRole
-                : "buyer",
-
-            phone:
-              profilePhone,
-
-            location:
-              "",
-
-            bio:
-              "",
-
-            photo_url:
-              "",
-          };
-        }
+          updatedProfile;
       }
 
+      /* ---------------------------------------------------
+         SAVE LOCAL USER
+         --------------------------------------------------- */
 
-      /* ===================================================
-         DETERMINE DASHBOARD ROLE
-      =================================================== */
-
-      let dashboardRole =
-        profile?.role;
-
-
-      if (
-        !dashboardRole ||
-        !roles[dashboardRole]
-      ) {
-        dashboardRole =
-          selectedRole &&
-          roles[selectedRole]
-            ? selectedRole
-            : "buyer";
-      }
-
-
-      console.log(
-        "🎯 Dashboard role:",
-        dashboardRole
+      saveLocalUser(
+        user,
+        profile
       );
 
-
-      /* ===================================================
-         SYNC OLD DASHBOARD USER
-      =================================================== */
-
-      syncLegacyUser(
-        data.user,
-        profile,
-        dashboardRole
+      setMessage(
+        "Login successful!"
       );
 
+      /* ---------------------------------------------------
+         OPEN SELECTED DASHBOARD
+         --------------------------------------------------- */
 
-      /* ===================================================
-         FINAL SESSION CHECK
-      =================================================== */
-
-      const {
-        data:
-          sessionData,
-      } =
-        await supabase.auth.getSession();
-
-
-      console.log(
-        "🔐 Final session:",
-        sessionData?.session
-      );
-
-
-      if (
-        !sessionData?.session
-      ) {
-        throw new Error(
-          "Login successful but browser session save avvaledu. Please refresh and login again."
+      setTimeout(() => {
+        openDashboard(
+          profile,
+          user
         );
-      }
+      }, 500);
 
-
-      /* ===================================================
-         GO TO DASHBOARD
-      =================================================== */
-
-      console.log(
-        "🚀 Opening dashboard:",
-        `/dashboard/${dashboardRole}`
-      );
-
-
-      navigate(
-        `/dashboard/${dashboardRole}`,
-        {
-          replace: true,
-        }
-      );
-
-    } catch (
-      submitError
-    ) {
-
+    } catch (err) {
       console.error(
-        "❌ AUTH ERROR:",
-        submitError
+        "Login error:",
+        err
       );
-
-
-      let message =
-        submitError?.message ||
-        "Login failed.";
-
-
-      const lower =
-        message.toLowerCase();
-
-
-      if (
-        lower.includes(
-          "invalid login credentials"
-        )
-      ) {
-        message =
-          "Email or password incorrect. Supabase Authentication lo same email/password use cheyyandi.";
-      }
-
-
-      if (
-        lower.includes(
-          "email not confirmed"
-        )
-      ) {
-        message =
-          "Email confirmation required. Supabase Authentication → Users lo confirmation status check cheyyandi.";
-      }
-
 
       setError(
-        message
+        err?.message ||
+        "Invalid email or password."
       );
 
     } finally {
-
       setLoading(false);
     }
-  }
-
+  };
 
   /* =======================================================
      SIGNUP
-  ======================================================= */
+     ======================================================= */
 
-  async function handleSignup() {
-    const cleanEmail =
-      email
-        .trim()
-        .toLowerCase();
+  const handleSignup = async (e) => {
+    e.preventDefault();
 
+    clearMessages();
 
-    const cleanPhone =
-      cleanPhoneNumber(
-        phone
+    if (!selectedRole) {
+      setError(
+        "Please select your role first."
       );
-
+      return;
+    }
 
     if (!name.trim()) {
       setError(
-        "Full name enter cheyyandi."
+        "Please enter your name."
       );
-
       return;
     }
 
-
-    if (!cleanEmail) {
+    if (!phone.trim()) {
       setError(
-        "Email enter cheyyandi."
+        "Please enter your phone number."
       );
-
       return;
     }
 
-
-    if (!isValidPhone(phone)) {
+    if (!email.trim()) {
       setError(
-        "Valid 10 digit phone number enter cheyyandi."
+        "Please enter your email."
       );
-
       return;
     }
 
-
-    if (!password) {
+    if (password.length < 6) {
       setError(
-        "Password enter cheyyandi."
+        "Password must contain at least 6 characters."
       );
-
       return;
     }
-
-
-    if (
-      password.length < 6
-    ) {
-      setError(
-        "Password minimum 6 characters undali."
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-    setError("");
-
-    setInfo("");
-
 
     try {
+      setLoading(true);
 
-      /* ===================================================
-         SIGNUP
-      =================================================== */
+      /* ---------------------------------------------------
+         CREATE SUPABASE ACCOUNT
+         --------------------------------------------------- */
 
       const {
         data,
-        error:
-          signupError,
+        error: signupError,
       } =
-        await supabase.auth.signUp(
-          {
-            email:
-              cleanEmail,
+        await supabase.auth.signUp({
+          email: email.trim(),
 
-            password:
-              password,
+          password,
+
+          options: {
+            data: {
+              full_name:
+                name.trim(),
+
+              name:
+                name.trim(),
+
+              phone:
+                phone.trim(),
+
+              role:
+                selectedRole,
+            },
+          },
+        });
+
+      if (signupError) {
+        throw signupError;
+      }
+
+      if (!data?.user) {
+        throw new Error(
+          "Account creation failed."
+        );
+      }
+
+      /* ---------------------------------------------------
+         EMAIL CONFIRMATION
+         --------------------------------------------------- */
+
+      if (!data.session) {
+        setMessage(
+          "Account created! Please check your email and confirm your account."
+        );
+
+        setMode("login");
+
+        setPassword("");
+
+        return;
+      }
+
+      /* ---------------------------------------------------
+         CREATE PROFILE
+         --------------------------------------------------- */
+
+      const profile =
+        await saveProfile(
+          data.user,
+          selectedRole,
+          {
+            name:
+              name.trim(),
+
+            phone:
+              phone.trim(),
+          }
+        );
+
+      /* ---------------------------------------------------
+         SAVE LOCAL USER
+         --------------------------------------------------- */
+
+      saveLocalUser(
+        data.user,
+        profile
+      );
+
+      setMessage(
+        "Account created successfully!"
+      );
+
+      /* ---------------------------------------------------
+         OPEN DASHBOARD
+         --------------------------------------------------- */
+
+      setTimeout(() => {
+        openDashboard(
+          profile,
+          data.user
+        );
+      }, 500);
+
+    } catch (err) {
+      console.error(
+        "Signup error:",
+        err
+      );
+
+      setError(
+        err?.message ||
+        "Unable to create account."
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /* =======================================================
+     GOOGLE LOGIN
+     ======================================================= */
+
+  const handleGoogleLogin = async () => {
+    clearMessages();
+
+    if (!selectedRole) {
+      setError(
+        "Please select a role first."
+      );
+      return;
+    }
+
+    try {
+      setGoogleLoading(true);
+
+      /* ---------------------------------------------------
+         SAVE ROLE BEFORE GOOGLE REDIRECT
+         --------------------------------------------------- */
+
+      localStorage.setItem(
+        "timbermart_selected_role",
+        selectedRole
+      );
+
+      /* ---------------------------------------------------
+         GOOGLE REDIRECT
+         --------------------------------------------------- */
+
+      const redirectTo =
+        `${window.location.origin}/login?role=${selectedRole}`;
+
+      const {
+        error,
+      } =
+        await supabase.auth.signInWithOAuth(
+          {
+            provider: "google",
 
             options: {
-              data: {
-                name:
-                  name.trim(),
+              redirectTo,
 
-                role:
-                  selectedRole,
-
-                phone:
-                  cleanPhone,
+              queryParams: {
+                prompt:
+                  "select_account",
               },
             },
           }
         );
 
-
-      if (signupError) {
-        console.error(
-          "❌ SIGNUP ERROR:",
-          signupError
-        );
-
-        throw signupError;
+      if (error) {
+        throw error;
       }
 
-
-      if (!data?.user) {
-        throw new Error(
-          "Account create avvaledu."
-        );
-      }
-
-
-      console.log(
-        "✅ SIGNUP SUCCESS:",
-        data.user
-      );
-
-
-      /* ===================================================
-         CREATE PROFILE
-      =================================================== */
-
-      let profile =
-        await createProfile(
-          data.user,
-          selectedRole,
-          name,
-          cleanPhone
-        );
-
-
-      /* ===================================================
-         SESSION AVAILABLE
-      =================================================== */
-
-      if (data.session) {
-
-        if (!profile) {
-          profile = {
-            id:
-              data.user.id,
-
-            name:
-              name.trim(),
-
-            role:
-              selectedRole,
-
-            phone:
-              cleanPhone,
-
-            location:
-              "",
-
-            bio:
-              "",
-
-            photo_url:
-              "",
-          };
-        }
-
-
-        /* Save compatibility user */
-
-        syncLegacyUser(
-          data.user,
-          profile,
-          selectedRole
-        );
-
-
-        setInfo(
-          "Account created successfully! Dashboard opening..."
-        );
-
-
-        setTimeout(() => {
-
-          navigate(
-            `/dashboard/${selectedRole}`,
-            {
-              replace: true,
-            }
-          );
-
-        }, 400);
-
-
-        return;
-      }
-
-
-      /* ===================================================
-         EMAIL CONFIRMATION
-      =================================================== */
-
-      setInfo(
-        "Account created successfully. Please login with the same email and password."
-      );
-
-
-      setMode(
-        "login"
-      );
-
-      setPassword("");
-
-    } catch (
-      submitError
-    ) {
-
+    } catch (err) {
       console.error(
-        "❌ SIGNUP ERROR:",
-        submitError
+        "Google error:",
+        err
       );
-
-
-      let message =
-        submitError?.message ||
-        "Account creation failed.";
-
-
-      const lower =
-        message.toLowerCase();
-
-
-      if (
-        lower.includes(
-          "user already registered"
-        )
-      ) {
-        message =
-          "This email already registered. Please login.";
-      }
-
 
       setError(
-        message
+        err?.message ||
+        "Unable to connect with Google."
       );
 
-    } finally {
-
-      setLoading(false);
+      setGoogleLoading(false);
     }
-  }
-
+  };
 
   /* =======================================================
-     FORM SUBMIT
-  ======================================================= */
+     GOOGLE CALLBACK
+     ======================================================= */
 
-  async function handleSubmit(
-    event
-  ) {
-    event.preventDefault();
+  useEffect(() => {
+    let active = true;
 
-    setError("");
+    const processGoogleLogin =
+      async () => {
+        try {
+          const {
+            data: {
+              session,
+            },
+          } =
+            await supabase.auth.getSession();
 
-    setInfo("");
+          if (!session?.user) {
+            return;
+          }
 
+          const user =
+            session.user;
 
-    if (
-      mode === "login"
-    ) {
-      await handleLogin();
-    } else {
-      await handleSignup();
-    }
-  }
+          /* ------------------------------------------------
+             CHECK GOOGLE CALLBACK
+             ------------------------------------------------ */
 
+          const params =
+            new URLSearchParams(
+              window.location.search
+            );
+
+          const hasCode =
+            params.has("code");
+
+          const hasOAuthError =
+            params.has(
+              "error"
+            );
+
+          if (
+            !hasCode &&
+            !hasOAuthError
+          ) {
+            return;
+          }
+
+          if (!active) return;
+
+          setGoogleLoading(true);
+
+          clearMessages();
+
+          /* ------------------------------------------------
+             GET SELECTED ROLE
+             ------------------------------------------------ */
+
+          const role =
+            getRoleFromUrl(
+              window.location.search
+            ) ||
+            getRoleFromStorage() ||
+            normalizeRole(
+              user.user_metadata
+                ?.role
+            );
+
+          if (!role) {
+            navigate(
+              "/roles",
+              {
+                replace: true,
+              }
+            );
+
+            return;
+          }
+
+          /* ------------------------------------------------
+             SAVE ROLE
+             ------------------------------------------------ */
+
+          localStorage.setItem(
+            "timbermart_selected_role",
+            role
+          );
+
+          /* ------------------------------------------------
+             GET PROFILE
+             ------------------------------------------------ */
+
+          let {
+            data: profile,
+          } =
+            await supabase
+              .from("profiles")
+              .select("*")
+              .eq("id", user.id)
+              .maybeSingle();
+
+          /* ------------------------------------------------
+             CREATE PROFILE
+             ------------------------------------------------ */
+
+          if (!profile) {
+            profile =
+              await saveProfile(
+                user,
+                role,
+                {
+                  name:
+                    user.user_metadata
+                      ?.full_name ||
+                    user.user_metadata
+                      ?.name ||
+                    user.email?.split(
+                      "@"
+                    )[0] ||
+                    "TimberMart User",
+
+                  phone: "",
+                }
+              );
+          } else {
+            /* ----------------------------------------------
+               Google selected role
+               ---------------------------------------------- */
+
+            const updateData = {};
+
+            const googleName =
+              user.user_metadata
+                ?.full_name ||
+              user.user_metadata
+                ?.name ||
+              user.email?.split(
+                "@"
+              )[0];
+
+            const googlePhoto =
+              user.user_metadata
+                ?.avatar_url ||
+              user.user_metadata
+                ?.picture ||
+              null;
+
+            if (
+              !profile.name &&
+              googleName
+            ) {
+              updateData.name =
+                googleName;
+            }
+
+            if (
+              !profile.photo_url &&
+              googlePhoto
+            ) {
+              updateData.photo_url =
+                googlePhoto;
+            }
+
+            /*
+              Role selected from Role Select
+              should be used.
+            */
+
+            if (
+              normalizeRole(
+                profile.role
+              ) !== role
+            ) {
+              updateData.role =
+                role;
+            }
+
+            if (
+              Object.keys(
+                updateData
+              ).length > 0
+            ) {
+              const {
+                data: updated,
+                error,
+              } =
+                await supabase
+                  .from(
+                    "profiles"
+                  )
+                  .update(
+                    updateData
+                  )
+                  .eq(
+                    "id",
+                    user.id
+                  )
+                  .select()
+                  .single();
+
+              if (error) {
+                throw error;
+              }
+
+              if (updated) {
+                profile =
+                  updated;
+              }
+            }
+          }
+
+          /* ------------------------------------------------
+             SAVE LOCAL USER
+             ------------------------------------------------ */
+
+          saveLocalUser(
+            user,
+            profile
+          );
+
+          /* ------------------------------------------------
+             CLEAN URL
+             ------------------------------------------------ */
+
+          window.history.replaceState(
+            {},
+            document.title,
+            `/login?role=${role}`
+          );
+
+          setMessage(
+            "Google login successful!"
+          );
+
+          /* ------------------------------------------------
+             OPEN DASHBOARD
+             ------------------------------------------------ */
+
+          setTimeout(() => {
+            if (!active) return;
+
+            openDashboard(
+              profile,
+              user
+            );
+          }, 500);
+
+        } catch (err) {
+          console.error(
+            "Google callback error:",
+            err
+          );
+
+          if (active) {
+            setError(
+              err?.message ||
+              "Google login completed but profile setup failed."
+            );
+          }
+
+        } finally {
+          if (active) {
+            setGoogleLoading(false);
+          }
+        }
+      };
+
+    processGoogleLogin();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate]);
 
   /* =======================================================
      FORGOT PASSWORD
-  ======================================================= */
+     ======================================================= */
 
-  async function handleForgotPassword() {
+  const handleForgotPassword =
+    async (e) => {
+      e.preventDefault();
 
-    const cleanEmail =
-      email
-        .trim()
-        .toLowerCase();
+      clearMessages();
 
-
-    if (!cleanEmail) {
-      setError(
-        "Password reset kosam email enter cheyyandi."
-      );
-
-      return;
-    }
-
-
-    setLoading(true);
-
-    setError("");
-
-    setInfo("");
-
-
-    try {
-
-      const redirectUrl =
-        `${window.location.origin}/login?role=${selectedRole}`;
-
-
-      const {
-        error:
-          resetError,
-      } =
-        await supabase.auth.resetPasswordForEmail(
-          cleanEmail,
-          {
-            redirectTo:
-              redirectUrl,
-          }
+      if (!email.trim()) {
+        setError(
+          "Enter your email address first."
         );
-
-
-      if (resetError) {
-        throw resetError;
+        return;
       }
 
+      try {
+        setLoading(true);
 
-      setInfo(
-        "Password reset link mee email ki pampincham."
-      );
+        const {
+          error,
+        } =
+          await supabase.auth.resetPasswordForEmail(
+            email.trim(),
+            {
+              redirectTo:
+                `${window.location.origin}/login`,
+            }
+          );
 
-    } catch (
-      resetError
-    ) {
+        if (error) {
+          throw error;
+        }
 
-      console.error(
-        "❌ RESET ERROR:",
-        resetError
-      );
+        setMessage(
+          "Password reset link sent to your email."
+        );
 
+      } catch (err) {
+        console.error(
+          "Reset password error:",
+          err
+        );
 
-      setError(
-        resetError?.message ||
-        "Password reset failed."
-      );
+        setError(
+          err?.message ||
+          "Unable to send reset email."
+        );
 
-    } finally {
-
-      setLoading(false);
-    }
-  }
-
+      } finally {
+        setLoading(false);
+      }
+    };
 
   /* =======================================================
-     BACK
-  ======================================================= */
+     LOADING
+     ======================================================= */
 
-  function goBack() {
-    navigate("/roles");
+  if (!selectedRole) {
+    return (
+      <div className="login-loading-page">
+
+        <Loader2
+          size={34}
+          className="login-spin"
+        />
+
+        <p>
+          Loading TimberMart...
+        </p>
+
+      </div>
+    );
   }
 
+  const role =
+    ROLE_INFO[selectedRole];
 
-  /* =========================================================
-     UI
-  ========================================================= */
+  /* =======================================================
+     FORGOT PASSWORD PAGE
+     ======================================================= */
+
+  if (forgotMode) {
+    return (
+      <div className="login-page">
+
+        <header className="login-navbar">
+
+          <button
+            type="button"
+            className="login-brand"
+            onClick={() =>
+              navigate("/")
+            }
+          >
+            <span className="login-brand-icon">
+              🌳
+            </span>
+
+            <span>
+              TimberMart
+            </span>
+          </button>
+
+          <button
+            type="button"
+            className="change-role-btn"
+            onClick={() =>
+              navigate("/roles")
+            }
+          >
+            <ArrowLeft size={17} />
+
+            Change Role
+          </button>
+
+        </header>
+
+        <main className="forgot-container">
+
+          <div className="forgot-card">
+
+            <div className="forgot-icon">
+              🔐
+            </div>
+
+            <h1>
+              Reset Password
+            </h1>
+
+            <p>
+              Enter your registered email
+              address. We'll send you a
+              password reset link.
+            </p>
+
+            {error && (
+              <div className="alert alert-error">
+
+                <AlertCircle size={18} />
+
+                <span>
+                  {error}
+                </span>
+
+              </div>
+            )}
+
+            {message && (
+              <div className="alert alert-success">
+
+                <CheckCircle2 size={18} />
+
+                <span>
+                  {message}
+                </span>
+
+              </div>
+            )}
+
+            <form
+              onSubmit={
+                handleForgotPassword
+              }
+            >
+
+              <label>
+                Email Address
+              </label>
+
+              <div className="input-box">
+
+                <Mail size={19} />
+
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value
+                    )
+                  }
+                />
+
+              </div>
+
+              <button
+                type="submit"
+                className="primary-btn"
+                disabled={loading}
+              >
+
+                {loading ? (
+                  <>
+                    <Loader2
+                      size={18}
+                      className="login-spin"
+                    />
+
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    Send Reset Link
+
+                    <ArrowRight
+                      size={18}
+                    />
+                  </>
+                )}
+
+              </button>
+
+            </form>
+
+            <button
+              type="button"
+              className="back-login-btn"
+              onClick={() => {
+                clearMessages();
+                setForgotMode(false);
+              }}
+            >
+              <ArrowLeft size={17} />
+
+              Back to Login
+            </button>
+
+          </div>
+
+        </main>
+
+      </div>
+    );
+  }
+
+  /* =======================================================
+     MAIN LOGIN PAGE
+     ======================================================= */
 
   return (
-    <div className="tm-auth-page">
+    <div className="login-page">
 
-      {/* ===================================================
-          TOP BAR
-      =================================================== */}
+      {/* =====================================================
+          NAVBAR
+          ===================================================== */}
 
-      <div className="tm-auth-topbar">
+      <header className="login-navbar">
 
         <button
           type="button"
-          className="tm-back-btn"
-          onClick={goBack}
+          className="login-brand"
+          onClick={() =>
+            navigate("/")
+          }
         >
-          <ArrowLeft size={18} />
 
-          Back
-        </button>
-
-
-        <div className="tm-logo">
-
-          <div className="tm-logo-mark">
-            🌲
-          </div>
+          <span className="login-brand-icon">
+            🌳
+          </span>
 
           <span>
             TimberMart
           </span>
 
-        </div>
+        </button>
 
-      </div>
+        <button
+          type="button"
+          className="change-role-btn"
+          onClick={() =>
+            navigate("/roles")
+          }
+        >
+          <ArrowLeft size={17} />
 
+          Change Role
+        </button>
 
-      {/* ===================================================
-          LOGIN CARD
-      =================================================== */}
+      </header>
 
-      <div className="tm-login-card">
+      {/* =====================================================
+          MAIN
+          ===================================================== */}
 
-        {/* ROLE */}
+      <main className="login-main">
 
-        <div className="tm-login-role">
+        {/* ===================================================
+            LEFT SIDE
+            =================================================== */}
 
-          <div className="tm-role-emoji">
-            {role.icon}
+        <section className="login-left">
+
+          <div className="selected-role-icon">
+            {role.emoji}
           </div>
 
-          <div>
-
-            <strong>
-              {role.title}
-            </strong>
-
-            <span>
-              {role.description}
-            </span>
-
+          <div className="selected-label">
+            SELECTED ROLE
           </div>
-
-        </div>
-
-
-        {/* HEADING */}
-
-        <div className="tm-auth-heading">
 
           <h1>
-            {mode === "login"
-              ? "Welcome back"
-              : "Create your account"}
+            Welcome,
+            <br />
+
+            <span>
+              {role.title}
+            </span>
           </h1>
 
-          <p>
-            {mode === "login"
-              ? "Login to continue to your TimberMart dashboard."
-              : "Create your TimberMart account and get started."}
+          <p className="role-description">
+            {role.description}
           </p>
 
-        </div>
+          <div className="benefit-list">
 
+            <div className="benefit-item">
 
-        {/* ERROR */}
+              <CheckCircle2
+                size={19}
+              />
 
-        {error && (
-          <div className="tm-error">
-            {error}
+              <span>
+                Connect with the
+                timber community
+              </span>
+
+            </div>
+
+            <div className="benefit-item">
+
+              <CheckCircle2
+                size={19}
+              />
+
+              <span>
+                Create your own
+                listings
+              </span>
+
+            </div>
+
+            <div className="benefit-item">
+
+              <CheckCircle2
+                size={19}
+              />
+
+              <span>
+                Find opportunities
+                and requirements
+              </span>
+
+            </div>
+
           </div>
-        )}
 
+        </section>
 
-        {/* INFO */}
+        {/* ===================================================
+            LOGIN CARD
+            =================================================== */}
 
-        {info && (
-          <div className="tm-info-box">
-            {info}
-          </div>
-        )}
+        <section className="login-right">
 
+          <div className="login-card">
 
-        {/* FORM */}
+            {/* CARD HEADER */}
 
-        <form
-          onSubmit={
-            handleSubmit
-          }
-          className="tm-login-form"
-        >
+            <div className="login-card-header">
 
-          {/* =================================================
-              NAME
-          ================================================= */}
+              <div className="login-card-logo">
+                🌳
+              </div>
 
-          {mode === "signup" && (
-            <div className="tm-form-group">
+              <div>
 
-              <label>
-                Full Name
-              </label>
+                <h2>
+                  {mode === "login"
+                    ? "Welcome Back"
+                    : "Create Account"}
+                </h2>
 
-              <div className="tm-input-icon-wrap">
-
-                <UserPlus
-                  size={18}
-                />
-
-                <input
-                  className="tm-input"
-                  type="text"
-                  value={name}
-                  onChange={(event) =>
-                    setName(
-                      event.target.value
-                    )
-                  }
-                  placeholder="Enter your full name"
-                  autoComplete="name"
-                />
+                <p>
+                  {mode === "login"
+                    ? "Login to your TimberMart account"
+                    : "Join TimberMart and get started"}
+                </p>
 
               </div>
 
             </div>
-          )}
 
+            {/* ALERT */}
 
-          {/* =================================================
-              PHONE
-          ================================================= */}
+            {error && (
+              <div className="alert alert-error">
 
-          {mode === "signup" && (
-            <div className="tm-form-group">
-
-              <label>
-                Phone Number
-              </label>
-
-              <div className="tm-input-icon-wrap">
-
-                <Phone
+                <AlertCircle
                   size={18}
                 />
 
+                <span>
+                  {error}
+                </span>
+
+              </div>
+            )}
+
+            {message && (
+              <div className="alert alert-success">
+
+                <CheckCircle2
+                  size={18}
+                />
+
+                <span>
+                  {message}
+                </span>
+
+              </div>
+            )}
+
+            {/* GOOGLE */}
+
+            <button
+              type="button"
+              className="google-btn"
+              onClick={
+                handleGoogleLogin
+              }
+              disabled={
+                googleLoading ||
+                loading
+              }
+            >
+
+              {googleLoading ? (
+                <Loader2
+                  size={20}
+                  className="login-spin"
+                />
+              ) : (
+                <span className="google-letter">
+                  G
+                </span>
+              )}
+
+              <span>
+                {googleLoading
+                  ? "Connecting..."
+                  : "Continue with Google"}
+              </span>
+
+            </button>
+
+            {/* DIVIDER */}
+
+            <div className="or-divider">
+
+              <span />
+
+              <b>
+                OR
+              </b>
+
+              <span />
+
+            </div>
+
+            {/* FORM */}
+
+            <form
+              onSubmit={
+                mode === "login"
+                  ? handleLogin
+                  : handleSignup
+              }
+            >
+
+              {/* NAME */}
+
+              {mode === "signup" && (
+                <>
+                  <label>
+                    Full Name
+                  </label>
+
+                  <div className="input-box">
+
+                    <User size={19} />
+
+                    <input
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={name}
+                      onChange={(e) =>
+                        setName(
+                          e.target.value
+                        )
+                      }
+                    />
+
+                  </div>
+
+                  <label>
+                    Phone Number
+                  </label>
+
+                  <div className="input-box">
+
+                    <Phone size={19} />
+
+                    <input
+                      type="tel"
+                      placeholder="Enter your phone number"
+                      value={phone}
+                      onChange={(e) =>
+                        setPhone(
+                          e.target.value
+                        )
+                      }
+                    />
+
+                  </div>
+                </>
+              )}
+
+              {/* EMAIL */}
+
+              <label>
+                Email Address
+              </label>
+
+              <div className="input-box">
+
+                <Mail size={19} />
+
                 <input
-                  className="tm-input"
-                  type="tel"
-                  value={phone}
-                  onChange={(event) =>
-                    setPhone(
-                      cleanPhoneNumber(
-                        event.target.value
-                      )
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) =>
+                    setEmail(
+                      e.target.value
                     )
                   }
-                  placeholder="Enter 10 digit phone number"
-                  autoComplete="tel"
-                  inputMode="numeric"
+                  autoComplete="email"
                 />
 
               </div>
 
-            </div>
-          )}
+              {/* PASSWORD */}
 
+              <label>
+                Password
+              </label>
 
-          {/* =================================================
-              EMAIL
-          ================================================= */}
+              <div className="input-box">
 
-          <div className="tm-form-group">
+                <Lock size={19} />
 
-            <label>
-              Email
-            </label>
+                <input
+                  type={
+                    showPassword
+                      ? "text"
+                      : "password"
+                  }
+                  placeholder={
+                    mode === "signup"
+                      ? "Create a password"
+                      : "Enter your password"
+                  }
+                  value={password}
+                  onChange={(e) =>
+                    setPassword(
+                      e.target.value
+                    )
+                  }
+                  autoComplete={
+                    mode === "signup"
+                      ? "new-password"
+                      : "current-password"
+                  }
+                />
 
-            <div className="tm-input-icon-wrap">
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() =>
+                    setShowPassword(
+                      !showPassword
+                    )
+                  }
+                >
 
-              <Mail
-                size={18}
-              />
+                  {showPassword ? (
+                    <EyeOff size={19} />
+                  ) : (
+                    <Eye size={19} />
+                  )}
 
-              <input
-                className="tm-input"
-                type="email"
-                value={email}
-                onChange={(event) =>
-                  setEmail(
-                    event.target.value
-                  )
-                }
-                placeholder="Enter your email"
-                autoComplete="email"
-              />
+                </button>
 
-            </div>
+              </div>
 
-          </div>
+              {/* FORGOT PASSWORD */}
 
+              {mode === "login" && (
+                <div className="forgot-row">
 
-          {/* =================================================
-              PASSWORD
-          ================================================= */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearMessages();
+                      setForgotMode(
+                        true
+                      );
+                    }}
+                  >
+                    Forgot password?
+                  </button>
 
-          <div className="tm-form-group">
+                </div>
+              )}
 
-            <label>
-              Password
-            </label>
-
-            <div className="tm-password-wrap">
-
-              <LockKeyhole
-                size={18}
-              />
-
-              <input
-                className="tm-input"
-                type={
-                  showPassword
-                    ? "text"
-                    : "password"
-                }
-                value={password}
-                onChange={(event) =>
-                  setPassword(
-                    event.target.value
-                  )
-                }
-                placeholder="Enter your password"
-                autoComplete={
-                  mode === "login"
-                    ? "current-password"
-                    : "new-password"
-                }
-              />
-
+              {/* SUBMIT */}
 
               <button
-                type="button"
-                className="tm-password-toggle"
-                onClick={() =>
-                  setShowPassword(
-                    (previous) =>
-                      !previous
-                  )
-                }
-                aria-label={
-                  showPassword
-                    ? "Hide password"
-                    : "Show password"
+                type="submit"
+                className="primary-btn"
+                disabled={
+                  loading ||
+                  googleLoading
                 }
               >
 
-                {showPassword ? (
-                  <EyeOff
-                    size={18}
-                  />
+                {loading ? (
+                  <>
+                    <Loader2
+                      size={19}
+                      className="login-spin"
+                    />
+
+                    {mode === "login"
+                      ? "Logging in..."
+                      : "Creating account..."}
+                  </>
                 ) : (
-                  <Eye
-                    size={18}
-                  />
+                  <>
+                    {mode === "login"
+                      ? "Login"
+                      : "Create Account"}
+
+                    <ArrowRight
+                      size={19}
+                    />
+                  </>
                 )}
 
               </button>
 
+            </form>
+
+            {/* SWITCH LOGIN / SIGNUP */}
+
+            <div className="switch-account">
+
+              {mode === "login" ? (
+                <>
+                  <span>
+                    Don't have an account?
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearMessages();
+                      setMode(
+                        "signup"
+                      );
+                    }}
+                  >
+                    Create Account
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span>
+                    Already have an account?
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      clearMessages();
+                      setMode(
+                        "login"
+                      );
+                    }}
+                  >
+                    Login
+                  </button>
+                </>
+              )}
+
             </div>
+
+            {/* SELECTED ROLE */}
+
+            <div className="role-bottom">
+
+              <div className="role-bottom-icon">
+                {role.emoji}
+              </div>
+
+              <div className="role-bottom-text">
+
+                <small>
+                  Continuing as
+                </small>
+
+                <strong>
+                  {role.title}
+                </strong>
+
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  navigate("/roles")
+                }
+              >
+                Change
+              </button>
+
+            </div>
+
+            {/* PRIVACY */}
+
+            <p className="privacy-text">
+              By continuing, you agree to
+              use TimberMart responsibly and
+              provide accurate account
+              information.
+            </p>
 
           </div>
 
+        </section>
 
-          {/* =================================================
-              FORGOT PASSWORD
-          ================================================= */}
+      </main>
 
-          {mode === "login" && (
-            <div
-              style={{
-                display:
-                  "flex",
+      {/* =====================================================
+          FOOTER
+          ===================================================== */}
 
-                justifyContent:
-                  "flex-end",
+      <footer className="login-footer">
 
-                marginTop:
-                  "-6px",
+        <strong>
+          🌳 TimberMart
+        </strong>
 
-                marginBottom:
-                  "4px",
-              }}
-            >
+        <span>
+          Connecting the timber community
+        </span>
 
-              <button
-                type="button"
-                className="tm-link"
-                onClick={
-                  handleForgotPassword
-                }
-                disabled={
-                  loading
-                }
-                style={{
-                  display:
-                    "inline-flex",
-
-                  alignItems:
-                    "center",
-
-                  gap:
-                    "6px",
-
-                  background:
-                    "none",
-
-                  border:
-                    "none",
-
-                  cursor:
-                    loading
-                      ? "not-allowed"
-                      : "pointer",
-
-                  padding: 0,
-                }}
-              >
-
-                <KeyRound
-                  size={15}
-                />
-
-                Forgot Password?
-
-              </button>
-
-            </div>
-          )}
-
-
-          {/* =================================================
-              SUBMIT
-          ================================================= */}
-
-          <button
-            type="submit"
-            className="tm-btn tm-btn-primary tm-full-btn"
-            disabled={
-              loading
-            }
-          >
-
-            {loading ? (
-              <>
-                <span className="tm-spinner" />
-
-                Please wait...
-              </>
-            ) : mode ===
-              "login" ? (
-              <>
-                <LogIn
-                  size={18}
-                />
-
-                Login
-              </>
-            ) : (
-              <>
-                <UserPlus
-                  size={18}
-                />
-
-                Create Account
-              </>
-            )}
-
-          </button>
-
-        </form>
-
-
-        {/* =================================================
-            SWITCH
-        ================================================= */}
-
-        <div className="tm-switch-auth">
-
-          {mode === "login" ? (
-            <>
-              Don't have an account?
-
-              <button
-                type="button"
-                className="tm-link"
-                onClick={() =>
-                  switchMode(
-                    "signup"
-                  )
-                }
-              >
-                Create Account
-              </button>
-            </>
-          ) : (
-            <>
-              Already have an account?
-
-              <button
-                type="button"
-                className="tm-link"
-                onClick={() =>
-                  switchMode(
-                    "login"
-                  )
-                }
-              >
-                Login
-              </button>
-            </>
-          )}
-
-        </div>
-
-      </div>
+      </footer>
 
     </div>
   );

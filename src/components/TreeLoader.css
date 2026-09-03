@@ -1,0 +1,498 @@
+/* =========================================================
+   TIMBERMART TREE LOADER
+   Seed → Sprout → Plant → Tree
+   ========================================================= */
+
+.tree-loader-page {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #f5fbf7 0%,
+      #edf7f0 45%,
+      #e5f2e9 100%
+    );
+
+  overflow: hidden;
+}
+
+.tree-loader {
+  width: 260px;
+  min-height: 300px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+
+  position: relative;
+}
+
+/* =========================================================
+   TREE AREA
+   ========================================================= */
+
+.tree-animation {
+  width: 150px;
+  height: 175px;
+
+  position: relative;
+
+  transform-origin: bottom center;
+
+  animation:
+    tree-grow 6s ease-in-out infinite,
+    tree-sway 3.5s ease-in-out 6s infinite;
+}
+
+/* =========================================================
+   GROUND
+   ========================================================= */
+
+.tree-ground {
+  width: 105px;
+  height: 13px;
+
+  position: absolute;
+  bottom: 91px;
+
+  border-radius: 50%;
+
+  background: #c7ddce;
+
+  animation: ground-grow 6s ease-in-out infinite;
+}
+
+/* =========================================================
+   SEED
+   ========================================================= */
+
+.tree-seed {
+  width: 20px;
+  height: 25px;
+
+  position: absolute;
+  left: 65px;
+  bottom: 95px;
+
+  border-radius: 50% 50% 48% 48%;
+
+  background: #8b6848;
+
+  transform: rotate(-18deg);
+
+  animation: seed-grow 6s ease-in-out infinite;
+}
+
+/* =========================================================
+   STEM
+   ========================================================= */
+
+.tree-stem {
+  width: 8px;
+  height: 80px;
+
+  position: absolute;
+  left: 71px;
+  bottom: 98px;
+
+  border-radius: 8px;
+
+  background: #6d563c;
+
+  transform-origin: bottom center;
+  transform: scaleY(0);
+
+  animation: stem-grow 6s ease-in-out infinite;
+}
+
+/* =========================================================
+   BRANCHES
+   ========================================================= */
+
+.tree-branch {
+  width: 5px;
+  height: 43px;
+
+  position: absolute;
+  bottom: 137px;
+
+  border-radius: 8px;
+
+  background: #6d563c;
+
+  transform-origin: bottom center;
+  opacity: 0;
+
+  animation: branch-grow 6s ease-in-out infinite;
+}
+
+.tree-branch-left {
+  left: 69px;
+  transform: rotate(-43deg) scaleY(0);
+}
+
+.tree-branch-right {
+  left: 76px;
+  transform: rotate(43deg) scaleY(0);
+}
+
+/* =========================================================
+   LEAVES
+   ========================================================= */
+
+.tree-leaf {
+  width: 29px;
+  height: 38px;
+
+  position: absolute;
+
+  border-radius:
+    100% 0 100% 0;
+
+  background: #2e8b57;
+
+  opacity: 0;
+
+  transform: scale(0) rotate(45deg);
+
+  animation:
+    leaves-grow 6s ease-in-out infinite;
+}
+
+/* Individual positions */
+
+.leaf-1 {
+  left: 45px;
+  bottom: 153px;
+  animation-delay: 0.05s;
+}
+
+.leaf-2 {
+  left: 78px;
+  bottom: 157px;
+  transform: scale(0) rotate(45deg);
+  animation-delay: 0.15s;
+}
+
+.leaf-3 {
+  left: 36px;
+  bottom: 128px;
+  animation-delay: 0.25s;
+}
+
+.leaf-4 {
+  left: 85px;
+  bottom: 130px;
+  animation-delay: 0.35s;
+}
+
+.leaf-5 {
+  left: 52px;
+  bottom: 118px;
+  animation-delay: 0.45s;
+}
+
+.leaf-6 {
+  left: 76px;
+  bottom: 110px;
+  animation-delay: 0.55s;
+}
+
+.leaf-7 {
+  left: 30px;
+  bottom: 145px;
+  width: 23px;
+  height: 30px;
+  animation-delay: 0.65s;
+}
+
+.leaf-8 {
+  left: 96px;
+  bottom: 146px;
+  width: 23px;
+  height: 30px;
+  animation-delay: 0.75s;
+}
+
+/* =========================================================
+   BRAND
+   ========================================================= */
+
+.tree-loader-brand {
+  margin-top: -78px;
+
+  position: relative;
+  z-index: 3;
+
+  animation: brand-show 6s ease-in-out infinite;
+}
+
+.tree-loader-brand span {
+  color: #185d38;
+
+  font-size: 20px;
+  font-weight: 850;
+
+  letter-spacing: -0.4px;
+}
+
+/* =========================================================
+   TEXT
+   ========================================================= */
+
+.tree-loader-text {
+  margin: 7px 0 0;
+
+  color: #71837a;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  letter-spacing: 0.2px;
+
+  animation: text-pulse 1.7s ease-in-out infinite;
+}
+
+/* =========================================================
+   DOTS
+   ========================================================= */
+
+.tree-loader-dots {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+
+  margin-top: 10px;
+}
+
+.tree-loader-dots span {
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: #3c8a5b;
+
+  animation: loader-dot 1.2s ease-in-out infinite;
+}
+
+.tree-loader-dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.tree-loader-dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+
+/* Whole tree appears gradually */
+
+@keyframes tree-grow {
+  0% {
+    transform: scale(0.18);
+  }
+
+  15% {
+    transform: scale(0.24);
+  }
+
+  30% {
+    transform: scale(0.38);
+  }
+
+  48% {
+    transform: scale(0.58);
+  }
+
+  67% {
+    transform: scale(0.78);
+  }
+
+  85% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Seed */
+
+@keyframes seed-grow {
+  0%,
+  12% {
+    opacity: 1;
+    transform: rotate(-18deg) scale(1);
+  }
+
+  17% {
+    opacity: 0;
+    transform: rotate(-18deg) scale(0.4);
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Stem */
+
+@keyframes stem-grow {
+  0%,
+  15% {
+    transform: scaleY(0);
+  }
+
+  32% {
+    transform: scaleY(0.35);
+  }
+
+  52% {
+    transform: scaleY(0.7);
+  }
+
+  68%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+/* Branches */
+
+@keyframes branch-grow {
+  0%,
+  40% {
+    opacity: 0;
+    transform: rotate(-43deg) scaleY(0);
+  }
+
+  58% {
+    opacity: 1;
+    transform: rotate(-43deg) scaleY(0.55);
+  }
+
+  72%,
+  100% {
+    opacity: 1;
+    transform: rotate(-43deg) scaleY(1);
+  }
+}
+
+/* Leaves */
+
+@keyframes leaves-grow {
+  0%,
+  48% {
+    opacity: 0;
+    transform: scale(0) rotate(45deg);
+  }
+
+  62% {
+    opacity: 0.5;
+    transform: scale(0.55) rotate(45deg);
+  }
+
+  76%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+/* Ground */
+
+@keyframes ground-grow {
+  0% {
+    transform: scaleX(0.2);
+    opacity: 0.4;
+  }
+
+  50% {
+    transform: scaleX(0.65);
+    opacity: 0.7;
+  }
+
+  100% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
+/* Brand */
+
+@keyframes brand-show {
+  0%,
+  45% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  65% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Text */
+
+@keyframes text-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Dots */
+
+@keyframes loader-dot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+  .tree-loader {
+    transform: scale(0.88);
+  }
+
+  .tree-loader-brand span {
+    font-size: 19px;
+  }
+
+  .tree-loader-text {
+    font-size: 10px;
+  }
+}

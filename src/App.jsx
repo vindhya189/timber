@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import GetStarted from "./pages/GetStarted";
 import RoleSelect from "./pages/RoleSelect";
 import Login from "./pages/Login";
+import "./App.css";
 
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
@@ -15,6 +16,77 @@ import SawmillDashboard from "./dashboards/SawmillDashboard";
 import CarpenterDashboard from "./dashboards/CarpenterDashboard";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
 import BuyerDashboard from "./dashboards/BuyerDashboard";
+
+/* =========================================================
+   GLOBAL THEME
+   ---------------------------------------------------------
+   Dark Mode Settings lo ON chesina taruvatha,
+   page change ayina, dashboard ki vellina,
+   profile / requirements ki vellina theme continue avtundi.
+   ========================================================= */
+
+function GlobalTheme() {
+  useEffect(() => {
+    /* ---------------------------------------------
+       Saved dark mode value
+    --------------------------------------------- */
+
+    const applySavedTheme = () => {
+      const darkMode =
+        localStorage.getItem("timbermart_dark_mode") === "true";
+
+      /* HTML */
+      document.documentElement.classList.toggle(
+        "timber-dark",
+        darkMode
+      );
+
+      /* BODY */
+      document.body.classList.toggle(
+        "timber-dark-body",
+        darkMode
+      );
+    };
+
+    /* ---------------------------------------------
+       App start ayyinappudu theme apply
+    --------------------------------------------- */
+
+    applySavedTheme();
+
+    /* ---------------------------------------------
+       Settings nunchi theme change ayinappudu
+    --------------------------------------------- */
+
+    const handleThemeChange = () => {
+      applySavedTheme();
+    };
+
+    window.addEventListener(
+      "timbermart-theme-change",
+      handleThemeChange
+    );
+
+    /* ---------------------------------------------
+       Cleanup
+    --------------------------------------------- */
+
+    return () => {
+      window.removeEventListener(
+        "timbermart-theme-change",
+        handleThemeChange
+      );
+    };
+  }, []);
+
+  return null;
+}
+
+/* =========================================================
+   DASHBOARD ROUTER
+   ---------------------------------------------------------
+   Existing dashboard routes same ga uncham.
+   ========================================================= */
 
 function DashboardRouter() {
   return (
@@ -62,61 +134,84 @@ function DashboardRouter() {
   );
 }
 
+/* =========================================================
+   MAIN APP
+   ========================================================= */
+
 export default function App() {
   return (
-    <Routes>
+    <>
+      {/* 
+        GlobalTheme page change ayina theme ni maintain chestundi.
+        Existing routes ki emi disturbance undadu.
+      */}
 
-      {/* PUBLIC */}
+      <GlobalTheme />
 
-      <Route
-        path="/"
-        element={<GetStarted />}
-      />
+      <Routes>
 
-      <Route
-        path="/roles"
-        element={<RoleSelect />}
-      />
+        {/* =================================================
+            PUBLIC
+        ================================================= */}
 
-      <Route
-        path="/login"
-        element={<Login />}
-      />
+        <Route
+          path="/"
+          element={<GetStarted />}
+        />
 
-      {/* COMMON LOGGED-IN PAGES */}
+        <Route
+          path="/roles"
+          element={<RoleSelect />}
+        />
 
-      <Route
-        path="/profile"
-        element={<Profile />}
-      />
+        <Route
+          path="/login"
+          element={<Login />}
+        />
 
-      <Route
-        path="/settings"
-        element={<Settings />}
-      />
+        {/* =================================================
+            COMMON LOGGED-IN PAGES
+        ================================================= */}
 
-      <Route
-        path="/requirements"
-        element={<RequirementWall />}
-      />
+        <Route
+          path="/profile"
+          element={<Profile />}
+        />
 
-      {/* DASHBOARDS */}
+        <Route
+          path="/settings"
+          element={<Settings />}
+        />
 
-      <Route
-        path="/dashboard/*"
-        element={<DashboardRouter />}
-      />
+        <Route
+          path="/requirements"
+          element={<RequirementWall />}
+        />
 
-      <Route
-        path="*"
-        element={
-          <Navigate
-            to="/"
-            replace
-          />
-        }
-      />
+        {/* =================================================
+            DASHBOARDS
+        ================================================= */}
 
-    </Routes>
+        <Route
+          path="/dashboard/*"
+          element={<DashboardRouter />}
+        />
+
+        {/* =================================================
+            FALLBACK
+        ================================================= */}
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
+      </Routes>
+    </>
   );
 }

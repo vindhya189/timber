@@ -1,5 +1,5 @@
 import React from "react";
-import { ArrowLeft, ArrowRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const roles = [
@@ -7,129 +7,142 @@ const roles = [
     id: "farmer",
     icon: "🌳",
     title: "Farmer",
-    description: "Sell timber and connect with timber buyers.",
+    description: "I am a farmer looking to sell timber or logs.",
   },
   {
     id: "merchant",
     icon: "🪵",
     title: "Timber Merchant",
-    description: "Buy, sell and manage timber business requirements.",
+    description: "I buy and sell timber and wood products.",
   },
   {
     id: "sawmill",
     icon: "🏭",
     title: "Sawmill / Wood Business",
-    description: "Manage wood processing and business opportunities.",
+    description: "I run a sawmill or wood processing business.",
   },
   {
     id: "carpenter",
     icon: "🛠️",
-    title: "Carpenter / Service Provider",
-    description: "Offer carpentry and wood-related services.",
+    title: "Carpenter",
+    description: "I provide carpentry and wood work services.",
   },
   {
     id: "worker",
     icon: "👷",
-    title: "Worker / Job Seeker",
-    description: "Find jobs and connect with employers.",
+    title: "Worker / Labor",
+    description: "I am a worker looking for jobs and work.",
   },
   {
     id: "buyer",
     icon: "🏠",
-    title: "Buyer / Homeowner",
-    description: "Find timber, wood products and services.",
+    title: "Buyer",
+    description: "I want to buy timber, wood or related products.",
   },
 ];
 
 export default function RoleSelect() {
   const navigate = useNavigate();
 
-  const selectRole = (role) => {
-    // Selected role ni login page ki send chestunnam
+  const handleRoleSelect = (role) => {
+    console.log("Selected Role:", role.id);
+
+    // Login page ki selected role ni query parameter ga pampistundi
     navigate(`/login?role=${role.id}`);
   };
 
   return (
-    <div className="tm-page">
-      <div className="tm-auth-page">
-        <div className="tm-auth-wrapper">
+    <div className="tm3-screen tm3-role">
 
-          {/* Back button */}
-          <button
-            className="tm-btn tm-btn-outline"
-            onClick={() => navigate("/")}
-            style={{
-              marginBottom: "25px",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "7px",
-            }}
-          >
-            <ArrowLeft size={17} />
-            Back
-          </button>
+      {/* ================= HEADER ================= */}
+      <header className="tm3-header tm3-inner-header">
 
-          {/* Heading */}
-          <div className="tm-auth-heading">
-            <div className="tm-start-badge">
-              🌲 Welcome to TimberMart
-            </div>
+        <button
+          type="button"
+          className="tm3-circle-btn"
+          onClick={() => navigate("/")}
+        >
+          <ArrowLeft size={20} />
+        </button>
 
-            <h1>Choose Your Role</h1>
+        <button
+          type="button"
+          className="tm3-logo"
+          onClick={() => navigate("/")}
+        >
+          <span>🌳</span>
+          <span>TimberMart</span>
+        </button>
 
-            <p>
-              Select how you want to use TimberMart.
-              You can create your account after selecting your role.
-            </p>
-          </div>
+        <button
+          type="button"
+          className="tm3-menu"
+          onClick={() => navigate("/")}
+        >
+          <Menu size={21} />
+        </button>
 
-          {/* Roles */}
-          <div className="tm-role-grid">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                type="button"
-                className="tm-role-card"
-                onClick={() => selectRole(role)}
-              >
-                <div className="tm-role-emoji">
-                  {role.icon}
-                </div>
+      </header>
 
-                <h3>{role.title}</h3>
+      {/* ================= CONTENT ================= */}
+      <main className="tm3-role-content">
 
-                <p>{role.description}</p>
+        <div className="tm3-role-heading">
+          <span className="tm3-heading-star">✦</span>
 
-                <div
-                  className="tm-role-select"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "5px",
-                  }}
-                >
-                  Continue
-                  <ArrowRight size={16} />
-                </div>
-              </button>
-            ))}
-          </div>
+          <h1>Select Your Role</h1>
 
-          {/* Bottom information */}
-          <div
-            style={{
-              textAlign: "center",
-              marginTop: "25px",
-            }}
-          >
-            <p className="tm-info-text">
-              Your dashboard and available features will be based
-              on the role you select.
-            </p>
-          </div>
+          <span className="tm3-heading-star">✦</span>
+        </div>
+
+        <p className="tm3-subtitle">
+          Choose how you want to join TimberMart
+        </p>
+
+        {/* ================= ROLE LIST ================= */}
+        <div className="tm3-role-list">
+
+          {roles.map((role) => (
+            <button
+              key={role.id}
+              type="button"
+              className="tm3-role-item"
+              onClick={() => handleRoleSelect(role)}
+            >
+
+              <span className="tm3-role-icon">
+                {role.icon}
+              </span>
+
+              <span className="tm3-role-copy">
+
+                <strong>
+                  {role.title}
+                </strong>
+
+                <small>
+                  {role.description}
+                </small>
+
+              </span>
+
+              <span className="tm3-role-arrow">
+                <ArrowRight size={19} />
+              </span>
+
+            </button>
+          ))}
 
         </div>
-      </div>
+
+        <div className="tm3-role-bottom-note">
+          <span>🌳</span>
+          <p>
+            Select your role and continue to login.
+          </p>
+        </div>
+
+      </main>
     </div>
   );
 }
