@@ -9,6 +9,7 @@ import "./App.css";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import RequirementWall from "./pages/RequirementWall";
+import AdminDashboard from "./dashboards/AdminDashboard";
 
 import FarmerDashboard from "./dashboards/FarmerDashboard";
 import MerchantDashboard from "./dashboards/MerchantDashboard";
@@ -120,6 +121,7 @@ function DashboardRouter() {
         path="buyer"
         element={<BuyerDashboard />}
       />
+      
 
       <Route
         path="*"
@@ -186,7 +188,9 @@ export default function App() {
         <Route
           path="/requirements"
           element={<RequirementWall />}
+
         />
+        <Route path="/admin" element={<AdminDashboard />} />
 
         {/* =================================================
             DASHBOARDS

@@ -176,6 +176,8 @@ export default function FarmerDashboard() {
 
   const [listings, setListings] = useState([]);
   const [requirements, setRequirements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   /* =======================================================
      UI STATE
@@ -244,7 +246,34 @@ export default function FarmerDashboard() {
       }
     );
 
-    return () => subscription.unsubscribe();
+    const notificationChannel = supabase
+      .channel(`farmer-notifications-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        async (payload) => {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
+          if (payload.new?.user_id !== session?.user?.id) return;
+
+          setNotifications((previous) => [
+            payload.new,
+            ...previous.filter((item) => item.id !== payload.new.id),
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+      supabase.removeChannel(notificationChannel);
+    };
   }, [navigate]);
 
 
@@ -284,6 +313,7 @@ export default function FarmerDashboard() {
       await Promise.all([
         loadListings(session.user.id),
         loadRequirements(),
+        loadNotifications(session.user.id),
       ]);
     } catch (error) {
       console.error(
@@ -342,6 +372,45 @@ export default function FarmerDashboard() {
   /* =======================================================
      LOAD REQUIREMENTS
   ======================================================= */
+
+  async function loadNotifications(userId) {
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    if (error) {
+      console.error("Notifications error:", error);
+      return;
+    }
+
+    setNotifications(data || []);
+  }
+
+  async function markNotificationRead(notificationId) {
+    if (!user?.id) return;
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId)
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error("Notification read error:", error);
+      return;
+    }
+
+    setNotifications((previous) =>
+      previous.map((item) =>
+        item.id === notificationId
+          ? { ...item, is_read: true }
+          : item
+      )
+    );
+  }
 
   async function loadRequirements() {
     const {
@@ -770,6 +839,8 @@ export default function FarmerDashboard() {
 
           role: "farmer",
 
+          status: "pending",
+
           category:
             sellForm.category,
 
@@ -1155,6 +1226,34 @@ export default function FarmerDashboard() {
     ]);
 
 
+  const liveListings = useMemo(() => {
+    return listings.filter(
+      (item) => item.status === "approved"
+    );
+  }, [listings]);
+
+  const filteredLiveListings = useMemo(() => {
+    const query = searchText.trim().toLowerCase();
+
+    if (!query) return liveListings;
+
+    return liveListings.filter((item) =>
+      [
+        item.title,
+        item.wood_type,
+        item.tree_type,
+        item.category,
+        item.product_type,
+        item.location,
+        item.description,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [liveListings, searchText]);
+
   /* =======================================================
      FILTER REQUIREMENTS
   ======================================================= */
@@ -1409,6 +1508,83 @@ export default function FarmerDashboard() {
 
           <div className="farmer-top-actions">
 
+            <div className="farmer-notification-wrap">
+              <button
+                className="farmer-icon-button farmer-notification-button"
+                title="Notifications"
+                onClick={() =>
+                  setShowNotifications((previous) => !previous)
+                }
+              >
+                <Bell size={20} />
+
+                {notifications.filter((item) => !item.is_read).length > 0 && (
+                  <span className="farmer-notification-badge">
+                    {notifications.filter((item) => !item.is_read).length > 9
+                      ? "9+"
+                      : notifications.filter((item) => !item.is_read).length}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <div className="farmer-notification-panel">
+                  <div className="farmer-notification-header">
+                    <div>
+                      <strong>Notifications</strong>
+                      <span>Listing approval updates</span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowNotifications(false)}
+                    >
+                      <X size={17} />
+                    </button>
+                  </div>
+
+                  <div className="farmer-notification-list">
+                    {notifications.length === 0 ? (
+                      <div className="farmer-notification-empty">
+                        <Bell size={25} />
+                        <strong>No notifications yet</strong>
+                        <span>Admin approval updates will appear here.</span>
+                      </div>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          type="button"
+                          key={notification.id}
+                          className={`farmer-notification-item ${
+                            notification.is_read ? "read" : "unread"
+                          }`}
+                          onClick={() => markNotificationRead(notification.id)}
+                        >
+                          <div className="farmer-notification-item-icon">
+                            {notification.type === "listing_approved"
+                              ? "✓"
+                              : notification.type === "listing_rejected"
+                              ? "!"
+                              : "⏳"}
+                          </div>
+
+                          <div>
+                            <strong>{notification.title}</strong>
+                            <p>{notification.message}</p>
+                            <small>
+                              {notification.created_at
+                                ? new Date(notification.created_at).toLocaleString()
+                                : ""}
+                            </small>
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
               className="farmer-icon-button"
               title="Requirement Wall"
@@ -1585,7 +1761,7 @@ export default function FarmerDashboard() {
               <div>
                 <strong>
                   {
-                    listings.length
+                    liveListings.length
                   }
                 </strong>
 
@@ -1989,8 +2165,7 @@ export default function FarmerDashboard() {
 
             <div className="farmer-listings-grid">
 
-              {filteredListings
-                .slice(0, 6)
+              {filteredLiveListings
                 .map(
                   (listing) => (
                     <ListingCard
@@ -3414,14 +3589,12 @@ function SellTreeModal({
               </div>
 
               <h2>
-                Listing Published 🎉
+                Submitted for Approval ⏳
               </h2>
 
               <p>
-                Your timber listing
-                has been successfully
-                published on
-                TimberMart.
+                Your timber listing has been submitted successfully.
+                It will become live only after TimberMart admin approval.
               </p>
 
 
@@ -3441,9 +3614,8 @@ function SellTreeModal({
 
 
               <small>
-                Buyers can now view
-                your listing and
-                contact you directly.
+                You will receive a notification after admin approval.
+                Until then, the listing will not appear in live Timber Listings.
               </small>
 
 
@@ -3904,6 +4076,16 @@ function ListingCard({
           currentUserId && (
           <span className="farmer-own-badge">
             Your Listing
+          </span>
+        )}
+
+        {listing.user_id === currentUserId &&
+          listing.status &&
+          listing.status !== "approved" && (
+          <span className={`farmer-listing-status ${listing.status}`}>
+            {listing.status === "pending"
+              ? "⏳ Pending Approval"
+              : "✕ Rejected"}
           </span>
         )}
 

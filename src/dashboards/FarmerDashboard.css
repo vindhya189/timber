@@ -2097,3 +2097,261 @@
   }
 
 }
+/* =========================================================
+   TIMBERMART - FARMER APPROVAL / NOTIFICATION UI
+   Add these rules at the END of FarmerDashboard.css
+========================================================= */
+
+.farmer-notification-wrap {
+  position: relative;
+}
+
+.farmer-notification-button {
+  position: relative;
+}
+
+.farmer-notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d63f3f;
+  color: #fff;
+  border: 2px solid #fff;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.farmer-notification-panel {
+  position: absolute;
+  top: calc(100% + 12px);
+  right: 0;
+  width: 380px;
+  max-width: calc(100vw - 30px);
+  background: #fff;
+  border: 1px solid #e4e9e5;
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(20, 50, 30, 0.16);
+  overflow: hidden;
+  z-index: 1000;
+}
+
+.farmer-notification-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.farmer-notification-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.farmer-notification-header strong {
+  font-size: 16px;
+  color: #17301e;
+}
+
+.farmer-notification-header span {
+  font-size: 12px;
+  color: #7a897e;
+}
+
+.farmer-notification-header > button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 9px;
+  background: #f2f5f3;
+  color: #5e6c63;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.farmer-notification-list {
+  max-height: 430px;
+  overflow-y: auto;
+}
+
+.farmer-notification-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 17px;
+  border: 0;
+  border-bottom: 1px solid #f0f2f1;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.farmer-notification-item:hover {
+  background: #f7faf8;
+}
+
+.farmer-notification-item.unread {
+  background: #eef8f0;
+}
+
+.farmer-notification-item-icon {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dff1e3;
+  color: #26723a;
+  font-weight: 900;
+}
+
+.farmer-notification-item > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.farmer-notification-item strong {
+  color: #203229;
+  font-size: 13px;
+}
+
+.farmer-notification-item p {
+  margin: 0;
+  color: #617068;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.farmer-notification-item small {
+  color: #929d96;
+  font-size: 10px;
+}
+
+.farmer-notification-empty {
+  min-height: 180px;
+  padding: 28px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  color: #7c8a81;
+}
+
+.farmer-notification-empty strong {
+  color: #34453b;
+  font-size: 14px;
+}
+
+.farmer-notification-empty span {
+  max-width: 230px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* Own listing approval status */
+.farmer-listing-status {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  backdrop-filter: blur(8px);
+}
+
+.farmer-listing-status.pending {
+  background: #fff5d8;
+  color: #89630c;
+  border: 1px solid #efd98c;
+}
+
+.farmer-listing-status.rejected {
+  background: #ffe5e5;
+  color: #a32d2d;
+  border: 1px solid #efb2b2;
+}
+
+/* Dark mode */
+body.timber-dark-body .farmer-notification-panel {
+  background: #122017;
+  border-color: #294332;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+}
+
+body.timber-dark-body .farmer-notification-header {
+  border-color: #294332;
+}
+
+body.timber-dark-body .farmer-notification-header strong,
+body.timber-dark-body .farmer-notification-item strong {
+  color: #e5f2e8;
+}
+
+body.timber-dark-body .farmer-notification-header span,
+body.timber-dark-body .farmer-notification-item p,
+body.timber-dark-body .farmer-notification-item small {
+  color: #9aafa0;
+}
+
+body.timber-dark-body .farmer-notification-header > button {
+  background: #20362a;
+  color: #c6d8ca;
+}
+
+body.timber-dark-body .farmer-notification-item {
+  background: #122017;
+  border-color: #263b2d;
+}
+
+body.timber-dark-body .farmer-notification-item:hover {
+  background: #192c20;
+}
+
+body.timber-dark-body .farmer-notification-item.unread {
+  background: #173322;
+}
+
+body.timber-dark-body .farmer-notification-empty strong {
+  color: #dcebe0;
+}
+
+body.timber-dark-body .farmer-listing-status.pending {
+  background: #4b3d18;
+  color: #ffe9a4;
+  border-color: #756020;
+}
+
+body.timber-dark-body .farmer-listing-status.rejected {
+  background: #4a2222;
+  color: #ffc1c1;
+  border-color: #713535;
+}
+
+@media (max-width: 600px) {
+  .farmer-notification-panel {
+    position: fixed;
+    top: 72px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+}

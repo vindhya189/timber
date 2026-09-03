@@ -519,10 +519,16 @@ export default function Login() {
 
       const profileRole =
         normalizeRole(
-          profile.role
+          profile?.role
         );
 
+      /* ---------------------------------------------------
+         ADMIN ACCOUNTS ARE NEVER CHANGED TO THE SELECTED
+         NORMAL USER ROLE.
+         --------------------------------------------------- */
+
       if (
+        profileRole !== "admin" &&
         profileRole &&
         profileRole !== selectedRole
       ) {
@@ -552,6 +558,41 @@ export default function Login() {
 
         profile =
           updatedProfile;
+      }
+
+      /* ---------------------------------------------------
+         FALLBACK FOR OLD/INCOMPLETE PROFILES
+         --------------------------------------------------- */
+
+      if (!normalizeRole(profile?.role)) {
+        profile = {
+          ...profile,
+          role: selectedRole,
+        };
+      }
+
+      /* ---------------------------------------------------
+         ADMIN DIRECT LOGIN
+         ---------------------------------------------------
+         Admin role comes from Supabase profiles.role.
+         Never overwrite it with the Role Select value.
+         --------------------------------------------------- */
+
+      if (normalizeRole(profile?.role) === "admin") {
+        const adminProfile = {
+          ...profile,
+          role: "admin",
+        };
+
+        saveLocalUser(user, adminProfile);
+
+        setMessage("Admin login successful!");
+
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 300);
+
+        return;
       }
 
       /* ---------------------------------------------------
@@ -744,10 +785,22 @@ export default function Login() {
         err
       );
 
-      setError(
-        err?.message ||
-        "Unable to create account."
-      );
+      const errorMessage = String(err?.message || "");
+
+      if (
+        errorMessage.toLowerCase().includes("user already registered")
+      ) {
+        setError(
+          "This email is already registered. Please switch to Login and use your existing password."
+        );
+        setMode("login");
+        setPassword("");
+      } else {
+        setError(
+          errorMessage ||
+          "Unable to create account."
+        );
+      }
 
     } finally {
       setLoading(false);
@@ -992,13 +1045,18 @@ export default function Login() {
               should be used.
             */
 
+            const existingGoogleRole =
+              normalizeRole(profile?.role);
+
+            /*
+              Never change an existing Admin account to a normal
+              selected role after Google authentication.
+            */
             if (
-              normalizeRole(
-                profile.role
-              ) !== role
+              existingGoogleRole !== "admin" &&
+              existingGoogleRole !== role
             ) {
-              updateData.role =
-                role;
+              updateData.role = role;
             }
 
             if (
@@ -1036,6 +1094,17 @@ export default function Login() {
           }
 
           /* ------------------------------------------------
+             FALLBACK FOR INCOMPLETE GOOGLE PROFILES
+             ------------------------------------------------ */
+
+          if (!normalizeRole(profile?.role)) {
+            profile = {
+              ...profile,
+              role,
+            };
+          }
+
+          /* ------------------------------------------------
              SAVE LOCAL USER
              ------------------------------------------------ */
 
@@ -1054,12 +1123,30 @@ export default function Login() {
             `/login?role=${role}`
           );
 
+          /* ------------------------------------------------
+             ADMIN DIRECT GOOGLE LOGIN
+             ------------------------------------------------ */
+
+          if (normalizeRole(profile?.role) === "admin") {
+            setMessage("Admin login successful!");
+
+            setTimeout(() => {
+              if (!active) return;
+
+              navigate("/admin", {
+                replace: true,
+              });
+            }, 300);
+
+            return;
+          }
+
           setMessage(
             "Google login successful!"
           );
 
           /* ------------------------------------------------
-             OPEN DASHBOARD
+             OPEN NORMAL DASHBOARD
              ------------------------------------------------ */
 
           setTimeout(() => {
