@@ -492,3 +492,130 @@ button:disabled { cursor: not-allowed; opacity: .65; }
   .buyer-supplier-card { align-items: flex-start; }
   .buyer-supplier-card > button { margin-left: auto; }
 }
+
+
+/* ============================================================
+   TIMBERMART ADMIN POST IMAGE IN NOTIFICATIONS
+   ============================================================ */
+.buyer-notification-image-wrap {
+  position: relative;
+  width: 100%;
+  margin: 0 0 9px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #edf5f1;
+  border: 1px solid #dcebe4;
+}
+
+.buyer-notification-image {
+  display: block;
+  width: 100%;
+  max-height: 190px;
+  object-fit: cover;
+}
+
+.buyer-admin-post-badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 5px 8px;
+  border-radius: 999px;
+  background: rgba(10, 61, 46, .92);
+  color: #fff;
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .8px;
+}
+
+.buyer-admin-post-backdrop {
+  z-index: 1700;
+}
+
+.buyer-admin-post-modal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(720px, calc(100% - 28px));
+  max-height: calc(100vh - 28px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 30px 90px rgba(0,0,0,.28);
+}
+
+.buyer-admin-post-hero {
+  width: 100%;
+  max-height: 420px;
+  overflow: hidden;
+  background: #edf5f1;
+}
+
+.buyer-admin-post-hero img {
+  display: block;
+  width: 100%;
+  max-height: 420px;
+  object-fit: cover;
+}
+
+.buyer-admin-post-body {
+  padding: 26px;
+}
+
+.buyer-admin-post-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #e5f4ec;
+  color: #126246;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .8px;
+}
+
+.buyer-admin-post-type {
+  display: inline-flex;
+  margin-left: 7px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f3f6f4;
+  color: #65756e;
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.buyer-admin-post-body h2 {
+  margin: 14px 0 8px;
+  color: #173f31;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.buyer-admin-post-body p {
+  margin: 0 0 14px;
+  color: #596a63;
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.buyer-admin-post-body small {
+  color: #8a9691;
+  font-size: 10px;
+}
+
+@media (max-width: 600px) {
+  .buyer-notification-image {
+    max-height: 155px;
+  }
+
+  .buyer-admin-post-body {
+    padding: 20px;
+  }
+
+  .buyer-admin-post-body h2 {
+    font-size: 20px;
+  }
+}

@@ -182,6 +182,11 @@ export default function Login() {
   const [selectedRole, setSelectedRole] = useState(null);
 
   /* -------------------------------------------------------
+     ADMIN LOGIN MODE
+     ------------------------------------------------------- */
+  const isAdminLogin = selectedRole === "admin";
+
+  /* -------------------------------------------------------
      FORM
      ------------------------------------------------------- */
 
@@ -209,16 +214,44 @@ export default function Login() {
      LOAD SELECTED ROLE
      ======================================================= */
 
-  useEffect(() => {
-    // First priority = URL
-    const urlRole = getRoleFromUrl(
-      location.search
+  /* =======================================================
+   LOAD SELECTED ROLE
+   ======================================================= */
+
+useEffect(() => {
+  const loadRole = () => {
+    /* ---------------------------------------------------
+       1. URL ROLE — HIGHEST PRIORITY
+       Example:
+       /login?role=admin
+       --------------------------------------------------- */
+
+    const params = new URLSearchParams(location.search);
+
+    const urlRole = normalizeRole(
+      params.get("role")
     );
 
-    // Second priority = localStorage
+    /* ---------------------------------------------------
+       2. LOCAL STORAGE ROLE
+       --------------------------------------------------- */
+
     const savedRole = getRoleFromStorage();
 
+    /* ---------------------------------------------------
+       3. FINAL ROLE
+       --------------------------------------------------- */
+
     const role = urlRole || savedRole;
+
+    console.log("TimberMart URL:", window.location.href);
+    console.log("TimberMart URL Role:", urlRole);
+    console.log("TimberMart Saved Role:", savedRole);
+    console.log("TimberMart Final Role:", role);
+
+    /* ---------------------------------------------------
+       NO ROLE
+       --------------------------------------------------- */
 
     if (!role) {
       navigate("/roles", {
@@ -228,17 +261,32 @@ export default function Login() {
       return;
     }
 
-    // Save selected role
+    /* ---------------------------------------------------
+       SAVE ROLE
+       --------------------------------------------------- */
+
     localStorage.setItem(
       "timbermart_selected_role",
       role
     );
 
     setSelectedRole(role);
-  }, [
-    location.search,
-    navigate,
-  ]);
+
+    /* ---------------------------------------------------
+       ADMIN = LOGIN ONLY
+       --------------------------------------------------- */
+
+    if (role === "admin") {
+      setMode("login");
+    }
+  };
+
+  loadRole();
+
+}, [
+  location.search,
+  navigate,
+]);
 
   /* =======================================================
      CLEAR MESSAGES
@@ -270,6 +318,18 @@ export default function Login() {
     if (!normalizedRole) {
       throw new Error(
         "Invalid TimberMart role."
+      );
+    }
+
+    /* -------------------------------------------------------
+       SECURITY: ADMIN ACCOUNTS CANNOT BE CREATED FROM THIS
+       PUBLIC LOGIN / SIGNUP PAGE.
+       An admin profile must already exist in Supabase with
+       profiles.role = "admin".
+       ------------------------------------------------------- */
+    if (normalizedRole === "admin") {
+      throw new Error(
+        "Admin accounts cannot be created from the public signup page."
       );
     }
 
@@ -489,7 +549,47 @@ export default function Login() {
       }
 
       /* ---------------------------------------------------
-         CREATE PROFILE IF NOT EXISTS
+         ROLE SECURITY
+         --------------------------------------------------- */
+
+      const profileRole =
+        normalizeRole(
+          profile?.role
+        );
+
+      /* ---------------------------------------------------
+         ADMIN DIRECT LOGIN
+         ---------------------------------------------------
+         Admin is NOT created here. The account must already
+         have profiles.role = "admin" in Supabase.
+         This prevents a user from changing the URL to
+         ?role=admin and creating an admin account.
+         --------------------------------------------------- */
+
+      if (selectedRole === "admin") {
+        if (!profile || profileRole !== "admin") {
+          throw new Error(
+            "This account is not authorized for Administrator access."
+          );
+        }
+
+        const adminProfile = {
+          ...profile,
+          role: "admin",
+        };
+
+        saveLocalUser(user, adminProfile);
+        setMessage("Admin login successful!");
+
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 300);
+
+        return;
+      }
+
+      /* ---------------------------------------------------
+         CREATE NORMAL USER PROFILE IF NEEDED
          --------------------------------------------------- */
 
       if (!profile) {
@@ -519,42 +619,22 @@ export default function Login() {
          LOGIN ROLE SHOULD BE SELECTED ROLE
          --------------------------------------------------- */
 
-      const profileRole =
+      const refreshedProfileRole =
         normalizeRole(
           profile?.role
         );
 
-      /* ---------------------------------------------------
-         ADMIN DIRECT LOGIN
-         --------------------------------------------------- */
-
       console.log("TimberMart login profile role:", profile?.role);
-      console.log("TimberMart normalized role:", profileRole);
-
-      if (profileRole === "admin") {
-        const adminProfile = {
-          ...profile,
-          role: "admin",
-        };
-
-        saveLocalUser(user, adminProfile);
-        setMessage("Admin login successful!");
-
-        setTimeout(() => {
-          navigate("/admin", { replace: true });
-        }, 300);
-
-        return;
-      }
+      console.log("TimberMart normalized role:", refreshedProfileRole);
 
       /* ---------------------------------------------------
          NORMAL USER ROLE
          --------------------------------------------------- */
 
       if (
-        profileRole !== "admin" &&
-        profileRole &&
-        profileRole !== selectedRole
+        refreshedProfileRole !== "admin" &&
+        refreshedProfileRole &&
+        refreshedProfileRole !== selectedRole
       ) {
         /*
           User selected a different role.
@@ -648,6 +728,14 @@ export default function Login() {
       setError(
         "Please select your role first."
       );
+      return;
+    }
+
+    if (selectedRole === "admin") {
+      setError(
+        "Administrator accounts cannot be created here. Please use an authorized admin account."
+      );
+      setMode("login");
       return;
     }
 
@@ -979,10 +1067,22 @@ export default function Login() {
               .maybeSingle();
 
           /* ------------------------------------------------
-             CREATE PROFILE
+             PROFILE SECURITY
              ------------------------------------------------ */
 
-          if (!profile) {
+          if (role === "admin") {
+            /* Never create an admin profile through Google. */
+            if (!profile || normalizeRole(profile?.role) !== "admin") {
+              throw new Error(
+                "This Google account is not authorized for Administrator access."
+              );
+            }
+
+            profile = {
+              ...profile,
+              role: "admin",
+            };
+          } else if (!profile) {
             profile =
               await saveProfile(
                 user,
@@ -1098,6 +1198,12 @@ export default function Login() {
              ------------------------------------------------ */
 
           if (!normalizeRole(profile?.role)) {
+            if (role === "admin") {
+              throw new Error(
+                "Administrator profile is missing or invalid."
+              );
+            }
+
             profile = {
               ...profile,
               role,
@@ -1855,7 +1961,13 @@ export default function Login() {
 
             <div className="switch-account">
 
-              {mode === "login" ? (
+              {isAdminLogin ? (
+                <>
+                  <span>
+                    Administrator access is restricted.
+                  </span>
+                </>
+              ) : mode === "login" ? (
                 <>
                   <span>
                     Don't have an account?

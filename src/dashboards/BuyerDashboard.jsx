@@ -119,6 +119,7 @@ export default function BuyerDashboard() {
   const [maxPrice, setMaxPrice] = useState("");
 
   const [selectedListing, setSelectedListing] = useState(null);
+  const [selectedAdminPost, setSelectedAdminPost] = useState(null);
   const [selectedSeller, setSelectedSeller] = useState(null);
 
   const [sellerLoading, setSellerLoading] = useState(false);
@@ -609,11 +610,29 @@ export default function BuyerDashboard() {
       return;
     }
 
-    // Generic post notification
-    if (notification.post_id) {
+    // Official Admin Post / Advertisement notification
+    if (notification.post_id || notification.source === "admin_post") {
+      const postId = notification.post_id;
+
+      if (postId) {
+        const { data, error } = await supabase
+          .from("admin_posts")
+          .select("*")
+          .eq("id", postId)
+          .maybeSingle();
+
+        if (!error && data) {
+          setSelectedAdminPost(data);
+          return;
+        }
+
+        console.error("Admin post notification error:", error);
+      }
+
+      // Fallback for older notifications without a post_id
       alert(
-        `${notification.title || "New TimberMart post"}\n\n${
-          notification.message || "Open the related post from TimberMart."
+        `${notification.title || "TimberMart Admin"}\n\n${
+          notification.message || "New TimberMart Admin update."
         }`
       );
     }
@@ -2248,6 +2267,20 @@ export default function BuyerDashboard() {
                     </div>
 
                     <div className="buyer-notification-content">
+                      {notification.image_url && (
+                        <div className="buyer-notification-image-wrap">
+                          <img
+                            className="buyer-notification-image"
+                            src={notification.image_url}
+                            alt={notification.title || "TimberMart Admin post"}
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.parentElement.style.display = "none";
+                            }}
+                          />
+                          <span className="buyer-admin-post-badge">TIMBERMART ADMIN</span>
+                        </div>
+                      )}
                       <strong>
                         {notification.title ||
                           "TimberMart Notification"}
@@ -2285,6 +2318,49 @@ export default function BuyerDashboard() {
               )}
             </div>
           </aside>
+        </div>
+      )}
+
+
+      {/* ================= ADMIN POST / AD MODAL ================= */}
+      {selectedAdminPost && (
+        <div
+          className="buyer-modal-backdrop buyer-admin-post-backdrop"
+          onClick={() => setSelectedAdminPost(null)}
+        >
+          <div
+            className="buyer-admin-post-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="buyer-modal-close"
+              onClick={() => setSelectedAdminPost(null)}
+              aria-label="Close admin post"
+            >
+              <X size={21} />
+            </button>
+
+            {selectedAdminPost.image_url && (
+              <div className="buyer-admin-post-hero">
+                <img
+                  src={selectedAdminPost.image_url}
+                  alt={selectedAdminPost.title || "TimberMart Admin post"}
+                />
+              </div>
+            )}
+
+            <div className="buyer-admin-post-body">
+              <span className="buyer-admin-post-label">
+                📢 TIMBERMART ADMIN
+              </span>
+              <span className="buyer-admin-post-type">
+                {selectedAdminPost.post_type || "announcement"}
+              </span>
+              <h2>{selectedAdminPost.title}</h2>
+              <p>{selectedAdminPost.message}</p>
+              <small>{formatDate(selectedAdminPost.created_at)}</small>
+            </div>
+          </div>
         </div>
       )}
 

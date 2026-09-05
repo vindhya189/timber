@@ -1,6299 +1,1811 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import {
-  Bell,
-  Camera,
-  Check,
-  CheckCircle2,
-  ChevronRight,
-  CircleUserRound,
-  FileText,
-  Eye,
-  Home,
-  ImagePlus,
-  LogOut,
-  MapPin,
-  Menu,
-  MessageCircle,
-  Phone,
-  Plus,
-  Search,
-  Settings,
-  Trash2,
-  TreePine,
-  Upload,
-  User,
-  X,
-} from "lucide-react";
-
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "../supabaseClient";
+import "./AdminDashboard.css";
 
-import "./FarmerDashboard.css";
-import TreeLoader from "../components/TreeLoader";
+/*
+  TimberMart Admin Dashboard
+  --------------------------
+  Standalone file:
+  - No UsersManagement import
+  - No Settings import
+  - No chart library required
+  - Supabase client: ../supabaseClient
 
-/* =========================================================
-   FARMER DASHBOARD
-   ---------------------------------------------------------
-   Existing dashboard functionality preserved.
+  Main admin areas:
+  Dashboard
+  Approval Center
+  Users
+  Listings
+  Requirements
+  Notifications
+  Locations
+  Analytics
+  Revenue & Payments
+  Reports & Moderation
+  Settings
+*/
 
-   Added:
-   - Professional Sell Tree flow
-   - Category selection
-   - Indian Trees
-   - Plantations
-   - Wood Products
-   - Dynamic tree/product types
-   - Plantation Acre field
-   - Tree age
-   - Diameter
-   - Quantity + unit
-   - Expected price
-   - Photos
-   - Review
-   - Publish to Supabase
-========================================================= */
-
-
-/* =========================================================
-   SELL TREE DATA
-========================================================= */
-
-const SELL_CATEGORIES = [
-  {
-    id: "indian_trees",
-    icon: "🌳",
-    title: "Indian Trees",
-    description:
-      "Standing trees grown on farms or individual land.",
-  },
-
-  {
-    id: "plantations",
-    icon: "🌱",
-    title: "Plantations",
-    description:
-      "Commercial plantation timber and farm-grown trees.",
-  },
-
-  {
-    id: "wood_products",
-    icon: "🪵",
-    title: "Wood Products",
-    description:
-      "Logs, planks, beams and other wood products.",
-  },
+const MENU = [
+  { id: "Dashboard", icon: "⌂", label: "Dashboard" },
+  { id: "Approval Center", icon: "✓", label: "Approval Center", approval: true },
+  { id: "Users", icon: "♟", label: "All Users" },
+  { id: "Farmers", icon: "🌳", label: "Farmers" },
+  { id: "Buyers", icon: "🏠", label: "Buyers" },
+  { id: "Merchants", icon: "🏪", label: "Merchants" },
+  { id: "Carpenters", icon: "🛠", label: "Carpenters" },
+  { id: "Workers", icon: "👷", label: "Workers" },
+  { id: "Businesses", icon: "🏭", label: "Businesses" },
+  { id: "Listings", icon: "🪵", label: "Listings", arrow: true },
+  { id: "Requirements", icon: "📋", label: "Requirements", arrow: true },
+  { id: "Jobs", icon: "💼", label: "Jobs", arrow: true },
+  { id: "Notifications", icon: "🔔", label: "Notifications" },
+  { id: "Admin Posts", icon: "📢", label: "Admin Posts & Ads" },
+  { id: "Locations", icon: "⌖", label: "Locations" },
+  { id: "Analytics", icon: "▥", label: "Analytics" },
+  { id: "Reports", icon: "⚠", label: "Reports & Moderation" },
+  { id: "Settings", icon: "⚙", label: "Settings" },
+  { id: "Admin Security", icon: "🔐", label: "Admin & Security" },
+  { id: "System Logs", icon: "▤", label: "System Logs" },
 ];
 
+const ROLE_LABELS = {
+  buyer: "Buyer",
+  farmer: "Farmer",
+  timber_merchant: "Merchant",
+  sawmill_business: "Business",
+  carpenter: "Carpenter",
+  worker: "Worker",
+  admin: "Admin",
+  other: "Other",
+};
 
-const INDIAN_TREES = [
-  "Teak",
-  "Neem",
-  "Rosewood",
-  "Mango",
-  "Tamarind",
-  "Eucalyptus",
-  "Melia Dubia",
-  "Casuarina",
-  "Subabul",
-  "Babul",
-  "Jackfruit",
-  "Sandalwood",
-  "Mahogany",
-  "Other Indian Tree",
-];
+const ROLE_COLORS = {
+  buyer: "#3f78d6",
+  farmer: "#2f9960",
+  timber_merchant: "#8154c7",
+  sawmill_business: "#e58a28",
+  carpenter: "#e05c4f",
+  worker: "#1c9b9a",
+  admin: "#d94666",
+  other: "#9aa4ad",
+};
 
+function normalizeRole(role) {
+  const value = String(role || "").trim().toLowerCase();
 
-const PLANTATION_TYPES = [
-  "Casuarina Plantation",
-  "Eucalyptus Plantation",
-  "Melia Dubia Plantation",
-  "Subabul Plantation",
-  "Teak Plantation",
-  "Bamboo Plantation",
-  "Other Plantation",
-];
-
-
-const WOOD_PRODUCTS = [
-  "Timber Logs",
-  "Sawn Timber",
-  "Wooden Planks",
-  "Wooden Beams",
-  "Wooden Poles",
-  "Firewood",
-  "Sawdust",
-  "Wood Chips",
-  "Plywood / Boards",
-  "Other Wood Product",
-];
-
-
-const QUANTITY_UNITS = [
-  "Trees",
-  "Logs",
-  "Tonnes",
-  "Cubic Feet",
-  "Cubic Metres",
-  "Pieces",
-  "Load",
-];
-
-
-const TREE_CONDITIONS = [
-  "Fresh",
-  "Good",
-  "Seasoned",
-  "Dry",
-  "Mixed",
-];
-
-
-const HARVEST_STATUS = [
-  "Ready for sale",
-  "Ready for harvest",
-  "Harvesting soon",
-  "Future harvest",
-];
-
-
-/* =========================================================
-   MAIN FARMER DASHBOARD
-========================================================= */
-
-/* =======================================================
-   NEARBY LISTING MATCHING
-   Gets the user's real device coordinates so Supabase can
-   match a new listing with requirements within 30 km.
-======================================================= */
-async function getCurrentCoordinates() {
-  // GPS only. IP address location is NEVER used.
-  if (!navigator.geolocation) return null;
-
-  try {
-    const position = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        resolve,
-        reject,
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        }
-      );
-    });
-
-    return {
-      latitude: Number(position.coords.latitude),
-      longitude: Number(position.coords.longitude),
-    };
-  } catch (error) {
-    console.warn("GPS location unavailable:", error);
-    return null;
+  if (["buyer", "customer", "homeowner"].includes(value)) return "buyer";
+  if (["farmer", "seller", "tree_seller"].includes(value)) return "farmer";
+  if (["merchant", "timber_merchant", "timber merchant"].includes(value)) {
+    return "timber_merchant";
   }
+  if (
+    [
+      "sawmill",
+      "sawmill_business",
+      "sawmill business",
+      "wood_business",
+      "wood business",
+    ].includes(value)
+  ) {
+    return "sawmill_business";
+  }
+  if (["carpenter", "service_provider"].includes(value)) return "carpenter";
+  if (["worker", "job_seeker", "job seeker"].includes(value)) return "worker";
+  if (["admin", "administrator"].includes(value)) return "admin";
+  return "other";
 }
 
-async function reverseGeocodeLocation(latitude, longitude) {
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return "";
-  }
-
-  try {
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}&zoom=18&addressdetails=1`,
-      {
-        headers: { Accept: "application/json" },
-      }
-    );
-
-    if (!response.ok) return "";
-
-    const data = await response.json();
-    const address = data?.address || {};
-
-    const parts = [
-      address.village,
-      address.town,
-      address.city,
-      address.municipality,
-      address.district,
-      address.state,
-      address.country,
-    ].filter(Boolean);
-
-    const uniqueParts = [...new Set(parts)];
-    return uniqueParts.join(", ") || data?.display_name || "";
-  } catch (error) {
-    console.warn("Reverse geocoding failed:", error);
-    return "";
-  }
+function displayName(row) {
+  return (
+    row?.name ||
+    row?.full_name ||
+    row?.fullName ||
+    row?.display_name ||
+    row?.username ||
+    row?.email ||
+    "User"
+  );
 }
 
-function cleanMatchingKeywords(values = []) {
-  const output = [];
+function listingTitle(row) {
+  return (
+    row?.title ||
+    row?.tree_type ||
+    row?.species ||
+    row?.category ||
+    "Timber Listing"
+  );
+}
 
-  values.forEach((value) => {
-    if (!value) return;
+function requirementTitle(row) {
+  return (
+    row?.title ||
+    row?.species ||
+    row?.category ||
+    row?.custom_requirement ||
+    "Buyer Requirement"
+  );
+}
 
-    if (Array.isArray(value)) {
-      value.forEach((item) => {
-        if (item) output.push(String(item).trim().toLowerCase());
-      });
-      return;
-    }
+function formatDate(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
 
-    String(value)
-      .split(",")
-      .map((item) => item.trim().toLowerCase())
-      .filter(Boolean)
-      .forEach((item) => output.push(item));
+function formatDateTime(value) {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function isPending(row) {
+  const status = String(row?.status || "").toLowerCase();
+  return (
+    !status ||
+    ["pending", "under_review", "requested", "waiting", "submitted"].includes(
+      status
+    )
+  );
+}
+
+function statusClass(status) {
+  const value = String(status || "pending").toLowerCase();
+
+  if (["approved", "active", "verified", "accepted", "completed"].includes(value)) {
+    return "tm-status approved";
+  }
+
+  if (["rejected", "blocked", "cancelled", "suspended"].includes(value)) {
+    return "tm-status rejected";
+  }
+
+  if (["reported", "flagged"].includes(value)) {
+    return "tm-status reported";
+  }
+
+  return "tm-status pending";
+}
+
+function safeNumber(value) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function DonutChart({ counts, total }) {
+  const segments = [
+    ["buyer", counts.buyer],
+    ["farmer", counts.farmer],
+    ["timber_merchant", counts.timber_merchant],
+    ["sawmill_business", counts.sawmill_business],
+    ["carpenter", counts.carpenter],
+    ["worker", counts.worker],
+    ["admin", counts.admin],
+    ["other", counts.other],
+  ];
+
+  let current = 0;
+
+  const stops = segments.map(([role, value]) => {
+    const amount = total ? (value / total) * 360 : 0;
+    const start = current;
+    const end = current + amount;
+    current = end;
+    return `${ROLE_COLORS[role]} ${start}deg ${end}deg`;
   });
 
-  return [...new Set(output)];
-}
+  const background = total
+    ? `conic-gradient(${stops.join(", ")})`
+    : "conic-gradient(#e8eeeb 0deg 360deg)";
 
-async function notifyMatchingUsers40Km({
-  senderId,
-  latitude,
-  longitude,
-  postType,
-  postId,
-  title,
-  message,
-  keywords = [],
-  matchingRoles = [],
-  listingId = null,
-  requirementId = null,
-  jobId = null,
-}) {
-  if (!senderId || !postId || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-    return 0;
-  }
-
-  const { data, error } = await supabase.rpc(
-    "notify_matching_users_40km",
-    {
-      p_sender_id: senderId,
-      p_latitude: latitude,
-      p_longitude: longitude,
-      p_post_type: postType,
-      p_post_id: postId,
-      p_title: title,
-      p_message: message,
-      p_keywords: cleanMatchingKeywords(keywords),
-      p_matching_roles: matchingRoles,
-      p_listing_id: listingId,
-      p_requirement_id: requirementId,
-      p_job_id: jobId,
-    }
+  return (
+    <div className="tm-donut" style={{ background }}>
+      <div className="tm-donut-hole">
+        <strong>{total.toLocaleString("en-IN")}</strong>
+        <span>Total Users</span>
+      </div>
+    </div>
   );
-
-  if (error) {
-    console.error("40 KM matching notification error:", error);
-    return 0;
-  }
-
-  return Number(data || 0);
 }
 
-export default function FarmerDashboard() {
-  const navigate = useNavigate();
+function SectionHeader({ title, subtitle, action, onAction }) {
+  return (
+    <div className="tm-section-header">
+      <div>
+        <h2>{title}</h2>
+        {subtitle && <p>{subtitle}</p>}
+      </div>
+      {action && (
+        <button type="button" className="tm-link-button" onClick={onAction}>
+          {action} →
+        </button>
+      )}
+    </div>
+  );
+}
 
-  /* =======================================================
-     USER / PROFILE
-  ======================================================= */
+function EmptyState({ icon = "📭", title = "No data", text = "" }) {
+  return (
+    <div className="tm-empty">
+      <div>{icon}</div>
+      <strong>{title}</strong>
+      {text && <span>{text}</span>}
+    </div>
+  );
+}
 
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-
-  /* =======================================================
-     DASHBOARD DATA
-  ======================================================= */
-
+export default function AdminDashboard({ onBack }) {
+  const [activeMenu, setActiveMenu] = useState("Dashboard");
+  const [users, setUsers] = useState([]);
   const [listings, setListings] = useState([]);
   const [requirements, setRequirements] = useState([]);
   const [notifications, setNotifications] = useState([]);
-  const [showNotifications, setShowNotifications] = useState(false);
-
-  // MESSAGES CENTER
-  const [showMessages, setShowMessages] = useState(false);
-  const [messageConversations, setMessageConversations] = useState([]);
-  const [unreadByUser, setUnreadByUser] = useState({});
-  const [messageToast, setMessageToast] = useState(null);
-  const messageAudioContextRef = useRef(null);
-  const messageSoundUnlockedRef = useRef(false);
-
-  /* =======================================================
-     UI STATE
-  ======================================================= */
 
   const [loading, setLoading] = useState(true);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState("home");
-  const [searchText, setSearchText] = useState("");
-
-  const [selectedListing, setSelectedListing] = useState(null);
-  const [selectedRequirement, setSelectedRequirement] =
-    useState(null);
-  const [selectedOwner, setSelectedOwner] = useState(null);
-
-  // CHAT STATE
-  const [selectedProfile, setSelectedProfile] = useState(null);
-  const [showChat, setShowChat] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [messageText, setMessageText] = useState("");
-  const [chatLoading, setChatLoading] = useState(false);
-
-  // Keep the latest chat/user values available to realtime message listeners.
-  const selectedProfileRef = useRef(null);
-  const showChatRef = useRef(false);
-  const userRef = useRef(null);
-
-  useEffect(() => {
-    selectedProfileRef.current = selectedProfile;
-    showChatRef.current = showChat;
-    userRef.current = user;
-  }, [selectedProfile, showChat, user]);
-
-  /* =======================================================
-     LISTING EXPIRY CLOCK
-     -------------------------------------------------------
-     Supabase sets expires_at when admin approves a listing.
-     This clock displays the remaining time and removes an
-     expired listing from the visible Timber Listings section.
-  ======================================================= */
-
-  const [expiryNow, setExpiryNow] = useState(Date.now());
-
-  useEffect(() => {
-    const expiryTimer = window.setInterval(() => {
-      setExpiryNow(Date.now());
-    }, 1000);
-
-    return () => window.clearInterval(expiryTimer);
-  }, []);
-
-  /* =======================================================
-     SELL TREE STATE
-  ======================================================= */
-
-  const [showSellTree, setShowSellTree] = useState(false);
-
-  const [sellStep, setSellStep] = useState(1);
-
-  const [sellForm, setSellForm] = useState({
-    category: "",
-    tree_type: "",
-    title: "",
-    location: "",
-    quantity: "",
-    quantity_unit: "",
-    acreage: "",
-    tree_age: "",
-    diameter: "",
-    estimated_volume: "",
-    condition: "",
-    harvest_status: "",
-    price: "",
-    description: "",
-  });
-
-  const [sellPhotos, setSellPhotos] = useState([]);
-
-  const [sellError, setSellError] = useState("");
-  const [publishingListing, setPublishingListing] =
-    useState(false);
-
-  const [listingPublished, setListingPublished] =
-    useState(false);
-
-  /* =======================================================
-     AUTH + INITIAL DATA
-  ======================================================= */
-
-  useEffect(() => {
-    loadDashboard();
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session?.user) {
-          navigate("/login", { replace: true });
-        } else {
-          setUser(session.user);
-        }
-      }
-    );
-
-    const notificationChannel = supabase
-      .channel(`farmer-notifications-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-        },
-        async (payload) => {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-
-          if (payload.new?.user_id !== session?.user?.id) return;
-
-          setNotifications((previous) => [
-            payload.new,
-            ...previous.filter((item) => item.id !== payload.new.id),
-          ]);
-
-          if (
-            "Notification" in window &&
-            Notification.permission === "granted"
-          ) {
-            new Notification(
-              payload.new?.title || "TimberMart",
-              {
-                body: payload.new?.message || "New notification",
-              }
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    // Global incoming-message listener. It works even when the chat window
-    // is closed, so the Messages badge can update immediately.
-    const incomingMessageChannel = supabase
-      .channel(`farmer-incoming-messages-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-        },
-        async (payload) => {
-          const receiverId = payload.new?.receiver_id;
-          const senderId = payload.new?.sender_id;
-          if (!receiverId || !senderId || receiverId !== userRef.current?.id) return;
-
-          // Update the open chat immediately if this conversation is visible.
-          if (showChatRef.current && selectedProfileRef.current?.id === senderId) {
-            setMessages((old) =>
-              old.some((item) => item.id === payload.new.id)
-                ? old
-                : [...old, payload.new]
-            );
-          } else {
-            setUnreadByUser((old) => ({
-              ...old,
-              [senderId]: (old[senderId] || 0) + 1,
-            }));
-          }
-
-          try {
-            const { data: senderProfile } = await supabase
-              .from("profiles")
-              .select("id,name,role,photo_url,location")
-              .eq("id", senderId)
-              .maybeSingle();
-
-            if (senderProfile) {
-              setMessageConversations((old) => {
-                const existing = old.find((item) => item.profile.id === senderId);
-                const nextItem = {
-                  profile: senderProfile,
-                  lastMessage: payload.new.body || "New message",
-                  updatedAt: payload.new.created_at || new Date().toISOString(),
-                  unread: showChatRef.current && selectedProfileRef.current?.id === senderId
-                    ? existing?.unread || 0
-                    : (existing?.unread || 0) + 1,
-                };
-                return [
-                  nextItem,
-                  ...old.filter((item) => item.profile.id !== senderId),
-                ];
-              });
-            }
-          } catch (error) {
-            console.error("Incoming message profile error:", error);
-          }
-
-          playFarmerMessageSound();
-          setMessageToast({
-            name: senderProfile?.name || "New message",
-            text: payload.new?.body || "You received a new message.",
-          });
-          window.clearTimeout(window.__tmMessageToastTimer);
-          window.__tmMessageToastTimer = window.setTimeout(() => {
-            setMessageToast(null);
-          }, 4500);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-      supabase.removeChannel(notificationChannel);
-      supabase.removeChannel(incomingMessageChannel);
-    };
-  }, [navigate]);
-
-
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission().catch(() => {});
-    }
-  }, []);
-
-  // Keep the open chat live in real time.
-  useEffect(() => {
-    if (!user?.id || !selectedProfile?.id || !showChat) return;
-
-    const channel = supabase
-      .channel(`farmer-chat-${user.id}-${selectedProfile.id}-${Date.now()}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "messages",
-          filter: `sender_id=eq.${selectedProfile.id}`,
-        },
-        (payload) => {
-          if (payload.new?.receiver_id !== user.id) return;
-          setMessages((old) =>
-            old.some((item) => item.id === payload.new.id)
-              ? old
-              : [...old, payload.new]
-          );
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user?.id, selectedProfile?.id, showChat]);
-
-
-  async function loadChatMessages(otherUserId) {
-    if (!user?.id || !otherUserId) return;
-
-    const { data, error } = await supabase
-      .from("messages")
-      .select("*")
-      .or(
-        `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`
-      )
-      .order("created_at", { ascending: true });
-
-    if (error) {
-      console.error("Chat messages error:", error);
-      setMessages([]);
-      return false;
-    }
-
-    setMessages(data || []);
-    return true;
-  }
-
-
-  async function sendMessage(event) {
-    event.preventDefault();
-
-    const text = messageText.trim();
-    if (!text || !user?.id || !selectedProfile?.id) return;
-
-    const receiverId = selectedProfile.id;
-
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({
-        sender_id: user.id,
-        receiver_id: receiverId,
-        body: text,
-      })
-      .select("*")
-      .single();
-
-    if (error) {
-      console.error("Send message error:", error);
-      alert(error.message || "Unable to send message.");
-      return;
-    }
-
-    setMessages((old) =>
-      old.some((item) => item.id === data.id) ? old : [...old, data]
-    );
-    setMessageConversations((old) => {
-      const existing = old.find((item) => item.profile.id === receiverId);
-      if (!existing) return old;
-      return [
-        {
-          ...existing,
-          lastMessage: text,
-          updatedAt: data.created_at || new Date().toISOString(),
-          unread: 0,
-        },
-        ...old.filter((item) => item.profile.id !== receiverId),
-      ];
-    });
-    setUnreadByUser((old) => ({ ...old, [receiverId]: 0 }));
-    setMessageText("");
-  }
-
-
-  async function openChat(userId, context = {}) {
-    if (!userId || !user?.id) {
-      alert("User information not available.");
-      return;
-    }
-
-    if (userId === user.id) {
-      alert("You cannot chat with yourself.");
-      return;
-    }
-
-    setChatLoading(true);
-
-    try {
-      // Create the listing-interest notification for the listing owner.
-      if (context?.listingId && context.listingOwnerId === userId) {
-        const { error: notificationError } = await supabase.rpc("notify_listing_chat", {
-          p_listing_id: context.listingId,
-        });
-
-        if (notificationError) {
-          console.error("Listing chat notification error:", notificationError);
-        }
-      }
-
-      const { data: person, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
-
-      if (profileError) throw profileError;
-      if (!person) {
-        alert("User profile not found.");
-        return;
-      }
-
-      setSelectedProfile(person);
-      setMessageText("");
-      setShowNotifications(false);
-      await loadChatMessages(userId);
-      setShowChat(true);
-    } catch (error) {
-      console.error("Open chat error:", error);
-      alert(error.message || "Unable to open chat.");
-    } finally {
-      setChatLoading(false);
-    }
-  }
-
-
-  // Unlock the browser audio engine after the farmer interacts with the page.
-  // This makes realtime message sounds much more reliable than creating a new
-  // AudioContext only after a websocket event arrives.
-  useEffect(() => {
-    const unlockMessageSound = async () => {
-      try {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) return;
-        if (!messageAudioContextRef.current) {
-          messageAudioContextRef.current = new AudioContextClass();
-        }
-        const ctx = messageAudioContextRef.current;
-        if (ctx.state === "suspended") await ctx.resume();
-        messageSoundUnlockedRef.current = ctx.state === "running";
-      } catch (error) {
-        console.debug("Audio unlock unavailable:", error);
-      }
-    };
-
-    window.addEventListener("pointerdown", unlockMessageSound, { passive: true });
-    window.addEventListener("keydown", unlockMessageSound);
-    return () => {
-      window.removeEventListener("pointerdown", unlockMessageSound);
-      window.removeEventListener("keydown", unlockMessageSound);
-    };
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      const ctx = messageAudioContextRef.current;
-      if (ctx) ctx.close().catch(() => {});
-    };
-  }, []);
-
-  // Special 3-note TimberMart incoming-message sound.
-  function playFarmerMessageSound() {
-    try {
-      const ctx = messageAudioContextRef.current;
-      if (!ctx || ctx.state !== "running") return;
-
-      const now = ctx.currentTime + 0.01;
-      const notes = [
-        { frequency: 659.25, start: 0, duration: 0.13 },
-        { frequency: 783.99, start: 0.14, duration: 0.13 },
-        { frequency: 1046.5, start: 0.28, duration: 0.24 },
-      ];
-
-      notes.forEach(({ frequency, start, duration }) => {
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-        oscillator.type = "triangle";
-        oscillator.frequency.setValueAtTime(frequency, now + start);
-        gain.gain.setValueAtTime(0.0001, now + start);
-        gain.gain.exponentialRampToValueAtTime(0.22, now + start + 0.025);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.start(now + start);
-        oscillator.stop(now + start + duration + 0.03);
-      });
-    } catch (error) {
-      console.debug("Message sound unavailable:", error);
-    }
-  }
-
-  async function loadMessageConversations(userId) {
-    if (!userId) return;
-
-    const { data, error } = await supabase
-      .from("messages")
-      .select("id,sender_id,receiver_id,body,created_at")
-      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
-      .order("created_at", { ascending: false })
-      .limit(150);
-
-    if (error) {
-      console.error("Message inbox error:", error);
-      return;
-    }
-
-    const latestByUser = new Map();
-    (data || []).forEach((message) => {
-      const otherId = message.sender_id === userId
-        ? message.receiver_id
-        : message.sender_id;
-      if (otherId && !latestByUser.has(otherId)) {
-        latestByUser.set(otherId, message);
-      }
-    });
-
-    const otherIds = [...latestByUser.keys()];
-    if (!otherIds.length) {
-      setMessageConversations([]);
-      return;
-    }
-
-    const { data: profilesData, error: profilesError } = await supabase
+  const [refreshing, setRefreshing] = useState(false);
+  const [busyId, setBusyId] = useState("");
+  const [error, setError] = useState("");
+  const [search, setSearch] = useState("");
+  const [mobileNav, setMobileNav] = useState(false);
+
+  const [announcement, setAnnouncement] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("TimberMart Admin");
+  const [announcementRole, setAnnouncementRole] = useState("all");
+
+  const [adminPosts, setAdminPosts] = useState([]);
+  const [postTitle, setPostTitle] = useState("");
+  const [postMessage, setPostMessage] = useState("");
+  const [postImageUrl, setPostImageUrl] = useState("");
+  const [postImageFile, setPostImageFile] = useState(null);
+  const [postImagePreview, setPostImagePreview] = useState("");
+  const [postImageUploading, setPostImageUploading] = useState(false);
+  const [postType, setPostType] = useState("announcement");
+
+  const loadUsers = useCallback(async () => {
+    const { data, error: queryError } = await supabase
       .from("profiles")
-      .select("id,name,role,photo_url,location")
-      .in("id", otherIds);
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1000);
 
-    if (profilesError) {
-      console.error("Message profile error:", profilesError);
+    if (queryError) {
+      console.warn("profiles:", queryError.message);
+      setUsers([]);
       return;
     }
 
-    const profileMap = new Map((profilesData || []).map((item) => [item.id, item]));
-    setMessageConversations(
-      otherIds
-        .map((otherId) => {
-          const message = latestByUser.get(otherId);
-          const person = profileMap.get(otherId);
-          if (!person) return null;
-          return {
-            profile: person,
-            lastMessage: message?.body || "",
-            updatedAt: message?.created_at || new Date().toISOString(),
-            unread: unreadByUser[otherId] || 0,
-          };
-        })
-        .filter(Boolean)
-    );
-  }
+    setUsers(data || []);
+  }, []);
 
-  function openMessagesCenter() {
-    setMenuOpen(false);
-    setShowNotifications(false);
-    setShowMessages(true);
-    if (user?.id) loadMessageConversations(user.id);
-  }
+  const loadListings = useCallback(async () => {
+    for (const table of ["listings", "timber_listings"]) {
+      const { data, error: queryError } = await supabase
+        .from(table)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
 
-  async function openConversationFromMessages(person) {
-    if (!person?.id) return;
-    setUnreadByUser((old) => ({ ...old, [person.id]: 0 }));
-    setMessageConversations((old) =>
-      old.map((item) =>
-        item.profile.id === person.id ? { ...item, unread: 0 } : item
-      )
-    );
-    await openChat(person.id);
-  }
-
-  function closeMessagesCenter() {
-    setShowMessages(false);
-    setShowChat(false);
-    setSelectedProfile(null);
-  }
-
-  async function loadDashboard() {
-    try {
-      setLoading(true);
-
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session?.user) {
-        navigate("/login", { replace: true });
+      if (!queryError) {
+        setListings(data || []);
         return;
       }
-
-      setUser(session.user);
-
-      const {
-        data: profileData,
-        error: profileError,
-      } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", session.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error(
-          "Profile error:",
-          profileError
-        );
-      }
-
-      setProfile(profileData);
-
-      await Promise.all([
-        loadListings(session.user.id),
-        loadRequirements(),
-        loadNotifications(session.user.id),
-        loadMessageConversations(session.user.id),
-      ]);
-    } catch (error) {
-      console.error(
-        "Dashboard error:",
-        error
-      );
-    } finally {
-      setLoading(false);
     }
-  }
+    setListings([]);
+  }, []);
 
+  const loadRequirements = useCallback(async () => {
+    for (const table of ["requirements", "buyer_requirements"]) {
+      const { data, error: queryError } = await supabase
+        .from(table)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(500);
 
-  /* =======================================================
-     LOAD LISTINGS
-  ======================================================= */
+      if (!queryError) {
+        setRequirements(data || []);
+        return;
+      }
+    }
+    setRequirements([]);
+  }, []);
 
-  async function loadListings(userId) {
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("listings")
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          name,
-          role,
-          phone,
-          location,
-          photo_url
-        ),
-        listing_images (
-          id,
-          image_url,
-          storage_path,
-          sort_order
-        )
-      `)
-      .order("created_at", {
-        ascending: false,
-      });
+  const loadAdminPosts = useCallback(async () => {
+    const { data, error: queryError } = await supabase
+      .from("admin_posts")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(100);
 
-    if (error) {
-      console.error(
-        "Listings error:",
-        error
-      );
+    if (queryError) {
+      console.warn("admin_posts:", queryError.message);
+      setAdminPosts([]);
       return;
     }
 
-    setListings(data || []);
-  }
+    setAdminPosts(data || []);
+  }, []);
 
-
-  /* =======================================================
-     LOAD REQUIREMENTS
-  ======================================================= */
-
-  async function loadNotifications(userId) {
-    const { data, error } = await supabase
+  const loadNotifications = useCallback(async () => {
+    const { data, error: queryError } = await supabase
       .from("notifications")
       .select("*")
-      .eq("user_id", userId)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(200);
 
-    if (error) {
-      console.error("Notifications error:", error);
+    if (queryError) {
+      console.warn("notifications:", queryError.message);
+      setNotifications([]);
       return;
     }
 
     setNotifications(data || []);
-  }
-
-  async function markNotificationRead(notificationId) {
-    if (!user?.id) return;
-
-    const { error } = await supabase
-      .from("notifications")
-      .update({ is_read: true })
-      .eq("id", notificationId)
-      .eq("user_id", user.id);
-
-    if (error) {
-      console.error("Notification read error:", error);
-      return;
-    }
-
-    setNotifications((previous) =>
-      previous.map((item) =>
-        item.id === notificationId
-          ? { ...item, is_read: true }
-          : item
-      )
-    );
-  }
-
-  async function loadRequirements() {
-    const {
-      data,
-      error,
-    } = await supabase
-      .from("requirements")
-      .select(`
-        *,
-        profiles:user_id (
-          id,
-          name,
-          role,
-          phone,
-          location,
-          photo_url
-        )
-      `)
-      .order("created_at", {
-        ascending: false,
-      });
-
-    if (error) {
-      console.error(
-        "Requirements error:",
-        error
-      );
-      return;
-    }
-
-    setRequirements(data || []);
-  }
-
-
-  /* =======================================================
-     NAVIGATION
-  ======================================================= */
-
-  function goProfile() {
-    setMenuOpen(false);
-    navigate("/profile");
-  }
-
-
-  function goSettings() {
-    setMenuOpen(false);
-    navigate("/settings");
-  }
-
-
-  function goNotifications() {
-    setMenuOpen(false);
-    setShowNotifications(true);
-  }
-
-
-  function goRequirements() {
-    setMenuOpen(false);
-    navigate("/requirements");
-  }
-
-
-  function goHome() {
-    setActiveSection("home");
-    setMenuOpen(false);
-  }
-
-
-  /* =======================================================
-     OPEN SELL TREE
-  ======================================================= */
-
-  function goSellTree() {
-    setMenuOpen(false);
-
-    setActiveSection("sell");
-
-    setShowSellTree(true);
-
-    setSellStep(1);
-
-    setSellError("");
-
-    setListingPublished(false);
-
-    setSellPhotos([]);
-
-    setSellForm({
-      category: "",
-      tree_type: "",
-      title: "",
-      location: profile?.location || "",
-      quantity: "",
-      quantity_unit: "",
-      acreage: "",
-      tree_age: "",
-      diameter: "",
-      estimated_volume: "",
-      condition: "",
-      harvest_status: "",
-      price: "",
-      description: "",
-    });
-  }
-
-
-  /* =======================================================
-     CLOSE SELL TREE
-  ======================================================= */
-
-  function closeSellTree() {
-    if (publishingListing) return;
-
-    setShowSellTree(false);
-    setSellStep(1);
-    setSellError("");
-    setSellPhotos([]);
-    setListingPublished(false);
-  }
-
-
-  /* =======================================================
-     UPDATE SELL FIELD
-  ======================================================= */
-
-  function updateSellField(field, value) {
-    setSellError("");
-
-    setSellForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
-  }
-
-
-  /* =======================================================
-     CHANGE CATEGORY
-  ======================================================= */
-
-  function changeSellCategory(category) {
-    setSellError("");
-
-    setSellForm((previous) => ({
-      ...previous,
-      category,
-      tree_type: "",
-      acreage: "",
-      tree_age: "",
-      diameter: "",
-      condition: "",
-      harvest_status: "",
-      quantity: "",
-      quantity_unit: "",
-    }));
-  }
-
-
-  /* =======================================================
-     GET TREE TYPES BASED ON CATEGORY
-  ======================================================= */
-
-  const sellTreeTypes = useMemo(() => {
-    if (
-      sellForm.category ===
-      "indian_trees"
-    ) {
-      return INDIAN_TREES;
-    }
-
-    if (
-      sellForm.category ===
-      "plantations"
-    ) {
-      return PLANTATION_TYPES;
-    }
-
-    if (
-      sellForm.category ===
-      "wood_products"
-    ) {
-      return WOOD_PRODUCTS;
-    }
-
-    return [];
-  }, [sellForm.category]);
-
-
-  const selectedSellCategory =
-    SELL_CATEGORIES.find(
-      (item) =>
-        item.id === sellForm.category
-    );
-
-
-  const isPlantation =
-    sellForm.category ===
-    "plantations";
-
-
-  const isIndianTree =
-    sellForm.category ===
-    "indian_trees";
-
-
-  const isWoodProduct =
-    sellForm.category ===
-    "wood_products";
-
-
-  /* =======================================================
-     SELL STEP 1 VALIDATION
-  ======================================================= */
-
-  function validateSellStepOne() {
-    if (!sellForm.category) {
-      setSellError(
-        "Please select a category."
-      );
-      return false;
-    }
-
-    if (!sellForm.tree_type) {
-      setSellError(
-        "Please select a tree or product type."
-      );
-      return false;
-    }
-
-    setSellError("");
-
-    return true;
-  }
-
-
-  /* =======================================================
-     SELL STEP 2 VALIDATION
-  ======================================================= */
-
-  function validateSellStepTwo() {
-    if (!sellForm.title.trim()) {
-      setSellError(
-        "Please enter a listing title."
-      );
-      return false;
-    }
-
-    if (!sellForm.location.trim()) {
-      setSellError(
-        "Please enter the location."
-      );
-      return false;
-    }
-
-    if (!sellForm.quantity.trim()) {
-      setSellError(
-        "Please enter the quantity."
-      );
-      return false;
-    }
-
-    if (!sellForm.quantity_unit) {
-      setSellError(
-        "Please select the quantity unit."
-      );
-      return false;
-    }
-
-    if (
-      isPlantation &&
-      !sellForm.acreage
-    ) {
-      setSellError(
-        "Please enter plantation area in acres."
-      );
-      return false;
-    }
-
-    setSellError("");
-
-    return true;
-  }
-
-
-  /* =======================================================
-     SELL STEP 3
-  ======================================================= */
-
-  function validateSellStepThree() {
-    setSellError("");
-
-    return true;
-  }
-
-
-  /* =======================================================
-     SELL STEP NAVIGATION
-  ======================================================= */
-
-  function nextSellStep() {
-    if (sellStep === 1) {
-      if (!validateSellStepOne()) {
-        return;
-      }
-    }
-
-    if (sellStep === 2) {
-      if (!validateSellStepTwo()) {
-        return;
-      }
-    }
-
-    if (sellStep === 3) {
-      if (!validateSellStepThree()) {
-        return;
-      }
-    }
-
-    if (sellStep < 4) {
-      setSellStep(
-        (previous) => previous + 1
-      );
-    }
-  }
-
-
-  function previousSellStep() {
-    setSellError("");
-
-    if (sellStep > 1) {
-      setSellStep(
-        (previous) => previous - 1
-      );
-    }
-  }
-
-
-  /* =======================================================
-     PHOTO UPLOAD SELECTION
-  ======================================================= */
-
-  function handleSellPhotos(event) {
-    const selectedFiles =
-      Array.from(
-        event.target.files || []
-      );
-
-    const validFiles =
-      selectedFiles.filter(
-        (file) => {
-          if (
-            !file.type.startsWith(
-              "image/"
-            )
-          ) {
-            return false;
-          }
-
-          if (
-            file.size >
-            5 * 1024 * 1024
-          ) {
-            return false;
-          }
-
-          return true;
-        }
-      );
-
-    setSellPhotos(
-      (previous) =>
-        [
-          ...previous,
-          ...validFiles,
-        ].slice(0, 6)
-    );
-
-    event.target.value = "";
-  }
-
-
-  function removeSellPhoto(index) {
-    setSellPhotos(
-      (previous) =>
-        previous.filter(
-          (_, photoIndex) =>
-            photoIndex !== index
-        )
-    );
-  }
-
-
-  /* =======================================================
-     PUBLISH SELL TREE LISTING
-  ======================================================= */
-
-  async function publishSellListing() {
-    if (!user) {
-      setSellError(
-        "Your session has expired. Please login again."
-      );
-      return;
-    }
-
-    if (!validateSellStepTwo()) {
-      setSellStep(2);
-      return;
-    }
-
-    if (!sellForm.price.trim()) {
-      setSellError(
-        "Please enter your expected price."
-      );
-      setSellStep(2);
-      return;
-    }
-
-    try {
-      setPublishingListing(true);
-      setSellError("");
-
-      /* -----------------------------------------------
-         CREATE LISTING
-      ------------------------------------------------ */
-
-      // GPS location only. No IP address is used.
-      let coordinates = await getCurrentCoordinates();
-
-      // If GPS permission is temporarily unavailable, use the user's
-      // previously saved GPS coordinates. They are never shown in the UI.
-      if (!coordinates && Number.isFinite(Number(profile?.latitude)) && Number.isFinite(Number(profile?.longitude))) {
-        coordinates = {
-          latitude: Number(profile.latitude),
-          longitude: Number(profile.longitude),
-        };
-      }
-
-      if (!coordinates) {
-        throw new Error(
-          "Please allow GPS location permission before posting. Your location is required for 40 KM matching notifications."
-        );
-      }
-
-      // Convert GPS to a human-readable location such as:
-      // Guntur, Andhra Pradesh, India
-      const detectedLocation =
-        await reverseGeocodeLocation(
-          coordinates.latitude,
-          coordinates.longitude
-        );
-
-      const displayLocation =
-        detectedLocation ||
-        sellForm.location.trim() ||
-        profile?.location ||
-        "Current Location";
-
-      // Save readable location + hidden coordinates.
-      const { error: profileLocationError } = await supabase
-        .from("profiles")
-        .update({
-          location: displayLocation,
-          latitude: coordinates.latitude,
-          longitude: coordinates.longitude,
-        })
-        .eq("id", user.id);
-
-      if (profileLocationError) {
-        console.warn(
-          "Profile location update skipped:",
-          profileLocationError
-        );
-      }
-
-      setProfile((previous) => ({
-        ...(previous || {}),
-        location: displayLocation,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-      }));
-
-      const {
-        data: newListing,
-        error: listingError,
-      } = await supabase
-        .from("listings")
-        .insert({
-          user_id: user.id,
-
-          role: "farmer",
-
-          status: "pending",
-
-          category:
-            sellForm.category,
-
-          tree_type:
-            sellForm.tree_type,
-
-          title:
-            sellForm.title.trim(),
-
-          wood_type:
-            sellForm.tree_type,
-
-          product_type:
-            isWoodProduct
-              ? sellForm.tree_type
-              : null,
-
-          service_type: null,
-
-          work_type: null,
-
-          experience: null,
-
-          skills: null,
-
-          availability: null,
-
-          quantity:
-            sellForm.quantity.trim(),
-
-          quantity_unit:
-            sellForm.quantity_unit,
-
-          acreage:
-            isPlantation
-              ? Number(
-                  sellForm.acreage
-                )
-              : null,
-
-          tree_age:
-            sellForm.tree_age.trim() ||
-            null,
-
-          diameter:
-            sellForm.diameter.trim() ||
-            null,
-
-          estimated_volume:
-            sellForm.estimated_volume.trim() ||
-            null,
-
-          condition:
-            sellForm.condition ||
-            null,
-
-          harvest_status:
-            sellForm.harvest_status ||
-            null,
-
-          location:
-            displayLocation,
-
-          latitude: coordinates?.latitude ?? null,
-          longitude: coordinates?.longitude ?? null,
-
-          price:
-            sellForm.price.trim(),
-
-          expected_salary: null,
-
-          description:
-            sellForm.description.trim() ||
-            null,
-
-          contact_preference:
-            "Call / WhatsApp / Chat",
-        })
-        .select("*")
-        .single();
-
-      if (listingError) {
-        throw listingError;
-      }
-
-
-      /* -----------------------------------------------
-         UPLOAD PHOTOS
-      ------------------------------------------------ */
-
-      for (
-        let index = 0;
-        index < sellPhotos.length;
-        index++
-      ) {
-        const file =
-          sellPhotos[index];
-
-        const extension =
-          file.name
-            .split(".")
-            .pop() || "jpg";
-
-        const storagePath =
-          `${user.id}/${newListing.id}/${Date.now()}-${index}.${extension}`;
-
-        const {
-          error: uploadError,
-        } = await supabase.storage
-          .from("listing-photos")
-          .upload(
-            storagePath,
-            file,
-            {
-              cacheControl:
-                "3600",
-              upsert: false,
-              contentType:
-                file.type,
-            }
-          );
-
-        if (uploadError) {
-          console.error(
-            "Photo upload error:",
-            uploadError
-          );
-          continue;
-        }
-
-        const {
-          data: publicUrlData,
-        } = supabase.storage
-          .from(
-            "listing-photos"
-          )
-          .getPublicUrl(
-            storagePath
-          );
-
-        const publicUrl =
-          publicUrlData?.publicUrl;
-
-        if (!publicUrl) {
-          continue;
-        }
-
-        const {
-          error: imageError,
-        } = await supabase
-          .from("listing_images")
-          .insert({
-            listing_id:
-              newListing.id,
-
-            user_id:
-              user.id,
-
-            image_url:
-              publicUrl,
-
-            storage_path:
-              storagePath,
-
-            sort_order:
-              index,
-          });
-
-        if (imageError) {
-          console.error(
-            "Image database error:",
-            imageError
-          );
-        }
-      }
-
-
-      /* -----------------------------------------------
-         40 KM MATCHING NOTIFICATIONS
-         The listing remains globally visible.
-         Only matching users within 40 KM are notified.
-      ------------------------------------------------ */
-
-      await notifyMatchingUsers40Km({
-        senderId: user.id,
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        postType: "listing",
-        postId: newListing.id,
-        listingId: newListing.id,
-        title: "New Timber Listing Near You",
-        message: `${sellForm.tree_type || "Timber"} listing is available near your location.`,
-        keywords: [
-          sellForm.tree_type,
-          sellForm.category,
-          sellForm.title,
-          sellForm.description,
-        ],
-        matchingRoles: [
-          "timber_merchant",
-          "sawmill_business",
-          "buyer",
-        ],
-      });
-
-      /* -----------------------------------------------
-         REFRESH DASHBOARD
-      ------------------------------------------------ */
-
-      await loadListings(user.id);
-
-      setListingPublished(true);
-
-      setSellStep(5);
-    } catch (error) {
-      console.error(
-        "Publish listing error:",
-        error
-      );
-
-      setSellError(
-        error?.message ||
-          "Unable to publish listing. Please try again."
-      );
-    } finally {
-      setPublishingListing(false);
-    }
-  }
-
-
-  /* =======================================================
-     LOGOUT
-  ======================================================= */
-
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-
-      localStorage.removeItem(
-        "timbermart_selected_role"
-      );
-
-      navigate("/login", {
-        replace: true,
-      });
-    } catch (error) {
-      console.error(
-        "Logout error:",
-        error
-      );
-    }
-  }
-
-
-  /* =======================================================
-     CONTACT HELPERS
-  ======================================================= */
-
-  function callUser(phone) {
-    if (!phone) {
-      alert(
-        "Phone number is not available."
-      );
-      return;
-    }
-
-    window.location.href =
-      `tel:${phone}`;
-  }
-
-
-  function whatsappUser(phone) {
-    if (!phone) {
-      alert(
-        "WhatsApp number is not available."
-      );
-      return;
-    }
-
-    const cleanPhone =
-      phone.replace(/\D/g, "");
-
-    window.open(
-      `https://wa.me/${cleanPhone}`,
-      "_blank",
-      "noopener,noreferrer"
-    );
-  }
-
-
-  async function chatUser(otherUserId, context = {}) {
-    return openChat(otherUserId, context);
-  }
-
-
-  /* =======================================================
-     OPEN LISTING
-  ======================================================= */
-
-  function openListing(listing) {
-    setSelectedListing(listing);
-    setShowNotifications(false);
-  }
-
-
-  async function openNotification(notification) {
-    await markNotificationRead(notification.id);
-    setShowNotifications(false);
-
-    if (!notification) return;
-
-    // -----------------------------------------------------
-    // LISTING NOTIFICATION
-    // -----------------------------------------------------
-    const listingId =
-      notification.listing_id ||
-      (notification.post_type === "listing"
-        ? notification.post_id
-        : null);
-
-    if (listingId) {
-      const { data, error } = await supabase
-        .from("listings")
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            name,
-            role,
-            phone,
-            location,
-            photo_url
-          ),
-          listing_images (
-            id,
-            image_url,
-            storage_path,
-            sort_order
-          )
-        `)
-        .eq("id", listingId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Notification listing error:", error);
-        return;
-      }
-
-      if (data) {
-        setSelectedListing(data);
-      }
-
-      return;
-    }
-
-    // -----------------------------------------------------
-    // REQUIREMENT NOTIFICATION
-    // -----------------------------------------------------
-    const requirementId =
-      notification.requirement_id ||
-      (notification.post_type === "requirement"
-        ? notification.post_id
-        : null);
-
-    if (requirementId) {
-      const { data, error } = await supabase
-        .from("requirements")
-        .select(`
-          *,
-          profiles:user_id (
-            id,
-            name,
-            role,
-            phone,
-            location,
-            photo_url
-          )
-        `)
-        .eq("id", requirementId)
-        .maybeSingle();
-
-      if (error) {
-        console.error("Notification requirement error:", error);
-        return;
-      }
-
-      if (data) {
-        setSelectedRequirement(data);
-      }
-
-      return;
-    }
-
-    // Job/service notifications can be opened by the existing
-    // dashboard navigation when those sections are available.
-    if (notification.post_type === "job") {
-      setActiveSection("jobs");
-      return;
-    }
-
-    if (notification.post_type === "service") {
-      setActiveSection("services");
-    }
-  }
-
-
-  /* =======================================================
-     OPEN REQUIREMENT
-  ======================================================= */
-
-  function openRequirement(
-    requirement
-  ) {
-    setSelectedRequirement(
-      requirement
-    );
-  }
-
-
-  /* =======================================================
-     DELETE REQUIREMENT
-  ======================================================= */
-
-  async function deleteRequirement(
-    requirementId
-  ) {
-    const confirmed =
-      window.confirm(
-        "Are you sure you want to delete this requirement?"
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
-    const {
-      error,
-    } = await supabase
-      .from("requirements")
-      .delete()
-      .eq(
-        "id",
-        requirementId
-      )
-      .eq(
-        "user_id",
-        user.id
-      );
-
-    if (error) {
-      console.error(error);
-
-      alert(error.message);
-
-      return;
-    }
-
-    setRequirements(
-      (previous) =>
-        previous.filter(
-          (item) =>
-            item.id !==
-            requirementId
-        )
-    );
-
-    setSelectedRequirement(
-      null
-    );
-  }
-
-
-  /* =======================================================
-     FILTER LISTINGS
-  ======================================================= */
-
-  const filteredListings =
-    useMemo(() => {
-      const query =
-        searchText
-          .trim()
-          .toLowerCase();
-
-      if (!query) {
-        return listings;
-      }
-
-      return listings.filter(
-        (item) =>
-          [
-            item.title,
-            item.wood_type,
-            item.tree_type,
-            item.category,
-            item.product_type,
-            item.location,
-            item.description,
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase()
-            .includes(query)
-      );
-    }, [
-      listings,
-      searchText,
+  }, []);
+
+  const loadAll = useCallback(async (refresh = false) => {
+    setError("");
+    if (refresh) setRefreshing(true);
+    else setLoading(true);
+
+    await Promise.all([
+      loadUsers(),
+      loadListings(),
+      loadRequirements(),
+      loadNotifications(),
+      loadAdminPosts(),
     ]);
 
+    if (refresh) setRefreshing(false);
+    else setLoading(false);
+  }, [loadUsers, loadListings, loadRequirements, loadNotifications, loadAdminPosts]);
 
-  const liveListings = useMemo(() => {
-    return listings.filter((item) => {
-      if (item.status !== "approved") return false;
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
-      const expiryDate = getListingExpiryDate(item);
+  const roleCounts = useMemo(() => {
+    const result = {
+      buyer: 0,
+      farmer: 0,
+      timber_merchant: 0,
+      sawmill_business: 0,
+      carpenter: 0,
+      worker: 0,
+      admin: 0,
+      other: 0,
+    };
 
-      // If Supabase has not populated an expiry yet, keep the approved
-      // listing visible instead of breaking the existing dashboard.
-      if (!expiryDate) return true;
-
-      return expiryDate.getTime() > expiryNow;
+    users.forEach((user) => {
+      result[normalizeRole(user.role)] += 1;
     });
-  }, [listings, expiryNow]);
 
-  const filteredLiveListings = useMemo(() => {
-    const query = searchText.trim().toLowerCase();
+    return result;
+  }, [users]);
 
-    if (!query) return liveListings;
+  const pendingListings = useMemo(
+    () => listings.filter(isPending),
+    [listings]
+  );
 
-    return liveListings.filter((item) =>
-      [
-        item.title,
-        item.wood_type,
-        item.tree_type,
-        item.category,
-        item.product_type,
-        item.location,
-        item.description,
+  const pendingRequirements = useMemo(
+    () => requirements.filter(isPending),
+    [requirements]
+  );
+
+  const unreadNotifications = useMemo(
+    () =>
+      notifications.filter(
+        (n) => n.is_read === false || n.is_read == null || n.read === false
+      ),
+    [notifications]
+  );
+
+  const pendingTotal = pendingListings.length + pendingRequirements.length;
+
+  const approvedListings = useMemo(
+    () =>
+      listings.filter((row) =>
+        ["approved", "active", "published", "live"].includes(
+          String(row.status || "").toLowerCase()
+        )
+      ),
+    [listings]
+  );
+
+  const growthData = useMemo(() => {
+    const days = [];
+
+    for (let i = 6; i >= 0; i -= 1) {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      start.setDate(start.getDate() - i);
+
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+
+      const value = users.filter((user) => {
+        const created = new Date(user.created_at);
+        return created >= start && created < end;
+      }).length;
+
+      days.push({
+        label: start.toLocaleDateString("en-IN", { weekday: "short" }),
+        value,
+      });
+    }
+
+    return days;
+  }, [users]);
+
+  const maxGrowth = Math.max(1, ...growthData.map((d) => d.value));
+
+  const recentUsers = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return users.slice(0, 8);
+
+    return users
+      .filter((user) =>
+        [
+          displayName(user),
+          user.email,
+          user.phone,
+          user.city,
+          user.state,
+          ROLE_LABELS[normalizeRole(user.role)],
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(term)
+      )
+      .slice(0, 30);
+  }, [users, search]);
+
+  const filteredListings = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    return listings.filter((row) => {
+      if (!term) return true;
+      return [
+        listingTitle(row),
+        row.category,
+        row.species,
+        row.tree_type,
+        row.city,
+        row.state,
+        row.status,
       ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase()
-        .includes(query)
+        .includes(term);
+    });
+  }, [listings, search]);
+
+  const filteredRequirements = useMemo(() => {
+    const term = search.trim().toLowerCase();
+
+    return requirements.filter((row) => {
+      if (!term) return true;
+      return [
+        requirementTitle(row),
+        row.category,
+        row.species,
+        row.city,
+        row.state,
+        row.status,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(term);
+    });
+  }, [requirements, search]);
+
+  async function updateRowStatus(type, id, status) {
+    if (!id) return;
+
+    setBusyId(`${type}-${id}`);
+    setError("");
+
+    const tables =
+      type === "listing"
+        ? ["listings", "timber_listings"]
+        : ["requirements", "buyer_requirements"];
+
+    let success = false;
+
+    for (const table of tables) {
+      const { error: queryError } = await supabase
+        .from(table)
+        .update({ status })
+        .eq("id", id);
+
+      if (!queryError) {
+        success = true;
+        break;
+      }
+    }
+
+    if (!success) {
+      setError(
+        `Could not ${status === "approved" ? "approve" : "reject"} this ${
+          type === "listing" ? "listing" : "requirement"
+        }. Check your Supabase UPDATE policy.`
+      );
+    } else if (type === "listing") {
+      setListings((current) =>
+        current.map((row) => (row.id === id ? { ...row, status } : row))
+      );
+    } else {
+      setRequirements((current) =>
+        current.map((row) => (row.id === id ? { ...row, status } : row))
+      );
+    }
+
+    setBusyId("");
+  }
+
+  async function markRead(id) {
+    if (!id) return;
+
+    setBusyId(`notification-${id}`);
+
+    const { error: queryError } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", id);
+
+    if (!queryError) {
+      setNotifications((current) =>
+        current.map((row) =>
+          row.id === id ? { ...row, is_read: true } : row
+        )
+      );
+    }
+
+    setBusyId("");
+  }
+
+  async function sendAnnouncement() {
+    const message = announcement.trim();
+    const title = announcementTitle.trim() || "TimberMart Admin";
+
+    if (!message) {
+      setError("Enter a notification message first.");
+      return;
+    }
+
+    setBusyId("announcement");
+    setError("");
+
+    const { data, error: queryError } = await supabase.rpc(
+      "admin_send_announcement",
+      {
+        p_title: title,
+        p_message: message,
+        p_target_role: announcementRole,
+      }
     );
-  }, [liveListings, searchText]);
 
-  /* =======================================================
-     FILTER REQUIREMENTS
-  ======================================================= */
+    if (queryError) {
+      setError(`Notification failed: ${queryError.message}`);
+    } else {
+      setAnnouncement("");
+      setAnnouncementTitle("TimberMart Admin");
+      const result = Array.isArray(data) ? data[0] : data;
+      const sent = Number(result?.recipients_count ?? result?.count ?? data ?? 0);
+      setError(`Announcement sent successfully to ${sent} user${sent === 1 ? "" : "s"}.`);
+      await loadNotifications();
+    }
 
-  const filteredRequirements =
-    useMemo(() => {
-      const query =
-        searchText
-          .trim()
-          .toLowerCase();
+    setBusyId("");
+  }
 
-      if (!query) {
-        return requirements;
+  function handlePostImageChange(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file only.");
+      event.target.value = "";
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image size must be 5 MB or less.");
+      event.target.value = "";
+      return;
+    }
+
+    if (postImagePreview) {
+      URL.revokeObjectURL(postImagePreview);
+    }
+
+    const previewUrl = URL.createObjectURL(file);
+    setPostImageFile(file);
+    setPostImagePreview(previewUrl);
+    setPostImageUrl("");
+    setError("");
+  }
+
+  function removePostImage() {
+    if (postImagePreview) {
+      URL.revokeObjectURL(postImagePreview);
+    }
+    setPostImageFile(null);
+    setPostImagePreview("");
+    setPostImageUrl("");
+  }
+
+  async function uploadAdminPostImage(file, userId) {
+    if (!file) return null;
+
+    const extension = file.name.includes(".")
+      ? file.name.split(".").pop().toLowerCase().replace(/[^a-z0-9]/g, "")
+      : "jpg";
+
+    const safeName = file.name
+      .replace(/\.[^/.]+$/, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9-_]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "admin-post";
+
+    const path = `admin-posts/${userId}/${crypto.randomUUID()}-${safeName}.${extension}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("admin-post-images")
+      .upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: file.type,
+      });
+
+    if (uploadError) {
+      throw new Error(uploadError.message);
+    }
+
+    const { data } = supabase.storage
+      .from("admin-post-images")
+      .getPublicUrl(path);
+
+    if (!data?.publicUrl) {
+      throw new Error("Could not create the uploaded image URL.");
+    }
+
+    return data.publicUrl;
+  }
+
+  async function publishAdminPost() {
+    const title = postTitle.trim();
+    const message = postMessage.trim();
+
+    if (!title || !message) {
+      setError("Enter both post title and post content.");
+      return;
+    }
+
+    if (!postImageFile) {
+      setError("Please select an image for the admin post/ad.");
+      return;
+    }
+
+    setBusyId("admin-post");
+    setPostImageUploading(true);
+    setError("");
+
+    try {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+
+      if (userError || !userData?.user) {
+        throw new Error("Admin session not found. Please login again.");
       }
 
-      return requirements.filter(
-        (item) =>
+      const uploadedImageUrl = await uploadAdminPostImage(postImageFile, userData.user.id);
+
+      const { data, error: queryError } = await supabase.rpc(
+        "admin_publish_post",
+        {
+          p_title: title,
+          p_message: message,
+          p_image_url: uploadedImageUrl,
+          p_post_type: postType,
+        }
+      );
+
+      if (queryError) {
+        throw new Error(queryError.message);
+      }
+
+      const result = Array.isArray(data) ? data[0] : data;
+      const sent = Number(result?.recipients_count || 0);
+
+      if (postImagePreview) {
+        URL.revokeObjectURL(postImagePreview);
+      }
+
+      setPostTitle("");
+      setPostMessage("");
+      setPostImageUrl("");
+      setPostImageFile(null);
+      setPostImagePreview("");
+      setPostType("announcement");
+
+      setError(
+        `Post published successfully. ${sent} user${sent === 1 ? "" : "s"} notified.`
+      );
+
+      await Promise.all([loadAdminPosts(), loadNotifications()]);
+    } catch (uploadOrPublishError) {
+      setError(`Admin post failed: ${uploadOrPublishError.message || "Unknown error"}`);
+    } finally {
+      setPostImageUploading(false);
+      setBusyId("");
+    }
+  }
+
+  function openMenu(menu) {
+    setActiveMenu(menu);
+    setSearch("");
+    setMobileNav(false);
+  }
+
+  function renderOverview() {
+    const totalUsers = users.length;
+
+    return (
+      <>
+        <section className="tm-overview-banner">
+          <div>
+            <span>ADMIN CONTROL CENTER</span>
+            <h2>Dashboard Overview</h2>
+            <p>
+              Welcome back, Admin! Here&apos;s what&apos;s happening on
+              TimberMart.
+            </p>
+          </div>
+
+          <div className="tm-banner-buttons">
+            <button onClick={() => openMenu("Users")} type="button">
+              + Add User
+            </button>
+            <button onClick={() => openMenu("Approval Center")} type="button">
+              Review Approvals
+            </button>
+          </div>
+        </section>
+
+        <section className="tm-stat-grid">
+          <button className="tm-stat" onClick={() => openMenu("Users")} type="button">
+            <div className="tm-stat-icon users">👥</div>
+            <div><span>Total Users</span><strong>{totalUsers.toLocaleString("en-IN")}</strong><small>Registered profiles</small></div>
+          </button>
+
+          <button className="tm-stat" onClick={() => openMenu("Listings")} type="button">
+            <div className="tm-stat-icon listings">🪵</div>
+            <div><span>Total Listings</span><strong>{listings.length.toLocaleString("en-IN")}</strong><small>{approvedListings.length} active</small></div>
+          </button>
+
+          <button className="tm-stat" onClick={() => openMenu("Requirements")} type="button">
+            <div className="tm-stat-icon requirements">📋</div>
+            <div><span>Total Requirements</span><strong>{requirements.length.toLocaleString("en-IN")}</strong><small>{pendingRequirements.length} pending</small></div>
+          </button>
+
+          <button className="tm-stat" onClick={() => openMenu("Approval Center")} type="button">
+            <div className="tm-stat-icon jobs">✓</div>
+            <div><span>Pending Approvals</span><strong>{pendingTotal}</strong><small>Needs admin action</small></div>
+          </button>
+
+          <button className="tm-stat" onClick={() => openMenu("Notifications")} type="button">
+            <div className="tm-stat-icon leads">🔔</div>
+            <div><span>Unread Alerts</span><strong>{unreadNotifications.length}</strong><small>Platform notifications</small></div>
+          </button>
+
+          <button className="tm-stat" onClick={() => openMenu("Reports")} type="button">
+            <div className="tm-stat-icon reports">⚠</div>
+            <div><span>Reported Items</span><strong>{listings.filter((x) => String(x.status).toLowerCase() === "reported").length}</strong><small>Needs review</small></div>
+          </button>
+        </section>
+
+        <section className="tm-main-grid">
+          <div className="tm-card tm-activity-card">
+            <SectionHeader title="Platform Activity" subtitle="New users created in the last 7 days" />
+
+            <div className="tm-chart">
+              <div className="tm-chart-y">
+                <span>{maxGrowth}</span>
+                <span>{Math.round(maxGrowth * 0.75)}</span>
+                <span>{Math.round(maxGrowth * 0.5)}</span>
+                <span>{Math.round(maxGrowth * 0.25)}</span>
+                <span>0</span>
+              </div>
+
+              <div className="tm-chart-bars">
+                {growthData.map((item) => (
+                  <div className="tm-chart-col" key={item.label}>
+                    <b>{item.value}</b>
+                    <i style={{ height: `${Math.max(7, (item.value / maxGrowth) * 100)}%` }} />
+                    <span>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="tm-card tm-role-card">
+            <SectionHeader title="Users by Role" subtitle="Current registered users" />
+
+            <div className="tm-role-layout">
+              <DonutChart counts={roleCounts} total={totalUsers} />
+
+              <div className="tm-role-list">
+                {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                  <div key={role}>
+                    <span>
+                      <i style={{ background: ROLE_COLORS[role] }} />
+                      {label}
+                    </span>
+                    <strong>{roleCounts[role]}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="tm-card tm-approval-preview">
+          <SectionHeader
+            title="Pending Approvals"
+            subtitle="Items waiting for administrator review"
+            action="Open Approval Center"
+            onAction={() => openMenu("Approval Center")}
+          />
+
+          <div className="tm-approval-grid">
+            {pendingListings.slice(0, 3).map((row) => (
+              <div className="tm-approval-item" key={`l-${row.id}`}>
+                <span className="tm-approval-icon">🪵</span>
+                <div>
+                  <strong>{listingTitle(row)}</strong>
+                  <small>Timber Listing · {formatDate(row.created_at)}</small>
+                </div>
+                <div className="tm-mini-actions">
+                  <button
+                    type="button"
+                    disabled={busyId === `listing-${row.id}`}
+                    onClick={() => updateRowStatus("listing", row.id, "approved")}
+                  >✓</button>
+                  <button
+                    type="button"
+                    disabled={busyId === `listing-${row.id}`}
+                    onClick={() => updateRowStatus("listing", row.id, "rejected")}
+                  >×</button>
+                </div>
+              </div>
+            ))}
+
+            {pendingRequirements.slice(0, 3).map((row) => (
+              <div className="tm-approval-item" key={`r-${row.id}`}>
+                <span className="tm-approval-icon req">📋</span>
+                <div>
+                  <strong>{requirementTitle(row)}</strong>
+                  <small>Buyer Requirement · {formatDate(row.created_at)}</small>
+                </div>
+                <div className="tm-mini-actions">
+                  <button
+                    type="button"
+                    disabled={busyId === `requirement-${row.id}`}
+                    onClick={() => updateRowStatus("requirement", row.id, "approved")}
+                  >✓</button>
+                  <button
+                    type="button"
+                    disabled={busyId === `requirement-${row.id}`}
+                    onClick={() => updateRowStatus("requirement", row.id, "rejected")}
+                  >×</button>
+                </div>
+              </div>
+            ))}
+
+            {!pendingTotal && (
+              <EmptyState
+                icon="✓"
+                title="Everything is reviewed"
+                text="There are no pending listings or requirements."
+              />
+            )}
+          </div>
+        </section>
+
+        <section className="tm-two-grid">
+          <div className="tm-card tm-table-card">
+            <SectionHeader title="Recent Users" action="View All" onAction={() => openMenu("Users")} />
+            <UserTable users={recentUsers} />
+          </div>
+
+          <div className="tm-card tm-table-card">
+            <SectionHeader title="Recent Listings" action="View All" onAction={() => openMenu("Listings")} />
+            <ListingTable
+              listings={listings.slice(0, 7)}
+              onApprove={(id) => updateRowStatus("listing", id, "approved")}
+              onReject={(id) => updateRowStatus("listing", id, "rejected")}
+              busyId={busyId}
+            />
+          </div>
+        </section>
+
+        <section className="tm-card tm-quick-actions">
+          <SectionHeader title="Quick Actions" />
+
+          <div className="tm-quick-grid">
+            <button type="button" onClick={() => openMenu("Users")}>👤 <span>Add New User</span></button>
+            <button type="button" onClick={() => openMenu("Listings")}>🪵 <span>Review Listings</span></button>
+            <button type="button" onClick={() => openMenu("Requirements")}>📋 <span>Review Requirements</span></button>
+            <button type="button" onClick={() => openMenu("Notifications")}>🔔 <span>Send Notification</span></button>
+            <button type="button" onClick={() => openMenu("Reports")}>⚠ <span>View Reports</span></button>
+            <button type="button" onClick={() => openMenu("System Logs")}>▤ <span>System Logs</span></button>
+          </div>
+        </section>
+      </>
+    );
+  }
+
+  function renderApprovalCenter() {
+    return (
+      <section className="tm-module">
+        <SectionHeader
+          title="Approval Center"
+          subtitle={`${pendingTotal} items require administrator action`}
+        />
+
+        <div className="tm-approval-summary">
+          <div><span>🪵</span><strong>{pendingListings.length}</strong><small>Pending Listings</small></div>
+          <div><span>📋</span><strong>{pendingRequirements.length}</strong><small>Pending Requirements</small></div>
+          <div><span>✓</span><strong>{approvedListings.length}</strong><small>Approved Listings</small></div>
+        </div>
+
+        <div className="tm-approval-section">
+          <div className="tm-subheading">
+            <div>
+              <h3>Timber Listings Awaiting Approval</h3>
+              <p>Check seller listing details before publishing.</p>
+            </div>
+            <span>{pendingListings.length}</span>
+          </div>
+
+          {pendingListings.length ? (
+            <div className="tm-approval-table-wrap">
+              <table className="tm-table">
+                <thead>
+                  <tr>
+                    <th>Listing</th>
+                    <th>Seller</th>
+                    <th>Category</th>
+                    <th>Location</th>
+                    <th>Created</th>
+                    <th>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingListings.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <strong>{listingTitle(row)}</strong>
+                        <small>{row.description || "Timber listing"}</small>
+                      </td>
+                      <td>{row.seller_name || row.owner_name || row.user_name || row.user_id || "Seller"}</td>
+                      <td>{row.category || row.species || row.tree_type || "—"}</td>
+                      <td>{[row.city, row.state].filter(Boolean).join(", ") || row.location || "—"}</td>
+                      <td>{formatDate(row.created_at)}</td>
+                      <td>
+                        <div className="tm-decision-buttons">
+                          <button
+                            className="approve"
+                            type="button"
+                            disabled={busyId === `listing-${row.id}`}
+                            onClick={() => updateRowStatus("listing", row.id, "approved")}
+                          >✓ Approve</button>
+                          <button
+                            className="reject"
+                            type="button"
+                            disabled={busyId === `listing-${row.id}`}
+                            onClick={() => updateRowStatus("listing", row.id, "rejected")}
+                          >× Reject</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState icon="✓" title="No pending listings" text="All timber listings have been reviewed." />
+          )}
+        </div>
+
+        <div className="tm-approval-section">
+          <div className="tm-subheading">
+            <div>
+              <h3>Buyer Requirements Awaiting Approval</h3>
+              <p>Review buyer demand before making it visible to sellers.</p>
+            </div>
+            <span>{pendingRequirements.length}</span>
+          </div>
+
+          {pendingRequirements.length ? (
+            <div className="tm-approval-table-wrap">
+              <table className="tm-table">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Buyer</th>
+                    <th>Quantity</th>
+                    <th>Budget</th>
+                    <th>Location</th>
+                    <th>Decision</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendingRequirements.map((row) => (
+                    <tr key={row.id}>
+                      <td>
+                        <strong>{requirementTitle(row)}</strong>
+                        <small>{row.description || "Buyer requirement"}</small>
+                      </td>
+                      <td>{row.buyer_name || row.owner_name || row.user_name || row.user_id || "Buyer"}</td>
+                      <td>{row.quantity ? `${row.quantity} ${row.unit || ""}` : "—"}</td>
+                      <td>{row.budget ? `₹${Number(row.budget).toLocaleString("en-IN")}` : "—"}</td>
+                      <td>{[row.city, row.state].filter(Boolean).join(", ") || row.location || "—"}</td>
+                      <td>
+                        <div className="tm-decision-buttons">
+                          <button
+                            className="approve"
+                            type="button"
+                            disabled={busyId === `requirement-${row.id}`}
+                            onClick={() => updateRowStatus("requirement", row.id, "approved")}
+                          >✓ Approve</button>
+                          <button
+                            className="reject"
+                            type="button"
+                            disabled={busyId === `requirement-${row.id}`}
+                            onClick={() => updateRowStatus("requirement", row.id, "rejected")}
+                          >× Reject</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <EmptyState icon="✓" title="No pending requirements" text="All buyer requirements have been reviewed." />
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  function renderUsersPage(roleFilter = null) {
+    const role = roleFilter ? normalizeRole(roleFilter) : null;
+    const data = users.filter((user) => !role || normalizeRole(user.role) === role);
+
+    const term = search.trim().toLowerCase();
+    const filtered = term
+      ? data.filter((user) =>
           [
-            item.title,
-            item.category,
-            item.category_label,
-            item.location,
-            item.description,
+            displayName(user),
+            user.email,
+            user.phone,
+            user.city,
+            user.state,
           ]
             .filter(Boolean)
             .join(" ")
             .toLowerCase()
-            .includes(query)
-      );
-    }, [
-      requirements,
-      searchText,
-    ]);
+            .includes(term)
+        )
+      : data;
 
+    const title = role ? `${ROLE_LABELS[role]} Users` : "All Users";
 
-  /* =======================================================
-     STATS
-  ======================================================= */
+    return (
+      <section className="tm-module">
+        <SectionHeader title={title} subtitle={`${filtered.length} users`} />
 
-  const ownListings =
-    listings.filter(
-      (item) =>
-        item.user_id ===
-        user?.id
+        <div className="tm-role-summary-grid">
+          {Object.entries(ROLE_LABELS).map(([key, label]) => (
+            <button type="button" key={key} onClick={() => openMenu(key === "buyer" ? "Buyers" : key === "farmer" ? "Farmers" : key === "timber_merchant" ? "Merchants" : key === "sawmill_business" ? "Businesses" : key === "carpenter" ? "Carpenters" : key === "worker" ? "Workers" : "Users")}>
+              <span style={{ background: ROLE_COLORS[key] }}>{roleCounts[key]}</span>
+              <div><strong>{label}</strong><small>Registered</small></div>
+            </button>
+          ))}
+        </div>
+
+        <div className="tm-card tm-inner-card">
+          <UserTable users={filtered} full />
+        </div>
+      </section>
+    );
+  }
+
+  function renderListingsPage() {
+    return (
+      <section className="tm-module">
+        <SectionHeader title="Timber Listings" subtitle={`${filteredListings.length} listings`} action="Approval Center" onAction={() => openMenu("Approval Center")} />
+        <div className="tm-card tm-inner-card">
+          <ListingTable
+            listings={filteredListings}
+            full
+            onApprove={(id) => updateRowStatus("listing", id, "approved")}
+            onReject={(id) => updateRowStatus("listing", id, "rejected")}
+            busyId={busyId}
+          />
+        </div>
+      </section>
+    );
+  }
+
+  function renderRequirementsPage() {
+    return (
+      <section className="tm-module">
+        <SectionHeader title="Buyer Requirements" subtitle={`${filteredRequirements.length} requirements`} action="Approval Center" onAction={() => openMenu("Approval Center")} />
+        <div className="tm-card tm-inner-card">
+          {filteredRequirements.length ? (
+            <div className="tm-table-scroll">
+              <table className="tm-table">
+                <thead>
+                  <tr>
+                    <th>Requirement</th>
+                    <th>Buyer</th>
+                    <th>Quantity</th>
+                    <th>Budget</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredRequirements.map((row) => (
+                    <tr key={row.id}>
+                      <td><strong>{requirementTitle(row)}</strong><small>{row.description || "—"}</small></td>
+                      <td>{row.buyer_name || row.user_name || row.user_id || "Buyer"}</td>
+                      <td>{row.quantity ? `${row.quantity} ${row.unit || ""}` : "—"}</td>
+                      <td>{row.budget ? `₹${Number(row.budget).toLocaleString("en-IN")}` : "—"}</td>
+                      <td>{[row.city, row.state].filter(Boolean).join(", ") || row.location || "—"}</td>
+                      <td><span className={statusClass(row.status)}>{row.status || "Pending"}</span></td>
+                      <td>
+                        <div className="tm-decision-buttons">
+                          <button className="approve" type="button" onClick={() => updateRowStatus("requirement", row.id, "approved")}>✓</button>
+                          <button className="reject" type="button" onClick={() => updateRowStatus("requirement", row.id, "rejected")}>×</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <EmptyState icon="📋" title="No requirements found" text="Buyer requirements will appear here." />}
+        </div>
+      </section>
+    );
+  }
+
+  function renderNotificationsPage() {
+    return (
+      <section className="tm-module">
+        <SectionHeader title="Notifications" subtitle={`${unreadNotifications.length} unread notifications`} />
+
+        <div className="tm-notification-layout">
+          <div className="tm-card tm-inner-card">
+            <div className="tm-subheading">
+              <div><h3>Send Announcement</h3><p>Send a message to selected users.</p></div>
+            </div>
+
+            <label className="tm-label">
+              Notification Title
+              <input
+                value={announcementTitle}
+                onChange={(e) => setAnnouncementTitle(e.target.value)}
+                placeholder="TimberMart Admin"
+                maxLength={160}
+              />
+            </label>
+
+            <label className="tm-label">
+              Audience
+              <select value={announcementRole} onChange={(e) => setAnnouncementRole(e.target.value)}>
+                <option value="all">All Users</option>
+                <option value="buyer">Buyers</option>
+                <option value="farmer">Farmers</option>
+                <option value="timber_merchant">Merchants</option>
+                <option value="sawmill_business">Businesses</option>
+                <option value="carpenter">Carpenters</option>
+                <option value="worker">Workers</option>
+              </select>
+            </label>
+
+            <label className="tm-label">
+              Message
+              <textarea value={announcement} onChange={(e) => setAnnouncement(e.target.value)} placeholder="Write announcement..." rows={6} />
+            </label>
+
+            <button className="tm-primary-button" type="button" disabled={busyId === "announcement"} onClick={sendAnnouncement}>
+              {busyId === "announcement" ? "Sending..." : "🔔 Send Notification"}
+            </button>
+
+            <p className="tm-note">
+              Admin sending is handled by a protected Supabase RPC. Each recipient gets an individual notification with the source marked as TimberMart Admin.
+            </p>
+          </div>
+
+          <div className="tm-card tm-inner-card">
+            <div className="tm-subheading">
+              <div><h3>Recent Notifications</h3><p>Latest platform notifications.</p></div>
+            </div>
+
+            <div className="tm-notification-list">
+              {notifications.length ? notifications.slice(0, 40).map((item) => {
+                const read = item.is_read === true || item.read === true;
+
+                return (
+                  <div className={`tm-notification ${read ? "read" : "unread"}`} key={item.id}>
+                    <span>🔔</span>
+                    <div>
+                      <strong>{item.title || "TimberMart Notification"}</strong>
+                      <p>{item.message || item.body || "Notification"}</p>
+                      <small>{formatDateTime(item.created_at)}</small>
+                    </div>
+                    {!read && (
+                      <button type="button" onClick={() => markRead(item.id)}>Mark read</button>
+                    )}
+                  </div>
+                );
+              }) : <EmptyState icon="🔔" title="No notifications" />}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderAdminPosts() {
+    return (
+      <section className="tm-module">
+        <SectionHeader
+          title="Admin Posts & Ads"
+          subtitle="Publish official TimberMart announcements, promotions and alerts to every user."
+        />
+
+        <div className="tm-admin-post-layout">
+          <div className="tm-card tm-inner-card tm-admin-post-form">
+            <div className="tm-subheading">
+              <div>
+                <h3>📢 Create Admin Post / Advertisement</h3>
+                <p>
+                  Posts are stored as official TimberMart content. The selected image is
+                  uploaded securely to Supabase Storage and a notification is delivered to all registered users.
+                </p>
+              </div>
+            </div>
+
+            <label className="tm-label">
+              Post Type
+              <select value={postType} onChange={(e) => setPostType(e.target.value)}>
+                <option value="announcement">Announcement</option>
+                <option value="promotion">Promotion / Ad</option>
+                <option value="alert">Important Alert</option>
+                <option value="update">Platform Update</option>
+              </select>
+            </label>
+
+            <label className="tm-label">
+              Title
+              <input
+                value={postTitle}
+                onChange={(e) => setPostTitle(e.target.value)}
+                placeholder="Example: TimberMart Weekend Sale"
+                maxLength={160}
+              />
+            </label>
+
+            <label className="tm-label">
+              Message / Content
+              <textarea
+                value={postMessage}
+                onChange={(e) => setPostMessage(e.target.value)}
+                placeholder="Write the announcement, offer, safety message or platform update..."
+                rows={7}
+                maxLength={3000}
+              />
+            </label>
+
+            <div className="tm-label">
+              <span className="tm-label-title">Post Image <span className="tm-required">*</span></span>
+              <div className="tm-image-upload-box">
+                <input
+                  id="tm-admin-post-image"
+                  className="tm-file-input"
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  onChange={handlePostImageChange}
+                  disabled={busyId === "admin-post"}
+                />
+                <label htmlFor="tm-admin-post-image" className="tm-upload-dropzone">
+                  <span className="tm-upload-icon">🖼️</span>
+                  <strong>Upload post image</strong>
+                  <small>PNG, JPG, WEBP or GIF · Max 5 MB</small>
+                  <span className="tm-upload-button">Choose Image</span>
+                </label>
+
+                {postImagePreview && (
+                  <div className="tm-selected-image">
+                    <img src={postImagePreview} alt="Selected admin post preview" />
+                    <div className="tm-selected-image-info">
+                      <strong>{postImageFile?.name || "Selected image"}</strong>
+                      <small>
+                        {postImageFile
+                          ? `${(postImageFile.size / (1024 * 1024)).toFixed(2)} MB`
+                          : "Ready to upload"}
+                      </small>
+                    </div>
+                    <button
+                      type="button"
+                      className="tm-remove-image"
+                      onClick={removePostImage}
+                      disabled={busyId === "admin-post"}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="tm-post-preview">
+              <div className="tm-preview-head">
+                <span className="tm-preview-badge">{postType}</span>
+                <span className="tm-preview-brand">🌳 TimberMart Admin</span>
+              </div>
+              {postImagePreview && (
+                <img className="tm-post-preview-image" src={postImagePreview} alt="Post preview" />
+              )}
+              <div className="tm-post-preview-content">
+                <h4>{postTitle || "Your TimberMart post title"}</h4>
+                <p>{postMessage || "Your post content preview will appear here."}</p>
+                <small>🔔 All registered users will receive a TimberMart Admin notification.</small>
+              </div>
+            </div>
+
+            <button
+              className="tm-primary-button"
+              type="button"
+              disabled={busyId === "admin-post" || postImageUploading}
+              onClick={publishAdminPost}
+            >
+              {postImageUploading
+                ? "Uploading image..."
+                : busyId === "admin-post"
+                  ? "Publishing..."
+                  : "📢 Publish to All Users"}
+            </button>
+          </div>
+
+          <div className="tm-card tm-inner-card">
+            <div className="tm-subheading">
+              <div>
+                <h3>Published Posts</h3>
+                <p>Official posts and advertisements created by the administrator.</p>
+              </div>
+              <span className="tm-post-count">{adminPosts.length}</span>
+            </div>
+
+            <div className="tm-admin-post-list">
+              {adminPosts.length ? (
+                adminPosts.map((post) => (
+                  <article className="tm-admin-post-item" key={post.id}>
+                    <div className="tm-admin-post-icon">
+                      {post.post_type === "promotion" ? "🏷️" : post.post_type === "alert" ? "🚨" : "📢"}
+                    </div>
+                    <div className="tm-admin-post-body">
+                      <div className="tm-admin-post-meta">
+                        <span>{post.post_type || "announcement"}</span>
+                        <small>{formatDateTime(post.created_at)}</small>
+                      </div>
+                      <h4>{post.title}</h4>
+                      <p>{post.message}</p>
+                      {post.image_url && (
+                        <img className="tm-published-post-image" src={post.image_url} alt={post.title || "Admin post"} />
+                      )}
+                      <small className="tm-admin-post-audience">👥 Sent to all registered users</small>
+                    </div>
+                  </article>
+                ))
+              ) : (
+                <EmptyState
+                  icon="📢"
+                  title="No admin posts yet"
+                  text="Create your first official TimberMart announcement or advertisement."
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderLocationsPage() {
+    const located = users.filter(
+      (user) =>
+        Number.isFinite(Number(user.latitude)) &&
+        Number.isFinite(Number(user.longitude))
     );
 
+    return (
+      <section className="tm-module">
+        <SectionHeader title="Locations" subtitle="GPS information saved in user profiles" />
 
-  const ownRequirements =
-    requirements.filter(
-      (item) =>
-        item.user_id ===
-        user?.id
+        <div className="tm-location-stats">
+          <div><span>📍</span><strong>{located.length}</strong><small>GPS enabled</small></div>
+          <div><span>👥</span><strong>{users.length}</strong><small>Total profiles</small></div>
+          <div><span>◉</span><strong>{users.length ? Math.round((located.length / users.length) * 100) : 0}%</strong><small>Location coverage</small></div>
+        </div>
+
+        <div className="tm-card tm-inner-card">
+          {located.length ? (
+            <div className="tm-table-scroll">
+              <table className="tm-table">
+                <thead><tr><th>User</th><th>Role</th><th>City</th><th>Latitude</th><th>Longitude</th><th>Updated</th></tr></thead>
+                <tbody>
+                  {located.map((user) => (
+                    <tr key={user.id}>
+                      <td>{displayName(user)}</td>
+                      <td>{ROLE_LABELS[normalizeRole(user.role)]}</td>
+                      <td>{[user.city, user.state].filter(Boolean).join(", ") || "—"}</td>
+                      <td>{Number(user.latitude).toFixed(5)}</td>
+                      <td>{Number(user.longitude).toFixed(5)}</td>
+                      <td>{formatDateTime(user.location_updated_at || user.updated_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : <EmptyState icon="📍" title="No GPS locations" text="Users can enable location from their dashboards." />}
+        </div>
+      </section>
     );
+  }
 
+  function renderAnalyticsPage() {
+    const total = users.length;
+    const activeRate = listings.length ? Math.round((approvedListings.length / listings.length) * 100) : 0;
 
-  /* =======================================================
-     LOADING
-  ======================================================= */
+    return (
+      <section className="tm-module">
+        <SectionHeader title="Analytics" subtitle="Live statistics calculated from TimberMart data" />
+
+        <div className="tm-analytics-grid">
+          <div><span>👥</span><small>Total Users</small><strong>{total}</strong></div>
+          <div><span>🪵</span><small>Total Listings</small><strong>{listings.length}</strong></div>
+          <div><span>📋</span><small>Total Requirements</small><strong>{requirements.length}</strong></div>
+          <div><span>✓</span><small>Approval Rate</small><strong>{activeRate}%</strong></div>
+        </div>
+
+        <div className="tm-card tm-inner-card">
+          <SectionHeader title="User Distribution" subtitle="Role-wise distribution" />
+          <div className="tm-big-role-layout">
+            <DonutChart counts={roleCounts} total={total} />
+            <div className="tm-big-role-list">
+              {Object.entries(ROLE_LABELS).map(([role, label]) => (
+                <div key={role}>
+                  <span><i style={{ background: ROLE_COLORS[role] }} />{label}</span>
+                  <strong>{roleCounts[role]}</strong>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderGeneric(title, icon, text) {
+    return (
+      <section className="tm-module">
+        <SectionHeader title={title} subtitle="TimberMart administrator workspace" />
+        <div className="tm-generic-card">
+          <div>{icon}</div>
+          <h3>{title}</h3>
+          <p>{text}</p>
+        </div>
+      </section>
+    );
+  }
+
+  function renderContent() {
+    if (activeMenu === "Dashboard") return renderOverview();
+    if (activeMenu === "Approval Center") return renderApprovalCenter();
+    if (activeMenu === "Users") return renderUsersPage();
+    if (activeMenu === "Farmers") return renderUsersPage("farmer");
+    if (activeMenu === "Buyers") return renderUsersPage("buyer");
+    if (activeMenu === "Merchants") return renderUsersPage("timber_merchant");
+    if (activeMenu === "Carpenters") return renderUsersPage("carpenter");
+    if (activeMenu === "Workers") return renderUsersPage("worker");
+    if (activeMenu === "Businesses") return renderUsersPage("sawmill_business");
+    if (activeMenu === "Listings") return renderListingsPage();
+    if (activeMenu === "Requirements") return renderRequirementsPage();
+    if (activeMenu === "Notifications") return renderNotificationsPage();
+    if (activeMenu === "Admin Posts") return renderAdminPosts();
+    if (activeMenu === "Locations") return renderLocationsPage();
+    if (activeMenu === "Analytics") return renderAnalyticsPage();
+
+    if (activeMenu === "Jobs") {
+      return renderGeneric("Jobs", "💼", "Job management can be connected to your jobs table when that schema is ready.");
+    }
+
+    if (activeMenu === "Reports") {
+      return renderGeneric("Reports & Moderation", "⚠", "Use this workspace to review reported listings, users and marketplace content.");
+    }
+
+    if (activeMenu === "Revenue & Payments") {
+      return renderGeneric("Revenue & Payments", "₹", "Connect your payment and transaction tables here.");
+    }
+
+    if (activeMenu === "Settings") {
+      return renderGeneric("Settings", "⚙", "Admin settings are protected by the admin role and AdminRoute.");
+    }
+
+    if (activeMenu === "Admin Security") {
+      return renderGeneric("Admin & Security", "🔐", "Administrator access is controlled through Supabase authentication and the admin profile role.");
+    }
+
+    return renderGeneric("System Logs", "▤", "System audit logs can be connected to your audit_logs table.");
+  }
 
   if (loading) {
     return (
-      <TreeLoader
-        text="Growing your dashboard..."
-      />
+      <div className="tm-loading-screen">
+        <div className="tm-loading-box">
+          <div className="tm-logo">🌳</div>
+          <div className="tm-loader" />
+          <h2>Loading TimberMart Admin</h2>
+          <p>Connecting to Supabase...</p>
+        </div>
+      </div>
     );
   }
 
-
-  /* =======================================================
-     MAIN UI
-  ======================================================= */
-
   return (
-    <div className="farmer-dashboard">
-
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
-      <aside
-        className={`farmer-sidebar ${
-          menuOpen ? "open" : ""
-        }`}
-      >
-
-        <div className="farmer-brand">
-
-          <div className="farmer-brand-icon">
-            <TreePine size={25} />
-          </div>
-
-          <div>
-            <h2>
-              TimberMart
-            </h2>
-
-            <span>
-              Farmer Portal
-            </span>
-          </div>
-
+    <div className="tm-admin">
+      <aside className={`tm-sidebar ${mobileNav ? "mobile-open" : ""}`}>
+        <div className="tm-sidebar-brand">
+          <div className="tm-tree-logo">🌳</div>
+          <div><strong>TimberMart</strong><span>Admin Panel</span></div>
         </div>
 
+        <div className="tm-admin-user">
+          <div className="tm-admin-avatar">🛡️</div>
+          <div><strong>Administrator</strong><span>Super Admin</span></div>
+          <span className="tm-online-dot" />
+        </div>
 
-        <nav className="farmer-nav">
+        <nav className="tm-nav">
+          <div className="tm-nav-label">MAIN MENU</div>
 
-          <button
-            className={
-              activeSection ===
-              "home"
-                ? "active"
-                : ""
-            }
-            onClick={goHome}
-          >
-            <Home size={19} />
-            <span>
-              Dashboard
-            </span>
-          </button>
+          {MENU.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              className={`tm-nav-button ${activeMenu === item.id ? "active" : ""}`}
+              onClick={() => openMenu(item.id)}
+            >
+              <span className="tm-nav-icon">{item.icon}</span>
+              <span>{item.label}</span>
 
+              {item.approval && pendingTotal > 0 && (
+                <b className="tm-nav-count">{pendingTotal}</b>
+              )}
 
-          <button
-            onClick={
-              goSellTree
-            }
-          >
-            <TreePine size={19} />
+              {item.id === "Notifications" && unreadNotifications.length > 0 && (
+                <b className="tm-nav-count red">{unreadNotifications.length}</b>
+              )}
 
-            <span>
-              Sell Tree
-            </span>
-          </button>
+              {item.arrow && <em>›</em>}
+            </button>
+          ))}
 
-
-          <button
-            onClick={
-              goRequirements
-            }
-          >
-            <FileText
-              size={19}
-            />
-
-            <span>
-              Requirement Wall
-            </span>
-          </button>
-
-
-          <button
-            className={showMessages ? "active" : ""}
-            onClick={openMessagesCenter}
-          >
-            <MessageCircle size={19} />
-            <span>Messages</span>
-            {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 0 && (
-              <span className="farmer-sidebar-message-badge">
-                {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 9
-                  ? "9+"
-                  : Object.values(unreadByUser).reduce((sum, count) => sum + count, 0)}
-              </span>
-            )}
-          </button>
-
-
-          <button
-            className={showNotifications ? "active" : ""}
-            onClick={goNotifications}
-          >
-            <Bell size={19} />
-
-            <span>
-              Notifications
-            </span>
-
-            {notifications.filter((item) => !item.is_read).length > 0 && (
-              <span className="farmer-sidebar-notification-badge">
-                {notifications.filter((item) => !item.is_read).length > 9
-                  ? "9+"
-                  : notifications.filter((item) => !item.is_read).length}
-              </span>
-            )}
-          </button>
-
-
-          <button
-            onClick={goProfile}
-          >
-            <CircleUserRound
-              size={19}
-            />
-
-            <span>
-              Profile
-            </span>
-          </button>
-
-
-          <button
-            onClick={goSettings}
-          >
-            <Settings
-              size={19}
-            />
-
-            <span>
-              Settings
-            </span>
-          </button>
-
+          <div className="tm-nav-label lower">SYSTEM</div>
         </nav>
 
-
-        <div className="farmer-sidebar-bottom">
-
+        <div className="tm-sidebar-bottom">
           <button
-            className="farmer-logout"
-            onClick={
-              handleLogout
-            }
+            type="button"
+            className="tm-back-app"
+            onClick={() => (onBack ? onBack() : window.history.back())}
           >
-            <LogOut
-              size={19}
-            />
-
-            <span>
-              Logout
-            </span>
+            ← Back to App
           </button>
-
         </div>
-
       </aside>
 
-
-      {/* =====================================================
-          MOBILE OVERLAY
-      ===================================================== */}
-
-      {menuOpen && (
-        <div
-          className="farmer-overlay"
-          onClick={() =>
-            setMenuOpen(false)
-          }
-        />
-      )}
-
-
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
-      <main className="farmer-main">
-
-        {/* ===================================================
-            TOPBAR
-        =================================================== */}
-
-        <header className="farmer-topbar">
-
-          <div className="farmer-top-left">
-
-            <button
-              className="farmer-menu-button"
-              onClick={() =>
-                setMenuOpen(true)
-              }
-            >
-              <Menu size={22} />
-            </button>
-
-
-            <div>
-              <h1>
-                Farmer Dashboard
-              </h1>
-
-              <p>
-                Manage your timber
-                activities
-              </p>
-            </div>
-
-          </div>
-
-
-          <div className="farmer-top-actions">
-
-            <div className="farmer-notification-wrap">
-              <button
-                className="farmer-icon-button farmer-notification-button"
-                title="Notifications"
-                onClick={() =>
-                  setShowNotifications((previous) => !previous)
-                }
-              >
-                <Bell size={20} />
-
-                {notifications.filter((item) => !item.is_read).length > 0 && (
-                  <span className="farmer-notification-badge">
-                    {notifications.filter((item) => !item.is_read).length > 9
-                      ? "9+"
-                      : notifications.filter((item) => !item.is_read).length}
-                  </span>
-                )}
-              </button>
-
-              {showNotifications && (
-                <div className="farmer-notification-panel">
-                  <div className="farmer-notification-header">
-                    <div>
-                      <strong>Notifications</strong>
-                      <span>Nearby matches, approvals & chat updates</span>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => setShowNotifications(false)}
-                    >
-                      <X size={17} />
-                    </button>
-                  </div>
-
-                  <div className="farmer-notification-list">
-                    {notifications.length === 0 ? (
-                      <div className="farmer-notification-empty">
-                        <Bell size={25} />
-                        <strong>No notifications yet</strong>
-                        <span>Matching posts within 40 KM will appear here.</span>
-                      </div>
-                    ) : (
-                      notifications.map((notification) => (
-                        <button
-                          type="button"
-                          key={notification.id}
-                          className={`farmer-notification-item ${
-                            notification.is_read ? "read" : "unread"
-                          }`}
-                          onClick={() =>
-                            openNotification(notification)
-                          }
-                        >
-                          <div className="farmer-notification-item-icon">
-                            {notification.type === "listing_approved"
-                              ? "✓"
-                              : notification.type === "listing_rejected"
-                              ? "!"
-                              : notification.type === "listing_chat"
-                              ? "💬"
-                              : notification.type === "nearby_match"
-                              ? "📍"
-                              : "🔔"}
-                          </div>
-
-                          <div>
-                            <strong>{notification.title}</strong>
-                            <p>{notification.message}</p>
-                            <small>
-                              {notification.distance_km != null
-                                ? `📍 ${Number(notification.distance_km).toFixed(1)} KM away • `
-                                : ""}
-                              {notification.created_at
-                                ? new Date(notification.created_at).toLocaleString()
-                                : ""}
-                            </small>
-                          </div>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button
-              className="farmer-icon-button"
-              title="Requirement Wall"
-              onClick={
-                goRequirements
-              }
-            >
-              <FileText
-                size={20}
-              />
-            </button>
-
-
-            <button
-              className="farmer-icon-button"
-              title="Settings"
-              onClick={
-                goSettings
-              }
-            >
-              <Settings
-                size={20}
-              />
-            </button>
-
-
-            <button
-              className="farmer-profile-button"
-              onClick={
-                goProfile
-              }
-            >
-
-              {profile?.photo_url ? (
-                <img
-                  src={
-                    profile.photo_url
-                  }
-                  alt="Profile"
-                />
-              ) : (
-                <User
-                  size={20}
-                />
-              )}
-
-              <span>
-                {profile?.name ||
-                  user?.email?.split(
-                    "@"
-                  )[0] ||
-                  "Farmer"}
-              </span>
-
-            </button>
-
-          </div>
-
-        </header>
-
-
-        {/* ===================================================
-            CONTENT
-        =================================================== */}
-
-        <section className="farmer-content">
-
-          {/* =================================================
-              WELCOME
-          ================================================= */}
-
-          <div className="farmer-welcome">
-
-            <div>
-
-              <span className="farmer-welcome-label">
-                Welcome back 👋
-              </span>
-
-              <h2>
-                {profile?.name ||
-                  user?.email?.split(
-                    "@"
-                  )[0] ||
-                  "Farmer"}
-              </h2>
-
-              <p>
-                Connect with timber
-                buyers and manage
-                your requirements
-                from one place.
-              </p>
-
-            </div>
-
-
-            <div className="farmer-location">
-
-              <MapPin
-                size={17}
-              />
-
-              <span>
-                {profile?.location ||
-                  "Location not added"}
-              </span>
-
-            </div>
-
-          </div>
-
-
-          {/* =================================================
-              STATS
-          ================================================= */}
-
-          <div className="farmer-stats">
-
-            <div className="farmer-stat-card">
-
-              <div className="farmer-stat-icon">
-                <TreePine
-                  size={21}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  {
-                    ownListings.length
-                  }
-                </strong>
-
-                <span>
-                  My Tree Listings
-                </span>
-              </div>
-
-            </div>
-
-
-            <div className="farmer-stat-card">
-
-              <div className="farmer-stat-icon">
-                <FileText
-                  size={21}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  {
-                    ownRequirements.length
-                  }
-                </strong>
-
-                <span>
-                  My Requirements
-                </span>
-              </div>
-
-            </div>
-
-
-            <div className="farmer-stat-card">
-
-              <div className="farmer-stat-icon">
-                <Search
-                  size={21}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  {
-                    liveListings.length
-                  }
-                </strong>
-
-                <span>
-                  Available Listings
-                </span>
-              </div>
-
-            </div>
-
-
-            <div className="farmer-stat-card">
-
-              <div className="farmer-stat-icon">
-                <Bell
-                  size={21}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  {
-                    requirements.length
-                  }
-                </strong>
-
-                <span>
-                  Requirements
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-
-
-          {/* =================================================
-              QUICK ACTIONS
-          ================================================= */}
-
-          <div className="farmer-section-heading">
-
-            <div>
-              <h2>
-                Quick Actions
-              </h2>
-
-              <p>
-                Start managing your
-                timber activities
-              </p>
-            </div>
-
-          </div>
-
-
-          <div className="farmer-actions-grid">
-
-            <button
-              className="farmer-action-card"
-              onClick={
-                goSellTree
-              }
-            >
-
-              <div className="farmer-action-icon tree">
-                <TreePine
-                  size={25}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  Sell Tree
-                </strong>
-
-                <span>
-                  Create a timber
-                  listing
-                </span>
-              </div>
-
-              <ChevronRight
-                size={19}
-              />
-
-            </button>
-
-
-            <button
-              className="farmer-action-card"
-              onClick={
-                goRequirements
-              }
-            >
-
-              <div className="farmer-action-icon requirement">
-                <FileText
-                  size={25}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  Requirement Wall
-                </strong>
-
-                <span>
-                  Add or view
-                  requirements
-                </span>
-              </div>
-
-              <ChevronRight
-                size={19}
-              />
-
-            </button>
-
-
-            <button
-              className="farmer-action-card"
-              onClick={
-                goProfile
-              }
-            >
-
-              <div className="farmer-action-icon profile">
-                <User
-                  size={25}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  My Profile
-                </strong>
-
-                <span>
-                  Update your farmer
-                  profile
-                </span>
-              </div>
-
-              <ChevronRight
-                size={19}
-              />
-
-            </button>
-
-
-            <button
-              className="farmer-action-card"
-              onClick={
-                goSettings
-              }
-            >
-
-              <div className="farmer-action-icon settings">
-                <Settings
-                  size={25}
-                />
-              </div>
-
-              <div>
-                <strong>
-                  Settings
-                </strong>
-
-                <span>
-                  Manage account
-                  preferences
-                </span>
-              </div>
-
-              <ChevronRight
-                size={19}
-              />
-
-            </button>
-
-          </div>
-
-
-          {/* =================================================
-              SEARCH
-          ================================================= */}
-
-          <div className="farmer-search-box">
-
-            <Search
-              size={19}
-            />
-
-            <input
-              type="text"
-              placeholder="Search timber listings or requirements..."
-              value={searchText}
-              onChange={(e) =>
-                setSearchText(
-                  e.target.value
-                )
-              }
-            />
-
-            {searchText && (
-              <button
-                onClick={() =>
-                  setSearchText("")
-                }
-              >
-                <X
-                  size={18}
-                />
-              </button>
-            )}
-
-          </div>
-
-
-          {/* =================================================
-              REQUIREMENT WALL
-          ================================================= */}
-
-          <div className="farmer-section-heading">
-
-            <div>
-              <h2>
-                Requirement Wall
-              </h2>
-
-              <p>
-                Latest timber
-                requirements from
-                users
-              </p>
-            </div>
-
-
-            <button
-              className="farmer-view-all"
-              onClick={
-                goRequirements
-              }
-            >
-              View All
-
-              <ChevronRight
-                size={17}
-              />
-            </button>
-
-          </div>
-
-
-          {filteredRequirements.length ===
-          0 ? (
-
-            <div className="farmer-empty">
-
-              <FileText
-                size={35}
-              />
-
-              <h3>
-                No requirements
-                yet
-              </h3>
-
-              <p>
-                Create your first
-                requirement and
-                connect with
-                timber sellers.
-              </p>
-
-              <button
-                onClick={
-                  goRequirements
-                }
-              >
-                <Plus
-                  size={18}
-                />
-
-                Add Requirement
-              </button>
-
-            </div>
-
-          ) : (
-
-            <div className="farmer-requirements-grid">
-
-              {filteredRequirements
-                .slice(0, 6)
-                .map(
-                  (
-                    requirement
-                  ) => (
-                    <RequirementCard
-                      key={
-                        requirement.id
-                      }
-                      requirement={
-                        requirement
-                      }
-                      currentUserId={
-                        user?.id
-                      }
-                      onOpen={() =>
-                        openRequirement(
-                          requirement
-                        )
-                      }
-                      onDelete={() =>
-                        deleteRequirement(
-                          requirement.id
-                        )
-                      }
-                      onProfile={(
-                        owner
-                      ) =>
-                        setSelectedOwner(
-                          owner
-                        )
-                      }
-                      onCall={
-                        callUser
-                      }
-                      onWhatsapp={
-                        whatsappUser
-                      }
-                      onChat={
-                        chatUser
-                      }
-                    />
-                  )
-                )}
-
-            </div>
-
-          )}
-
-
-          {/* =================================================
-              TREE LISTINGS
-          ================================================= */}
-
-          <div className="farmer-section-heading listing-heading">
-
-            <div>
-              <h2>
-                Timber Listings
-              </h2>
-
-              <p>
-                Latest trees and
-                timber available
-              </p>
-            </div>
-
-          </div>
-
-
-          {filteredListings.length ===
-          0 ? (
-
-            <div className="farmer-empty">
-
-              <TreePine
-                size={35}
-              />
-
-              <h3>
-                No timber listings
-                yet
-              </h3>
-
-              <p>
-                You can create a
-                listing from Sell
-                Tree.
-              </p>
-
-              <button
-                onClick={
-                  goSellTree
-                }
-              >
-                <Plus
-                  size={18}
-                />
-
-                Sell Tree
-              </button>
-
-            </div>
-
-          ) : (
-
-            <div className="farmer-listings-grid">
-
-              {filteredLiveListings
-                .map(
-                  (listing) => (
-                    <ListingCard
-                      key={
-                        listing.id
-                      }
-                      listing={
-                        listing
-                      }
-                      currentUserId={
-                        user?.id
-                      }
-                      onOpen={() =>
-                        openListing(
-                          listing
-                        )
-                      }
-                      onProfile={(
-                        owner
-                      ) =>
-                        setSelectedOwner(
-                          owner
-                        )
-                      }
-                      onCall={
-                        callUser
-                      }
-                      onWhatsapp={
-                        whatsappUser
-                      }
-                      onChat={
-                        chatUser
-                      }
-                    />
-                  )
-                )}
-
-            </div>
-
-          )}
-
-
-          {/* =================================================
-              DISCLAIMER
-          ================================================= */}
-
-          <div className="farmer-disclaimer">
-
-            <strong>
-              TimberMart connects
-              people directly.
-            </strong>
-
-            <p>
-              TimberMart does not
-              handle payments,
-              delivery or
-              transactions. Buyers
-              and sellers communicate
-              directly and make
-              their own arrangements.
-            </p>
-
-          </div>
-
-        </section>
-
-      </main>
-
-
-      {/* =====================================================
-          SELL TREE MODAL
-      ===================================================== */}
-
-      {showSellTree && (
-        <SellTreeModal
-          user={user}
-          profile={profile}
-          step={sellStep}
-          setStep={setSellStep}
-          form={sellForm}
-          setForm={setSellForm}
-          updateField={
-            updateSellField
-          }
-          changeCategory={
-            changeSellCategory
-          }
-          categories={
-            SELL_CATEGORIES
-          }
-          treeTypes={
-            sellTreeTypes
-          }
-          isPlantation={
-            isPlantation
-          }
-          isIndianTree={
-            isIndianTree
-          }
-          isWoodProduct={
-            isWoodProduct
-          }
-          selectedCategory={
-            selectedSellCategory
-          }
-          photos={sellPhotos}
-          onPhotos={
-            handleSellPhotos
-          }
-          removePhoto={
-            removeSellPhoto
-          }
-          error={sellError}
-          publishing={
-            publishingListing
-          }
-          published={
-            listingPublished
-          }
-          onClose={
-            closeSellTree
-          }
-          onNext={
-            nextSellStep
-          }
-          onBack={
-            previousSellStep
-          }
-          onPublish={
-            publishSellListing
-          }
-        />
-      )}
-
-
-      {/* =====================================================
-          LISTING MODAL
-      ===================================================== */}
-
-      {selectedListing && (
-        <ListingModal
-          listing={
-            selectedListing
-          }
-          currentUserId={
-            user?.id
-          }
-          onClose={() =>
-            setSelectedListing(
-              null
-            )
-          }
-          onProfile={(
-            owner
-          ) =>
-            setSelectedOwner(
-              owner
-            )
-          }
-          onCall={
-            callUser
-          }
-          onWhatsapp={
-            whatsappUser
-          }
-          onChat={
-            chatUser
-          }
-        />
-      )}
-
-
-      {/* =====================================================
-          REQUIREMENT MODAL
-      ===================================================== */}
-
-      {selectedRequirement && (
-        <RequirementModal
-          requirement={
-            selectedRequirement
-          }
-          currentUserId={
-            user?.id
-          }
-          onClose={() =>
-            setSelectedRequirement(
-              null
-            )
-          }
-          onDelete={() =>
-            deleteRequirement(
-              selectedRequirement.id
-            )
-          }
-          onProfile={(
-            owner
-          ) =>
-            setSelectedOwner(
-              owner
-            )
-          }
-          onCall={
-            callUser
-          }
-          onWhatsapp={
-            whatsappUser
-          }
-          onChat={
-            chatUser
-          }
-        />
-      )}
-
-
-      {/* =====================================================
-          PROFILE MODAL
-      ===================================================== */}
-
-      {selectedOwner && (
-        <ProfileModal
-          owner={
-            selectedOwner
-          }
-          onClose={() =>
-            setSelectedOwner(
-              null
-            )
-          }
-          onCall={
-            callUser
-          }
-          onWhatsapp={
-            whatsappUser
-          }
-          onChat={
-            chatUser
-          }
-        />
-      )}
-
-
-
-      {/* =====================================================
-          MODERN MESSAGES CENTER
-          -----------------------------------------------------
-          This is an inbox-style chat screen. Existing listing
-          chat functionality remains untouched underneath.
-      ====================================================== */}
-      {messageToast && !showMessages && (
+      {mobileNav && (
         <button
           type="button"
-          className="tm-message-toast"
-          onClick={() => {
-            setMessageToast(null);
-            openMessagesCenter();
-          }}
-        >
-          <span className="tm-toast-icon"><MessageCircle size={20} /></span>
-          <span className="tm-toast-copy">
-            <strong>{messageToast.name}</strong>
-            <small>{messageToast.text}</small>
-          </span>
-          <span className="tm-toast-wave">🔔</span>
-        </button>
+          aria-label="Close navigation"
+          className="tm-mobile-overlay"
+          onClick={() => setMobileNav(false)}
+        />
       )}
 
-      {showMessages && (
-        <div className="tm-inbox-overlay" onMouseDown={closeMessagesCenter}>
-          <div className="tm-inbox" onMouseDown={(event) => event.stopPropagation()}>
-            <header className="tm-inbox-topbar">
-              <div className="tm-inbox-brand">
-                <div className="tm-inbox-brand-icon"><MessageCircle size={22} /></div>
-                <div>
-                  <strong>Messages</strong>
-                  <span>TimberMart Inbox • Real-time chat</span>
-                </div>
-              </div>
-              <div className="tm-inbox-top-actions">
-                <span className="tm-inbox-live"><i /> Live chat</span>
-                <button type="button" onClick={closeMessagesCenter} aria-label="Close messages"><X size={20} /></button>
-              </div>
-            </header>
-
-            <div className="tm-inbox-body">
-              <aside className="tm-inbox-list">
-                <div className="tm-inbox-list-head">
-                  <div>
-                    <strong>Chats</strong>
-                    <span>{messageConversations.length} conversations</span>
-                  </div>
-                  {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 0 && (
-                    <b>{Object.values(unreadByUser).reduce((sum, count) => sum + count, 0)} new</b>
-                  )}
-                </div>
-
-                <div className="tm-inbox-conversations">
-                  {messageConversations.length === 0 ? (
-                    <div className="tm-inbox-empty-list">
-                      <div><MessageCircle size={28} /></div>
-                      <strong>No chats yet</strong>
-                      <span>Open any listing and tap Chat to start.</span>
-                    </div>
-                  ) : (
-                    messageConversations.map((conversation) => {
-                      const person = conversation.profile;
-                      const unread = unreadByUser[person.id] || conversation.unread || 0;
-                      return (
-                        <button
-                          key={person.id}
-                          type="button"
-                          className={`tm-conversation ${selectedProfile?.id === person.id ? "active" : ""} ${unread ? "has-unread" : ""}`}
-                          onClick={() => openConversationFromMessages(person)}
-                        >
-                          <div className="tm-conversation-avatar">
-                            {person.photo_url ? <img src={person.photo_url} alt="" /> : <span>{(person.name || "U").charAt(0).toUpperCase()}</span>}
-                            <i />
-                          </div>
-                          <div className="tm-conversation-content">
-                            <div className="tm-conversation-name">
-                              <strong>{person.name || "TimberMart User"}</strong>
-                              <time>{conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</time>
-                            </div>
-                            <small>{person.role || "User"}</small>
-                            <p>{conversation.lastMessage || "Start a conversation"}</p>
-                          </div>
-                          {unread > 0 && <em>{unread > 9 ? "9+" : unread}</em>}
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              </aside>
-
-              <section className="tm-chat">
-                {selectedProfile ? (
-                  <>
-                    <div className="tm-chat-head">
-                      <div className="tm-chat-person">
-                        <div className="tm-chat-avatar">
-                          {selectedProfile.photo_url ? <img src={selectedProfile.photo_url} alt="" /> : <span>{(selectedProfile.name || "U").charAt(0).toUpperCase()}</span>}
-                          <i />
-                        </div>
-                        <div>
-                          <strong>{selectedProfile.name || "TimberMart User"}</strong>
-                          <span>{selectedProfile.role || "User"}{selectedProfile.location ? ` • ${selectedProfile.location}` : ""}</span>
-                        </div>
-                      </div>
-                      <div className="tm-chat-actions">
-                        {selectedProfile.phone && <a href={`tel:${selectedProfile.phone}`} title="Call"><Phone size={18} /></a>}
-                        <button type="button" onClick={() => { setShowChat(false); setSelectedProfile(null); }} title="Close conversation"><X size={18} /></button>
-                      </div>
-                    </div>
-
-                    <div className="tm-chat-stream">
-                      {chatLoading ? (
-                        <div className="tm-chat-status">Loading messages...</div>
-                      ) : messages.length === 0 ? (
-                        <div className="tm-chat-welcome">
-                          <div className="tm-chat-welcome-icon"><MessageCircle size={30} /></div>
-                          <strong>Start chatting with {selectedProfile.name || "this user"}</strong>
-                          <span>Send a message about timber, listings or requirements.</span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="tm-chat-day">Today</div>
-                          {messages.map((message) => {
-                            const mine = message.sender_id === user?.id;
-                            return (
-                              <div key={message.id} className={`tm-message-row ${mine ? "mine" : "other"}`}>
-                                <div className="tm-message-bubble">
-                                  <span>{message.body}</span>
-                                  <small>{message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}{mine ? "  ✓" : ""}</small>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </>
-                      )}
-                    </div>
-
-                    <form className="tm-chat-composer" onSubmit={sendMessage}>
-                      <button type="button" className="tm-composer-plus" title="More options"><Plus size={19} /></button>
-                      <input
-                        value={messageText}
-                        onChange={(event) => setMessageText(event.target.value)}
-                        placeholder={`Message ${selectedProfile.name || "user"}...`}
-                        autoComplete="off"
-                        disabled={chatLoading}
-                      />
-                      <button type="submit" className="tm-composer-send" disabled={chatLoading || !messageText.trim()} title="Send message"><MessageCircle size={18} /></button>
-                    </form>
-                  </>
-                ) : (
-                  <div className="tm-chat-no-selection">
-                    <div className="tm-chat-no-selection-icon"><MessageCircle size={42} /></div>
-                    <h3>Your messages</h3>
-                    <p>Select a chat from the left to continue the conversation.</p>
-                  </div>
-                )}
-              </section>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* =====================================================
-          CHAT MODAL
-      ====================================================== */}
-      {showChat && selectedProfile && !showMessages && (
-        <div
-          className="farmer-modal-overlay farmer-chat-overlay"
-          onMouseDown={() => setShowChat(false)}
-        >
-          <div
-            className="farmer-chat-modal"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="farmer-chat-header">
-              <div className="farmer-chat-user">
-                <div className="farmer-chat-avatar">
-                  {selectedProfile.photo_url ? (
-                    <img src={selectedProfile.photo_url} alt="" />
-                  ) : (
-                    <User size={20} />
-                  )}
-                </div>
-                <div>
-                  <strong>{selectedProfile.name || "TimberMart User"}</strong>
-                  <span>{selectedProfile.role || "User"}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="farmer-close"
-                onClick={() => setShowChat(false)}
-                title="Close chat"
-              >
-                <X size={21} />
-              </button>
-            </div>
-
-            <div className="farmer-chat-messages">
-              {chatLoading ? (
-                <div className="farmer-chat-empty">Loading chat...</div>
-              ) : messages.length === 0 ? (
-                <div className="farmer-chat-empty">
-                  <MessageCircle size={34} />
-                  <h3>Start Conversation</h3>
-                  <p>Send a message to {selectedProfile.name || "this user"}.</p>
-                </div>
-              ) : (
-                messages.map((message) => {
-                  const mine = message.sender_id === user?.id;
-                  return (
-                    <div
-                      key={message.id}
-                      className={mine ? "farmer-message farmer-message-mine" : "farmer-message"}
-                    >
-                      {message.body}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-
-            <form className="farmer-chat-form" onSubmit={sendMessage}>
-              <input
-                value={messageText}
-                onChange={(event) => setMessageText(event.target.value)}
-                placeholder="Type a message..."
-                disabled={chatLoading}
-                autoComplete="off"
-              />
-              <button type="submit" disabled={chatLoading || !messageText.trim()}>
-                <MessageCircle size={19} />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
-/* ===========================================================
-   SELL TREE MODAL
-=========================================================== */
-
-function SellTreeModal({
-  user,
-  profile,
-  step,
-  setStep,
-  form,
-  setForm,
-  updateField,
-  changeCategory,
-  categories,
-  treeTypes,
-  isPlantation,
-  isIndianTree,
-  isWoodProduct,
-  selectedCategory,
-  photos,
-  onPhotos,
-  removePhoto,
-  error,
-  publishing,
-  published,
-  onClose,
-  onNext,
-  onBack,
-  onPublish,
-}) {
-  return (
-    <div
-      className="sell-tree-overlay"
-      onClick={(event) => {
-        if (
-          event.target ===
-          event.currentTarget
-        ) {
-          onClose();
-        }
-      }}
-    >
-
-      <div className="sell-tree-modal">
-
-        {/* HEADER */}
-
-        <header className="sell-tree-header">
-
-          <div className="sell-tree-brand">
-
-            <div className="sell-tree-brand-icon">
-              <TreePine
-                size={24}
-              />
-            </div>
-
+      <main className="tm-main">
+        <header className="tm-topbar">
+          <div className="tm-top-left">
+            <button type="button" className="tm-menu-toggle" onClick={() => setMobileNav(true)}>☰</button>
             <div>
-              <strong>
-                TimberMart
-              </strong>
-
-              <span>
-                Sell Timber
-              </span>
+              <span className="tm-breadcrumb">Admin /</span>
+              <h1>{activeMenu}</h1>
             </div>
-
           </div>
 
-
-          <button
-            className="sell-tree-close"
-            onClick={
-              onClose
-            }
-            disabled={
-              publishing
-            }
-          >
-            <X size={21} />
-          </button>
-
-        </header>
-
-
-        {/* PROGRESS */}
-
-        {!published && (
-          <div className="sell-progress">
-
-            <ProgressItem
-              number="1"
-              label="Category"
-              active={
-                step >= 1
-              }
-              current={
-                step === 1
-              }
-            />
-
-            <ProgressItem
-              number="2"
-              label="Details"
-              active={
-                step >= 2
-              }
-              current={
-                step === 2
-              }
-            />
-
-            <ProgressItem
-              number="3"
-              label="Photos"
-              active={
-                step >= 3
-              }
-              current={
-                step === 3
-              }
-            />
-
-            <ProgressItem
-              number="4"
-              label="Review"
-              active={
-                step >= 4
-              }
-              current={
-                step === 4
-              }
-            />
-
-          </div>
-        )}
-
-
-        {/* BODY */}
-
-        <div className="sell-tree-body">
-
-          {/* =================================================
-              STEP 1
-          ================================================= */}
-
-          {step === 1 && (
-            <div className="sell-step">
-
-              <div className="sell-step-heading">
-
-                <span>
-                  STEP 1
-                </span>
-
-                <h2>
-                  What are you
-                  selling?
-                </h2>
-
-                <p>
-                  Select a category
-                  first. The available
-                  tree or product types
-                  will appear below.
-                </p>
-
-              </div>
-
-
-              <div className="sell-category-grid">
-
-                {categories.map(
-                  (category) => (
-                    <button
-                      type="button"
-                      key={
-                        category.id
-                      }
-                      className={`sell-category-card ${
-                        form.category ===
-                        category.id
-                          ? "selected"
-                          : ""
-                      }`}
-                      onClick={() =>
-                        changeCategory(
-                          category.id
-                        )
-                      }
-                    >
-
-                      <div className="sell-category-icon">
-                        {
-                          category.icon
-                        }
-                      </div>
-
-                      <div className="sell-category-content">
-
-                        <strong>
-                          {
-                            category.title
-                          }
-                        </strong>
-
-                        <p>
-                          {
-                            category.description
-                          }
-                        </p>
-
-                      </div>
-
-
-                      {form.category ===
-                        category.id && (
-                        <CheckCircle2
-                          size={22}
-                          className="sell-category-check"
-                        />
-                      )}
-
-                    </button>
-                  )
-                )}
-
-              </div>
-
-
-              {/* DYNAMIC TYPE SELECT */}
-
-              {form.category && (
-                <div className="sell-dependent-box">
-
-                  <div className="sell-dependent-heading">
-
-                    <div>
-                      <span>
-                        {selectedCategory?.icon}
-                      </span>
-
-                      <div>
-                        <small>
-                          Selected Category
-                        </small>
-
-                        <strong>
-                          {
-                            selectedCategory?.title
-                          }
-                        </strong>
-                      </div>
-                    </div>
-
-                  </div>
-
-
-                  <label>
-                    {isWoodProduct
-                      ? "Select wood product"
-                      : "Select tree type"}
-
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-
-                  <select
-                    value={
-                      form.tree_type
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "tree_type",
-                        event.target
-                          .value
-                      )
-                    }
-                  >
-
-                    <option value="">
-                      Select{" "}
-                      {isWoodProduct
-                        ? "wood product"
-                        : "tree type"}
-                    </option>
-
-                    {treeTypes.map(
-                      (type) => (
-                        <option
-                          key={type}
-                          value={type}
-                        >
-                          {type}
-                        </option>
-                      )
-                    )}
-
-                  </select>
-
-
-                  {form.tree_type ===
-                    "Casuarina Plantation" && (
-                    <div className="sell-special-note">
-                      <span>
-                        🌱
-                      </span>
-
-                      <div>
-                        <strong>
-                          Casuarina Plantation
-                        </strong>
-
-                        <p>
-                          Plantation area in
-                          acres will be
-                          required in the next
-                          step.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-              )}
-
+          <div className="tm-top-actions">
+            <div className="tm-global-search">
+              <span>⌕</span>
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search users, listings, requirements..."
+              />
+              <kbd>⌘ K</kbd>
             </div>
-          )}
-
-
-          {/* =================================================
-              STEP 2
-          ================================================= */}
-
-          {step === 2 && (
-            <div className="sell-step">
-
-              <div className="sell-step-heading">
-
-                <span>
-                  STEP 2
-                </span>
-
-                <h2>
-                  Timber details
-                </h2>
-
-                <p>
-                  Add accurate details
-                  so buyers can
-                  understand your
-                  listing.
-                </p>
-
-              </div>
-
-
-              <div className="sell-selected-summary">
-
-                <div className="sell-summary-icon">
-                  {
-                    selectedCategory?.icon
-                  }
-                </div>
-
-                <div>
-                  <small>
-                    {
-                      selectedCategory?.title
-                    }
-                  </small>
-
-                  <strong>
-                    {
-                      form.tree_type
-                    }
-                  </strong>
-                </div>
-
-              </div>
-
-
-              <div className="sell-form-grid">
-
-                {/* TITLE */}
-
-                <div className="sell-field sell-full">
-
-                  <label>
-                    Listing title
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-                  <input
-                    value={
-                      form.title
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "title",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder={
-                      isPlantation
-                        ? "Example: 3 acre Casuarina plantation for sale"
-                        : isWoodProduct
-                        ? "Example: Seasoned teak timber logs"
-                        : "Example: Mature teak trees for sale"
-                    }
-                  />
-
-                </div>
-
-
-                {/* LOCATION */}
-
-                <div className="sell-field">
-
-                  <label>
-                    Location
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-                  <div className="sell-input-with-icon">
-
-                    <MapPin
-                      size={17}
-                    />
-
-                    <input
-                      value={
-                        form.location
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateField(
-                          "location",
-                          event.target
-                            .value
-                        )
-                      }
-                      placeholder="Village / Town / District"
-                    />
-
-                  </div>
-
-                </div>
-
-
-                {/* QUANTITY */}
-
-                <div className="sell-field">
-
-                  <label>
-                    Quantity
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-                  <input
-                    value={
-                      form.quantity
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "quantity",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder={
-                      isPlantation
-                        ? "Estimated quantity"
-                        : "Example: 25"
-                    }
-                  />
-
-                </div>
-
-
-                {/* UNIT */}
-
-                <div className="sell-field">
-
-                  <label>
-                    Quantity unit
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-                  <select
-                    value={
-                      form.quantity_unit
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "quantity_unit",
-                        event.target
-                          .value
-                      )
-                    }
-                  >
-
-                    <option value="">
-                      Select unit
-                    </option>
-
-                    {QUANTITY_UNITS.map(
-                      (unit) => (
-                        <option
-                          key={unit}
-                          value={unit}
-                        >
-                          {unit}
-                        </option>
-                      )
-                    )}
-
-                  </select>
-
-                </div>
-
-
-                {/* PLANTATION ACRES */}
-
-                {isPlantation && (
-                  <div className="sell-field sell-important-field">
-
-                    <label>
-                      Plantation area
-                      (Acres)
-
-                      <span>
-                        *
-                      </span>
-                    </label>
-
-                    <div className="sell-acres-input">
-
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={
-                          form.acreage
-                        }
-                        onChange={(
-                          event
-                        ) =>
-                          updateField(
-                            "acreage",
-                            event.target
-                              .value
-                          )
-                        }
-                        placeholder="Example: 2.5"
-                      />
-
-                      <span>
-                        Acres
-                      </span>
-
-                    </div>
-
-                    <small>
-                      Enter total
-                      plantation area.
-                    </small>
-
-                  </div>
-                )}
-
-
-                {/* TREE AGE */}
-
-                {(isPlantation ||
-                  isIndianTree) && (
-                  <div className="sell-field">
-
-                    <label>
-                      Tree age
-                    </label>
-
-                    <input
-                      value={
-                        form.tree_age
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateField(
-                          "tree_age",
-                          event.target
-                            .value
-                        )
-                      }
-                      placeholder="Example: 5 years"
-                    />
-
-                  </div>
-                )}
-
-
-                {/* DIAMETER */}
-
-                {isIndianTree && (
-                  <div className="sell-field">
-
-                    <label>
-                      Average diameter
-                    </label>
-
-                    <input
-                      value={
-                        form.diameter
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateField(
-                          "diameter",
-                          event.target
-                            .value
-                        )
-                      }
-                      placeholder="Example: 18 inches"
-                    />
-
-                  </div>
-                )}
-
-
-                {/* CONDITION */}
-
-                {isWoodProduct && (
-                  <div className="sell-field">
-
-                    <label>
-                      Wood condition
-                    </label>
-
-                    <select
-                      value={
-                        form.condition
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateField(
-                          "condition",
-                          event.target
-                            .value
-                        )
-                      }
-                    >
-
-                      <option value="">
-                        Select condition
-                      </option>
-
-                      {TREE_CONDITIONS.map(
-                        (item) => (
-                          <option
-                            key={item}
-                            value={item}
-                          >
-                            {item}
-                          </option>
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-                )}
-
-
-                {/* VOLUME */}
-
-                <div className="sell-field">
-
-                  <label>
-                    Estimated volume
-                  </label>
-
-                  <input
-                    value={
-                      form.estimated_volume
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "estimated_volume",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="Example: 500 CFT"
-                  />
-
-                </div>
-
-
-                {/* HARVEST */}
-
-                {!isWoodProduct && (
-                  <div className="sell-field">
-
-                    <label>
-                      Sale / Harvest
-                      status
-                    </label>
-
-                    <select
-                      value={
-                        form.harvest_status
-                      }
-                      onChange={(
-                        event
-                      ) =>
-                        updateField(
-                          "harvest_status",
-                          event.target
-                            .value
-                        )
-                      }
-                    >
-
-                      <option value="">
-                        Select status
-                      </option>
-
-                      {HARVEST_STATUS.map(
-                        (item) => (
-                          <option
-                            key={item}
-                            value={item}
-                          >
-                            {item}
-                          </option>
-                        )
-                      )}
-
-                    </select>
-
-                  </div>
-                )}
-
-
-                {/* PRICE */}
-
-                <div className="sell-field sell-full">
-
-                  <label>
-                    Expected price
-                    <span>
-                      *
-                    </span>
-                  </label>
-
-                  <input
-                    value={
-                      form.price
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "price",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="Example: ₹2,50,000 or ₹1,200 / CFT"
-                  />
-
-                  <small>
-                    You can enter a
-                    total price or
-                    price per unit.
-                  </small>
-
-                </div>
-
-
-                {/* DESCRIPTION */}
-
-                <div className="sell-field sell-full">
-
-                  <label>
-                    Description
-                  </label>
-
-                  <textarea
-                    rows="5"
-                    value={
-                      form.description
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      updateField(
-                        "description",
-                        event.target
-                          .value
-                      )
-                    }
-                    placeholder="Add tree quality, road access, land details, timber condition, harvesting information and any other useful details."
-                  />
-
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-
-          {/* =================================================
-              STEP 3 — PHOTOS
-          ================================================= */}
-
-          {step === 3 && (
-            <div className="sell-step">
-
-              <div className="sell-step-heading">
-
-                <span>
-                  STEP 3
-                </span>
-
-                <h2>
-                  Add timber photos
-                </h2>
-
-                <p>
-                  Good photos help
-                  buyers understand
-                  the actual timber.
-                </p>
-
-              </div>
-
-
-              <label className="sell-photo-upload">
-
-                <input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={
-                    onPhotos
-                  }
-                />
-
-                <div className="sell-photo-upload-icon">
-                  <ImagePlus
-                    size={30}
-                  />
-                </div>
-
-                <strong>
-                  Upload photos
-                </strong>
-
-                <span>
-                  JPG, PNG or WEBP
-                </span>
-
-                <small>
-                  Maximum 5 MB per
-                  image · Up to 6
-                  photos
-                </small>
-
-              </label>
-
-
-              {photos.length > 0 && (
-                <div className="sell-photo-grid">
-
-                  {photos.map(
-                    (
-                      photo,
-                      index
-                    ) => (
-                      <div
-                        className="sell-photo-preview"
-                        key={`${photo.name}-${index}`}
-                      >
-
-                        <img
-                          src={URL.createObjectURL(
-                            photo
-                          )}
-                          alt=""
-                        />
-
-                        <button
-                          type="button"
-                          onClick={() =>
-                            removePhoto(
-                              index
-                            )
-                          }
-                        >
-                          <X
-                            size={16}
-                          />
-                        </button>
-
-                        {index ===
-                          0 && (
-                          <span>
-                            Main photo
-                          </span>
-                        )}
-
-                      </div>
-                    )
-                  )}
-
-                </div>
-              )}
-
-
-              <div className="sell-photo-tip">
-
-                <Camera
-                  size={19}
-                />
-
-                <div>
-
-                  <strong>
-                    Photo tips
-                  </strong>
-
-                  <p>
-                    Upload clear
-                    photos of the
-                    actual tree,
-                    plantation,
-                    logs or wood
-                    products.
-                  </p>
-
-                </div>
-
-              </div>
-
-            </div>
-          )}
-
-
-          {/* =================================================
-              STEP 4 — REVIEW
-          ================================================= */}
-
-          {step === 4 && (
-            <div className="sell-step">
-
-              <div className="sell-step-heading">
-
-                <span>
-                  STEP 4
-                </span>
-
-                <h2>
-                  Review listing
-                </h2>
-
-                <p>
-                  Check your details
-                  before publishing.
-                </p>
-
-              </div>
-
-
-              <div className="sell-review-card">
-
-                <div className="sell-review-top">
-
-                  <div className="sell-review-category-icon">
-                    {
-                      selectedCategory?.icon
-                    }
-                  </div>
-
-                  <div>
-
-                    <small>
-                      {
-                        selectedCategory?.title
-                      }
-                    </small>
-
-                    <h3>
-                      {
-                        form.title
-                      }
-                    </h3>
-
-                    <strong>
-                      {
-                        form.tree_type
-                      }
-                    </strong>
-
-                  </div>
-
-                </div>
-
-
-                <div className="sell-review-grid">
-
-                  <ReviewItem
-                    label="Location"
-                    value={
-                      form.location
-                    }
-                  />
-
-                  <ReviewItem
-                    label="Quantity"
-                    value={`${form.quantity} ${form.quantity_unit}`}
-                  />
-
-                  {isPlantation && (
-                    <ReviewItem
-                      label="Plantation Area"
-                      value={`${form.acreage} Acres`}
-                    />
-                  )}
-
-                  {form.tree_age && (
-                    <ReviewItem
-                      label="Tree Age"
-                      value={
-                        form.tree_age
-                      }
-                    />
-                  )}
-
-                  {form.diameter && (
-                    <ReviewItem
-                      label="Diameter"
-                      value={
-                        form.diameter
-                      }
-                    />
-                  )}
-
-                  {form.estimated_volume && (
-                    <ReviewItem
-                      label="Estimated Volume"
-                      value={
-                        form.estimated_volume
-                      }
-                    />
-                  )}
-
-                  {form.condition && (
-                    <ReviewItem
-                      label="Condition"
-                      value={
-                        form.condition
-                      }
-                    />
-                  )}
-
-                  {form.harvest_status && (
-                    <ReviewItem
-                      label="Harvest Status"
-                      value={
-                        form.harvest_status
-                      }
-                    />
-                  )}
-
-                  <ReviewItem
-                    label="Expected Price"
-                    value={
-                      form.price
-                    }
-                  />
-
-                  <ReviewItem
-                    label="Photos"
-                    value={`${photos.length} ${
-                      photos.length ===
-                      1
-                        ? "photo"
-                        : "photos"
-                    }`}
-                  />
-
-                </div>
-
-
-                {form.description && (
-                  <div className="sell-review-description">
-
-                    <strong>
-                      Description
-                    </strong>
-
-                    <p>
-                      {
-                        form.description
-                      }
-                    </p>
-
-                  </div>
-                )}
-
-              </div>
-
-
-              <div className="sell-publish-note">
-
-                <CheckCircle2
-                  size={20}
-                />
-
-                <p>
-                  Your listing will be
-                  visible to TimberMart
-                  users. Buyers can
-                  contact you directly
-                  through Call,
-                  WhatsApp or Chat.
-                </p>
-
-              </div>
-
-            </div>
-          )}
-
-
-          {/* =================================================
-              STEP 5 — SUCCESS
-          ================================================= */}
-
-          {step === 5 && (
-            <div className="sell-success">
-
-              <div className="sell-success-icon">
-
-                <CheckCircle2
-                  size={52}
-                />
-
-              </div>
-
-              <h2>
-                Submitted for Approval ⏳
-              </h2>
-
-              <p>
-                Your timber listing has been submitted successfully.
-                It will become live only after TimberMart admin approval.
-              </p>
-
-
-              <div className="sell-success-summary">
-
-                <TreePine
-                  size={20}
-                />
-
-                <span>
-                  {
-                    form.title
-                  }
-                </span>
-
-              </div>
-
-
-              <small>
-                You will receive a notification after admin approval.
-                Until then, the listing will not appear in live Timber Listings.
-              </small>
-
-
-              <button
-                className="sell-success-close"
-                onClick={
-                  onClose
-                }
-              >
-                Back to Dashboard
-              </button>
-
-            </div>
-          )}
-
-
-          {/* ERROR */}
-
-          {error && (
-            <div className="sell-error">
-              {error}
-            </div>
-          )}
-
-        </div>
-
-
-        {/* FOOTER */}
-
-        {!published && (
-          <footer className="sell-tree-footer">
 
             <button
               type="button"
-              className="sell-back-button"
-              onClick={
-                step === 1
-                  ? onClose
-                  : onBack
-              }
-              disabled={
-                publishing
-              }
+              className="tm-top-icon"
+              onClick={() => openMenu("Notifications")}
+              title="Notifications"
             >
-              <ChevronRight
-                size={18}
-                className="sell-back-icon"
-              />
-
-              {step === 1
-                ? "Cancel"
-                : "Back"}
+              🔔
+              {unreadNotifications.length > 0 && <b>{unreadNotifications.length}</b>}
             </button>
 
+            <button
+              type="button"
+              className="tm-top-icon"
+              onClick={() => loadAll(true)}
+              disabled={refreshing}
+              title="Refresh"
+            >
+              {refreshing ? "…" : "↻"}
+            </button>
 
-            {step < 4 ? (
-              <button
-                type="button"
-                className="sell-next-button"
-                onClick={
-                  onNext
-                }
-                disabled={
-                  publishing
-                }
-              >
-                Continue
+            <div className="tm-profile-menu">
+              <div className="tm-profile-avatar">A</div>
+              <div><strong>Admin</strong><span>Super Admin</span></div>
+              <span>⌄</span>
+            </div>
+          </div>
+        </header>
 
-                <ChevronRight
-                  size={18}
-                />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="sell-publish-button"
-                onClick={
-                  onPublish
-                }
-                disabled={
-                  publishing
-                }
-              >
-
-                {publishing ? (
-                  <>
-                    <span className="sell-button-spinner" />
-                    Publishing...
-                  </>
-                ) : (
-                  <>
-                    <Upload
-                      size={18}
-                    />
-                    Publish Listing
-                  </>
-                )}
-
-              </button>
-            )}
-
-          </footer>
+        {error && (
+          <div className="tm-error">
+            <span>⚠ {error}</span>
+            <button type="button" onClick={() => setError("")}>×</button>
+          </div>
         )}
 
-      </div>
-
+        <div className="tm-page">
+          {renderContent()}
+        </div>
+      </main>
     </div>
   );
 }
 
-
-/* ===========================================================
-   PROGRESS ITEM
-=========================================================== */
-
-function ProgressItem({
-  number,
-  label,
-  active,
-  current,
-}) {
-  return (
-    <div
-      className={`sell-progress-item ${
-        active
-          ? "active"
-          : ""
-      } ${
-        current
-          ? "current"
-          : ""
-      }`}
-    >
-
-      <span>
-        {active &&
-        !current ? (
-          <Check
-            size={14}
-          />
-        ) : (
-          number
-        )}
-      </span>
-
-      <strong>
-        {label}
-      </strong>
-
-    </div>
-  );
-}
-
-
-/* ===========================================================
-   REVIEW ITEM
-=========================================================== */
-
-function ReviewItem({
-  label,
-  value,
-}) {
-  if (!value) {
-    return null;
+function UserTable({ users, full = false }) {
+  if (!users.length) {
+    return <EmptyState icon="👥" title="No users found" text="Registered profiles will appear here." />;
   }
 
   return (
-    <div className="sell-review-item">
+    <div className="tm-table-scroll">
+      <table className="tm-table">
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Role</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Joined</th>
+            {full && <th>Phone</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {users.slice(0, full ? 500 : 8).map((user) => {
+            const role = normalizeRole(user.role);
 
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value}
-      </strong>
-
+            return (
+              <tr key={user.id}>
+                <td>
+                  <div className="tm-user-cell">
+                    <div className="tm-user-avatar">{String(displayName(user)).charAt(0).toUpperCase()}</div>
+                    <div><strong>{displayName(user)}</strong><small>{user.email || "No email"}</small></div>
+                  </div>
+                </td>
+                <td><span className="tm-role-pill">{ROLE_LABELS[role]}</span></td>
+                <td>{[user.city, user.state].filter(Boolean).join(", ") || "—"}</td>
+                <td><span className="tm-status approved">{user.status || "Active"}</span></td>
+                <td>{formatDate(user.created_at)}</td>
+                {full && <td>{user.phone || "—"}</td>}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
 
-
-/* ===========================================================
-   REQUIREMENT CARD
-=========================================================== */
-
-function RequirementCard({
-  requirement,
-  currentUserId,
-  onOpen,
-  onDelete,
-  onProfile,
-  onCall,
-  onWhatsapp,
-  onChat,
-}) {
-  const owner =
-    requirement.profiles;
-
-  return (
-    <article className="farmer-requirement-card">
-
-      <div className="farmer-card-top">
-
-        <div
-          className="farmer-user-mini"
-          onClick={() =>
-            onProfile(
-              owner
-            )
-          }
-        >
-
-          {owner?.photo_url ? (
-            <img
-              src={
-                owner.photo_url
-              }
-              alt=""
-            />
-          ) : (
-            <div className="farmer-avatar">
-              <User
-                size={17}
-              />
-            </div>
-          )}
-
-          <div>
-
-            <strong>
-              {owner?.name ||
-                "TimberMart User"}
-            </strong>
-
-            <span>
-              {owner?.role ||
-                "User"}
-            </span>
-
-          </div>
-
-        </div>
-
-
-        {requirement.user_id ===
-          currentUserId && (
-          <button
-            className="farmer-delete-mini"
-            onClick={(
-              event
-            ) => {
-              event.stopPropagation();
-              onDelete();
-            }}
-            title="Delete"
-          >
-            <Trash2
-              size={16}
-            />
-          </button>
-        )}
-
-      </div>
-
-
-      <button
-        className="farmer-card-body-button"
-        onClick={
-          onOpen
-        }
-      >
-
-        <h3>
-          {
-            requirement.title
-          }
-        </h3>
-
-
-        <div className="farmer-card-info">
-
-          {(requirement.category_label ||
-            requirement.category) && (
-            <span>
-              {
-                requirement.category_label ||
-                requirement.category
-              }
-            </span>
-          )}
-
-
-          {requirement.location && (
-            <span>
-              <MapPin
-                size={14}
-              />
-
-              {
-                requirement.location
-              }
-            </span>
-          )}
-
-
-          {requirement.quantity && (
-            <span>
-              Quantity:{" "}
-              {
-                requirement.quantity
-              }
-            </span>
-          )}
-
-
-          {requirement.budget && (
-            <span>
-              Budget:{" "}
-              {
-                requirement.budget
-              }
-            </span>
-          )}
-
-        </div>
-
-
-        {requirement.description && (
-          <p>
-            {
-              requirement.description
-            }
-          </p>
-        )}
-
-      </button>
-
-
-      <div className="farmer-card-actions">
-
-        <button
-          onClick={() =>
-            onCall(
-              owner?.phone
-            )
-          }
-          disabled={
-            !owner?.phone
-          }
-        >
-          <Phone
-            size={16}
-          />
-
-          Call
-        </button>
-
-
-        <button
-          onClick={() =>
-            onWhatsapp(
-              owner?.phone
-            )
-          }
-          disabled={
-            !owner?.phone
-          }
-        >
-          <MessageCircle
-            size={16}
-          />
-
-          WhatsApp
-        </button>
-
-
-        <button
-          onClick={() =>
-            onChat(
-              owner?.id
-            )
-          }
-          disabled={
-            !owner?.id
-          }
-        >
-          <MessageCircle
-            size={16}
-          />
-
-          Chat
-        </button>
-
-      </div>
-
-    </article>
-  );
-}
-
-
-/* ===========================================================
-   LISTING EXPIRY DISPLAY
-=========================================================== */
-
-function getListingExpiryDate(listing) {
-  if (!listing) return null;
-
-  // Preferred value: Supabase expiry created at admin approval.
-  if (listing.expires_at) {
-    const directDate = new Date(listing.expires_at);
-    if (!Number.isNaN(directDate.getTime())) return directDate;
-  }
-
-  // Safe fallback for older approved rows created before expires_at
-  // was added. For approved listings, reviewed_at is the approval time.
-  const baseValue =
-    listing.reviewed_at ||
-    (listing.status === "approved" ? listing.created_at : null);
-
-  if (!baseValue) return null;
-
-  const baseDate = new Date(baseValue);
-  if (Number.isNaN(baseDate.getTime())) return null;
-
-  return new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000);
-}
-
-function getExpiryInfo(listing) {
-  const expiryDate = getListingExpiryDate(listing);
-
-  if (!expiryDate) {
-    return {
-      expired: false,
-      text: "Expiry: Pending",
-      dateText: "",
-    };
-  }
-
-  const expiryTime = expiryDate.getTime();
-  const remaining = expiryTime - Date.now();
-
-  if (remaining <= 0) {
-    return {
-      expired: true,
-      text: "Expired",
-      dateText: expiryDate.toLocaleString(),
-    };
-  }
-
-  const totalSeconds = Math.floor(remaining / 1000);
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  return {
-    expired: false,
-    text: `Expires in ${days}d ${hours}h ${minutes}m ${seconds}s`,
-    dateText: expiryDate.toLocaleString(),
-  };
-}
-
-/* ===========================================================
-   LISTING CARD
-=========================================================== */
-
-function ListingCard({
-  listing,
-  currentUserId,
-  onOpen,
-  onProfile,
-  onCall,
-  onWhatsapp,
-  onChat,
-}) {
-  const owner =
-    listing.profiles;
-
-  const images = [
-    ...(listing.listing_images ||
-      []),
-  ].sort(
-    (a, b) =>
-      (a.sort_order || 0) -
-      (b.sort_order || 0)
-  );
-
-  const image =
-    images[0]?.image_url;
-
-  const expiryInfo = getExpiryInfo(listing);
-
-  return (
-    <article className="farmer-listing-card">
-
-      <div
-        className="farmer-listing-image farmer-listing-image-clickable"
-        onClick={onOpen}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") onOpen();
-        }}
-        title="Click image to view listing"
-      >
-
-        {image ? (
-          <>
-            <img
-              src={image}
-              alt={
-                listing.title
-              }
-            />
-            <span className="farmer-image-view-hint">
-              <Eye size={16} /> View photo
-            </span>
-          </>
-        ) : (
-          <div className="farmer-no-image">
-
-            <TreePine
-              size={38}
-            />
-
-            <span>
-              No photo
-            </span>
-
-          </div>
-        )}
-
-
-        {listing.user_id ===
-          currentUserId && (
-          <span className="farmer-own-badge">
-            Your Listing
-          </span>
-        )}
-
-        {listing.user_id === currentUserId &&
-          listing.status &&
-          listing.status !== "approved" && (
-          <span className={`farmer-listing-status ${listing.status}`}>
-            {listing.status === "pending"
-              ? "⏳ Pending Approval"
-              : "✕ Rejected"}
-          </span>
-        )}
-
-      </div>
-
-
-      <div className="farmer-listing-content">
-
-        <div
-          className="farmer-user-mini"
-          onClick={() =>
-            onProfile(
-              owner
-            )
-          }
-        >
-
-          {owner?.photo_url ? (
-            <img
-              src={
-                owner.photo_url
-              }
-              alt=""
-            />
-          ) : (
-            <div className="farmer-avatar">
-              <User
-                size={17}
-              />
-            </div>
-          )}
-
-          <div>
-
-            <strong>
-              {owner?.name ||
-                "TimberMart User"}
-            </strong>
-
-            <span>
-              {owner?.role ||
-                "Farmer"}
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <button
-          className="farmer-listing-open"
-          onClick={
-            onOpen
-          }
-        >
-
-          <h3>
-            {
-              listing.title
-            }
-          </h3>
-
-
-          {listing.category && (
-            <span>
-              Category:{" "}
-              {
-                listing.category ===
-                "indian_trees"
-                  ? "Indian Trees"
-                  : listing.category ===
-                    "plantations"
-                  ? "Plantations"
-                  : "Wood Products"
-              }
-            </span>
-          )}
-
-
-          {listing.tree_type && (
-            <span>
-              Type:{" "}
-              {
-                listing.tree_type
-              }
-            </span>
-          )}
-
-
-          {listing.quantity && (
-            <span>
-              Quantity:{" "}
-              {
-                listing.quantity
-              }{" "}
-              {
-                listing.quantity_unit ||
-                ""
-              }
-            </span>
-          )}
-
-
-          {listing.acreage && (
-            <span>
-              Plantation:{" "}
-              {
-                listing.acreage
-              }{" "}
-              Acres
-            </span>
-          )}
-
-
-          {listing.location && (
-            <span>
-              <MapPin
-                size={14}
-              />
-
-              {
-                listing.location
-              }
-            </span>
-          )}
-
-
-          {listing.price && (
-            <strong>
-              Price:{" "}
-              {
-                listing.price
-              }
-            </strong>
-          )}
-
-          {/* =================================================
-              LISTING EXPIRY
-              Shows the live countdown and exact expiry time.
-          ================================================= */}
-          <span
-            className={`farmer-listing-expiry ${
-              expiryInfo.expired ? "expired" : ""
-            }`}
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "6px",
-              marginTop: "8px",
-              padding: "7px 10px",
-              borderRadius: "10px",
-              fontSize: "12px",
-              fontWeight: 700,
-              lineHeight: 1.35,
-              background: expiryInfo.expired
-                ? "rgba(220, 38, 38, 0.10)"
-                : "rgba(245, 158, 11, 0.10)",
-              color: expiryInfo.expired
-                ? "#b91c1c"
-                : "#b45309",
-              width: "fit-content",
-            }}
-            title={
-              expiryInfo.dateText
-                ? `Expires on ${expiryInfo.dateText}`
-                : "Expiry will be set after admin approval"
-            }
-          >
-            ⏳ {expiryInfo.text}
-          </span>
-
-        </button>
-
-
-        <div className="farmer-card-actions">
-
-          <button
-            className="farmer-view-listing-button"
-            onClick={onOpen}
-            type="button"
-          >
-            <Eye size={16} />
-            View
-          </button>
-
-          <button
-            onClick={() =>
-              onCall(
-                owner?.phone
-              )
-            }
-            disabled={
-              !owner?.phone
-            }
-          >
-            <Phone
-              size={16}
-            />
-
-            Call
-          </button>
-
-
-          <button
-            onClick={() =>
-              onWhatsapp(
-                owner?.phone
-              )
-            }
-            disabled={
-              !owner?.phone
-            }
-          >
-            <MessageCircle
-              size={16}
-            />
-
-            WhatsApp
-          </button>
-
-
-          <button
-            onClick={() =>
-              onChat(
-                owner?.id,
-                {
-                  listingId: listing.id,
-                  listingOwnerId: listing.user_id,
-                  listingTitle: listing.title,
-                }
-              )
-            }
-            disabled={
-              !owner?.id
-            }
-          >
-            <MessageCircle
-              size={16}
-            />
-
-            Chat
-          </button>
-
-        </div>
-
-      </div>
-
-    </article>
-  );
-}
-
-
-/* ===========================================================
-   LISTING MODAL
-=========================================================== */
-
-function ListingModal({
-  listing,
-  currentUserId,
-  onClose,
-  onProfile,
-  onCall,
-  onWhatsapp,
-  onChat,
-}) {
-  const owner =
-    listing.profiles;
-
-  const images = [
-    ...(listing.listing_images ||
-      []),
-  ].sort(
-    (a, b) =>
-      (a.sort_order || 0) -
-      (b.sort_order || 0)
-  );
-
-  const [lightboxImage, setLightboxImage] = useState(null);
-  const expiryInfo = getExpiryInfo(listing);
-
-  useEffect(() => {
-    if (!lightboxImage) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") setLightboxImage(null);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxImage]);
-
-  return (
-    <div
-      className="farmer-modal-backdrop"
-      onClick={
-        onClose
-      }
-    >
-
-      <div
-        className="farmer-modal"
-        onClick={(
-          event
-        ) =>
-          event.stopPropagation()
-        }
-      >
-
-        <button
-          className="farmer-modal-close"
-          onClick={
-            onClose
-          }
-        >
-          <X
-            size={21}
-          />
-        </button>
-
-
-        <div className="farmer-modal-header">
-
-          <div>
-
-            <span className="farmer-modal-label">
-              Timber Listing
-            </span>
-
-            <h2>
-              {
-                listing.title
-              }
-            </h2>
-
-            <div className={`farmer-modal-expiry ${expiryInfo.expired ? "expired" : ""}`}>
-              <span>⏳ {expiryInfo.text}</span>
-              {expiryInfo.dateText && (
-                <small>Expires on {expiryInfo.dateText}</small>
-              )}
-            </div>
-
-          </div>
-
-        </div>
-
-
-        {images.length >
-          0 && (
-          <div className="farmer-modal-images">
-
-            {images.map(
-              (image, index) => (
-                <button
-                  key={image.id}
-                  type="button"
-                  className="farmer-modal-image-button"
-                  onClick={() => setLightboxImage(image.image_url)}
-                  title="Click to enlarge"
-                >
-                  <img
-                    src={image.image_url}
-                    alt={`${listing.title} photo ${index + 1}`}
-                  />
-                  <span className="farmer-modal-image-zoom">
-                    <Eye size={18} />
-                  </span>
-                </button>
-              )
-            )}
-
-          </div>
-        )}
-
-
-        <div className="farmer-modal-details">
-
-          {listing.category && (
-            <DetailRow
-              label="Category"
-              value={
-                listing.category ===
-                "indian_trees"
-                  ? "Indian Trees"
-                  : listing.category ===
-                    "plantations"
-                  ? "Plantations"
-                  : "Wood Products"
-              }
-            />
-          )}
-
-
-          {listing.tree_type && (
-            <DetailRow
-              label="Tree / Product Type"
-              value={
-                listing.tree_type
-              }
-            />
-          )}
-
-
-          {listing.wood_type && (
-            <DetailRow
-              label="Wood Type"
-              value={
-                listing.wood_type
-              }
-            />
-          )}
-
-
-          {listing.quantity && (
-            <DetailRow
-              label="Quantity"
-              value={`${listing.quantity} ${
-                listing.quantity_unit ||
-                ""
-              }`}
-            />
-          )}
-
-
-          {listing.acreage && (
-            <DetailRow
-              label="Plantation Area"
-              value={`${listing.acreage} Acres`}
-            />
-          )}
-
-
-          {listing.tree_age && (
-            <DetailRow
-              label="Tree Age"
-              value={
-                listing.tree_age
-              }
-            />
-          )}
-
-
-          {listing.diameter && (
-            <DetailRow
-              label="Diameter"
-              value={
-                listing.diameter
-              }
-            />
-          )}
-
-
-          {listing.estimated_volume && (
-            <DetailRow
-              label="Estimated Volume"
-              value={
-                listing.estimated_volume
-              }
-            />
-          )}
-
-
-          {listing.condition && (
-            <DetailRow
-              label="Condition"
-              value={
-                listing.condition
-              }
-            />
-          )}
-
-
-          {listing.harvest_status && (
-            <DetailRow
-              label="Status"
-              value={
-                listing.harvest_status
-              }
-            />
-          )}
-
-
-          {listing.location && (
-            <DetailRow
-              label="Location"
-              value={
-                listing.location
-              }
-            />
-          )}
-
-
-          {listing.price && (
-            <DetailRow
-              label="Expected Price"
-              value={
-                listing.price
-              }
-            />
-          )}
-
-
-          {expiryInfo.dateText && (
-            <DetailRow
-              label="Listing Expires"
-              value={expiryInfo.dateText}
-            />
-          )}
-
-          {listing.description && (
-            <div className="farmer-description">
-
-              <strong>
-                Description
-              </strong>
-
-              <p>
-                {
-                  listing.description
-                }
-              </p>
-
-            </div>
-          )}
-
-        </div>
-
-
-        <div
-          className="farmer-modal-owner"
-          onClick={() =>
-            onProfile(
-              owner
-            )
-          }
-        >
-
-          {owner?.photo_url ? (
-            <img
-              src={
-                owner.photo_url
-              }
-              alt=""
-            />
-          ) : (
-            <div className="farmer-avatar large">
-              <User
-                size={21}
-              />
-            </div>
-          )}
-
-
-          <div>
-
-            <strong>
-              {owner?.name ||
-                "TimberMart User"}
-            </strong>
-
-            <span>
-              {owner?.location ||
-                "Location not available"}
-            </span>
-
-          </div>
-
-        </div>
-
-
-        {listing.user_id !==
-          currentUserId && (
-          <div className="farmer-modal-actions">
-
-            <button
-              onClick={() =>
-                onCall(
-                  owner?.phone
-                )
-              }
-              disabled={
-                !owner?.phone
-              }
-            >
-              <Phone
-                size={18}
-              />
-              Call
-            </button>
-
-
-            <button
-              onClick={() =>
-                onWhatsapp(
-                  owner?.phone
-                )
-              }
-              disabled={
-                !owner?.phone
-              }
-            >
-              <MessageCircle
-                size={18}
-              />
-              WhatsApp
-            </button>
-
-
-            <button
-              onClick={() =>
-                onChat(
-                  owner?.id,
-                  {
-                    listingId: listing.id,
-                    listingOwnerId: listing.user_id,
-                    listingTitle: listing.title,
-                  }
-                )
-              }
-              disabled={
-                !owner?.id
-              }
-            >
-              <MessageCircle
-                size={18}
-              />
-              Chat
-            </button>
-
-          </div>
-        )}
-
-      </div>
-
-
-      {lightboxImage && (
-        <div
-          className="farmer-image-lightbox"
-          onClick={() => setLightboxImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="Large listing image"
-        >
-          <button
-            type="button"
-            className="farmer-lightbox-close"
-            onClick={() => setLightboxImage(null)}
-            aria-label="Close image"
-          >
-            <X size={26} />
-          </button>
-          <img
-            src={lightboxImage}
-            alt={listing.title}
-            onClick={(event) => event.stopPropagation()}
-          />
-          <span className="farmer-lightbox-caption">Click anywhere outside the image to close</span>
-        </div>
-      )}
-
-    </div>
-  );
-}
-
-
-/* ===========================================================
-   REQUIREMENT MODAL
-=========================================================== */
-
-function RequirementModal({
-  requirement,
-  currentUserId,
-  onClose,
-  onDelete,
-  onProfile,
-  onCall,
-  onWhatsapp,
-  onChat,
-}) {
-  const owner =
-    requirement.profiles;
-
-  return (
-    <div
-      className="farmer-modal-backdrop"
-      onClick={
-        onClose
-      }
-    >
-
-      <div
-        className="farmer-modal"
-        onClick={(
-          event
-        ) =>
-          event.stopPropagation()
-        }
-      >
-
-        <button
-          className="farmer-modal-close"
-          onClick={
-            onClose
-          }
-        >
-          <X
-            size={21}
-          />
-        </button>
-
-
-        <span className="farmer-modal-label">
-          Requirement
-        </span>
-
-
-        <h2>
-          {
-            requirement.title
-          }
-        </h2>
-
-
-        <div className="farmer-modal-details">
-
-          {(requirement.category_label ||
-            requirement.category) && (
-            <DetailRow
-              label="Category"
-              value={
-                requirement.category_label ||
-                requirement.category
-              }
-            />
-          )}
-
-
-          {requirement.location && (
-            <DetailRow
-              label="Location"
-              value={
-                requirement.location
-              }
-            />
-          )}
-
-
-          {requirement.quantity && (
-            <DetailRow
-              label="Quantity"
-              value={
-                requirement.quantity
-              }
-            />
-          )}
-
-
-          {requirement.budget && (
-            <DetailRow
-              label="Budget"
-              value={
-                requirement.budget
-              }
-            />
-          )}
-
-
-          {requirement.description && (
-            <div className="farmer-description">
-
-              <strong>
-                Description
-              </strong>
-
-              <p>
-                {
-                  requirement.description
-                }
-              </p>
-
-            </div>
-          )}
-
-        </div>
-
-
-        <div
-          className="farmer-modal-owner"
-          onClick={() =>
-            onProfile(
-              owner
-            )
-          }
-        >
-
-          {owner?.photo_url ? (
-            <img
-              src={
-                owner.photo_url
-              }
-              alt=""
-            />
-          ) : (
-            <div className="farmer-avatar large">
-              <User
-                size={21}
-              />
-            </div>
-          )}
-
-
-          <div>
-
-            <strong>
-              {owner?.name ||
-                "TimberMart User"}
-            </strong>
-
-            <span>
-              {owner?.location ||
-                "Location not available"}
-            </span>
-
-          </div>
-
-        </div>
-
-
-        {requirement.user_id ===
-        currentUserId ? (
-
-          <button
-            className="farmer-danger-button"
-            onClick={
-              onDelete
-            }
-          >
-            <Trash2
-              size={18}
-            />
-
-            Delete Requirement
-          </button>
-
-        ) : (
-
-          <div className="farmer-modal-actions">
-
-            <button
-              onClick={() =>
-                onCall(
-                  owner?.phone
-                )
-              }
-              disabled={
-                !owner?.phone
-              }
-            >
-              <Phone
-                size={18}
-              />
-              Call
-            </button>
-
-
-            <button
-              onClick={() =>
-                onWhatsapp(
-                  owner?.phone
-                )
-              }
-              disabled={
-                !owner?.phone
-              }
-            >
-              <MessageCircle
-                size={18}
-              />
-              WhatsApp
-            </button>
-
-
-            <button
-              onClick={() =>
-                onChat(
-                  owner?.id
-                )
-              }
-              disabled={
-                !owner?.id
-              }
-            >
-              <MessageCircle
-                size={18}
-              />
-              Chat
-            </button>
-
-          </div>
-
-        )}
-
-      </div>
-
-    </div>
-  );
-}
-
-
-/* ===========================================================
-   PROFILE MODAL
-=========================================================== */
-
-function ProfileModal({
-  owner,
-  onClose,
-  onCall,
-  onWhatsapp,
-  onChat,
-}) {
-  if (!owner) {
-    return null;
+function ListingTable({ listings, full = false, onApprove, onReject, busyId }) {
+  if (!listings.length) {
+    return <EmptyState icon="🪵" title="No listings found" text="Timber listings will appear here." />;
   }
 
   return (
-    <div
-      className="farmer-modal-backdrop"
-      onClick={
-        onClose
-      }
-    >
-
-      <div
-        className="farmer-profile-modal"
-        onClick={(
-          event
-        ) =>
-          event.stopPropagation()
-        }
-      >
-
-        <button
-          className="farmer-modal-close"
-          onClick={
-            onClose
-          }
-        >
-          <X
-            size={21}
-          />
-        </button>
-
-
-        <div className="farmer-profile-modal-photo">
-
-          {owner.photo_url ? (
-            <img
-              src={
-                owner.photo_url
-              }
-              alt={
-                owner.name ||
-                "User"
-              }
-            />
-          ) : (
-            <User
-              size={35}
-            />
-          )}
-
-        </div>
-
-
-        <h2>
-          {owner.name ||
-            "TimberMart User"}
-        </h2>
-
-
-        <span className="farmer-profile-role">
-          {owner.role ||
-            "User"}
-        </span>
-
-
-        {owner.location && (
-          <p className="farmer-profile-location">
-
-            <MapPin
-              size={16}
-            />
-
-            {
-              owner.location
-            }
-
-          </p>
-        )}
-
-
-        <div className="farmer-profile-actions">
-
-          <button
-            onClick={() =>
-              onCall(
-                owner.phone
-              )
-            }
-            disabled={
-              !owner.phone
-            }
-          >
-            <Phone
-              size={18}
-            />
-
-            Call
-          </button>
-
-
-          <button
-            onClick={() =>
-              onWhatsapp(
-                owner.phone
-              )
-            }
-            disabled={
-              !owner.phone
-            }
-          >
-            <MessageCircle
-              size={18}
-            />
-
-            WhatsApp
-          </button>
-
-
-          <button
-            onClick={() =>
-              onChat(
-                owner.id
-              )
-            }
-            disabled={
-              !owner.id
-            }
-          >
-            <MessageCircle
-              size={18}
-            />
-
-            Chat
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-  );
-}
-
-
-/* ===========================================================
-   DETAIL ROW
-=========================================================== */
-
-function DetailRow({
-  label,
-  value,
-}) {
-  return (
-    <div className="farmer-detail-row">
-
-      <span>
-        {label}
-      </span>
-
-      <strong>
-        {value}
-      </strong>
-
+    <div className="tm-table-scroll">
+      <table className="tm-table">
+        <thead>
+          <tr>
+            <th>Listing</th>
+            <th>Category</th>
+            <th>Seller</th>
+            <th>Status</th>
+            <th>Price</th>
+            <th>Posted</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {listings.slice(0, full ? 500 : 7).map((row) => (
+            <tr key={row.id}>
+              <td><strong>{listingTitle(row)}</strong><small>{row.description || "Timber listing"}</small></td>
+              <td>{row.category || row.species || row.tree_type || "—"}</td>
+              <td>{row.seller_name || row.owner_name || row.user_name || row.user_id || "Seller"}</td>
+              <td><span className={statusClass(row.status)}>{row.status || "Pending"}</span></td>
+              <td>{row.price ? `₹${Number(row.price).toLocaleString("en-IN")}` : "—"}</td>
+              <td>{formatDate(row.created_at)}</td>
+              <td>
+                <div className="tm-row-actions">
+                  <button
+                    type="button"
+                    title="Approve"
+                    className="approve-icon"
+                    disabled={busyId === `listing-${row.id}`}
+                    onClick={() => onApprove(row.id)}
+                  >✓</button>
+                  <button
+                    type="button"
+                    title="Reject"
+                    className="reject-icon"
+                    disabled={busyId === `listing-${row.id}`}
+                    onClick={() => onReject(row.id)}
+                  >×</button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

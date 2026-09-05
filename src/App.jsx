@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import GetStarted from "./pages/GetStarted";
@@ -17,6 +17,8 @@ import SawmillDashboard from "./dashboards/SawmillDashboard";
 import CarpenterDashboard from "./dashboards/CarpenterDashboard";
 import WorkerDashboard from "./dashboards/WorkerDashboard";
 import BuyerDashboard from "./dashboards/BuyerDashboard";
+
+import { supabase } from "./supabaseClient";
 
 /* =========================================================
    GLOBAL THEME
@@ -84,6 +86,94 @@ function GlobalTheme() {
 }
 
 /* =========================================================
+   ADMIN ROUTE PROTECTION
+   ---------------------------------------------------------
+   /admin URL ni direct ga type chesina normal user ki
+   AdminDashboard open avvakunda Supabase profiles.role
+   verify chestundi.
+
+   IMPORTANT:
+   AdminDashboard.jsx already has its own admin protection.
+   Ee guard additional route-level protection matrame.
+   ========================================================= */
+
+function AdminRoute() {
+  const [status, setStatus] = useState("checking");
+
+  useEffect(() => {
+    let active = true;
+
+    const checkAdmin = async () => {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!session?.user?.id) {
+          if (active) setStatus("unauthorized");
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        if (profile?.role === "admin") {
+          if (active) setStatus("allowed");
+        } else {
+          if (active) setStatus("unauthorized");
+        }
+      } catch (error) {
+        console.error("Admin route check failed:", error);
+        if (active) setStatus("unauthorized");
+      }
+    };
+
+    checkAdmin();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  /* ---------------------------------------------
+     Checking
+  --------------------------------------------- */
+
+  if (status === "checking") {
+    return (
+      <div className="loading-screen">
+        <div className="loading-logo">🛡️</div>
+        <h2>TimberMart</h2>
+        <p>Verifying administrator access...</p>
+      </div>
+    );
+  }
+
+  /* ---------------------------------------------
+     Not authorized
+  --------------------------------------------- */
+
+  if (status !== "allowed") {
+    return (
+      <Navigate
+        to="/login?role=admin"
+        replace
+      />
+    );
+  }
+
+  return <AdminDashboard />;
+}
+
+/* =========================================================
    DASHBOARD ROUTER
    ---------------------------------------------------------
    Existing dashboard routes same ga uncham.
@@ -121,7 +211,6 @@ function DashboardRouter() {
         path="buyer"
         element={<BuyerDashboard />}
       />
-      
 
       <Route
         path="*"
@@ -143,7 +232,7 @@ function DashboardRouter() {
 export default function App() {
   return (
     <>
-      {/* 
+      {/*
         GlobalTheme page change ayina theme ni maintain chestundi.
         Existing routes ki emi disturbance undadu.
       */}
@@ -188,9 +277,19 @@ export default function App() {
         <Route
           path="/requirements"
           element={<RequirementWall />}
-
         />
-        <Route path="/admin" element={<AdminDashboard />} />
+
+        {/* =================================================
+            ADMIN
+            -------------------------------------------------
+            AdminDashboard.jsx and AdminDashboard.css already
+            exist. We are only protecting the route here.
+        ================================================= */}
+
+        <Route
+          path="/admin"
+          element={<AdminRoute />}
+        />
 
         {/* =================================================
             DASHBOARDS
