@@ -32,6 +32,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./MerchantDashboard.css";
+import TreeLoader from "../components/TreeLoader";
 
 const CATEGORIES = [
   "All",
@@ -1253,24 +1254,10 @@ export default function MerchantDashboard() {
   ===================================================== */
 
   if (loading) {
-    return (
-      <div className="merchant-loading">
-        <div className="merchant-loading-card">
-          <div className="merchant-loading-logo">
-            🌳
-          </div>
-
-          <h2>TimberMart</h2>
-
-          <p>
-            Loading your merchant dashboard...
-          </p>
-
-          <div className="merchant-loader" />
-        </div>
-      </div>
-    );
-  }
+  return (
+    <TreeLoader text="Growing your requirements..." />
+  );
+}
 
   /* =====================================================
      DASHBOARD

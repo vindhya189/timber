@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Bell,
@@ -8,9 +8,11 @@ import {
   ChevronRight,
   CircleUserRound,
   FileText,
+  Eye,
   Home,
   ImagePlus,
   LogOut,
+  LocateFixed,
   MapPin,
   Menu,
   MessageCircle,
@@ -160,6 +162,141 @@ const HARVEST_STATUS = [
    MAIN FARMER DASHBOARD
 ========================================================= */
 
+/* =======================================================
+   NEARBY LISTING MATCHING
+   Gets the user's real device coordinates so Supabase can
+   match a new listing with requirements within 30 km.
+======================================================= */
+async function getCurrentCoordinates() {
+  // GPS only. IP address location is NEVER used.
+  if (!navigator.geolocation) return null;
+
+  try {
+    const position = await new Promise((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        resolve,
+        reject,
+        {
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        }
+      );
+    });
+
+    return {
+      latitude: Number(position.coords.latitude),
+      longitude: Number(position.coords.longitude),
+    };
+  } catch (error) {
+    console.warn("GPS location unavailable:", error);
+    return null;
+  }
+}
+
+async function reverseGeocodeLocation(latitude, longitude) {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return "";
+  }
+
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}&zoom=18&addressdetails=1`,
+      {
+        headers: { Accept: "application/json" },
+      }
+    );
+
+    if (!response.ok) return "";
+
+    const data = await response.json();
+    const address = data?.address || {};
+
+    const parts = [
+      address.village,
+      address.town,
+      address.city,
+      address.municipality,
+      address.district,
+      address.state,
+      address.country,
+    ].filter(Boolean);
+
+    const uniqueParts = [...new Set(parts)];
+    return uniqueParts.join(", ") || data?.display_name || "";
+  } catch (error) {
+    console.warn("Reverse geocoding failed:", error);
+    return "";
+  }
+}
+
+function cleanMatchingKeywords(values = []) {
+  const output = [];
+
+  values.forEach((value) => {
+    if (!value) return;
+
+    if (Array.isArray(value)) {
+      value.forEach((item) => {
+        if (item) output.push(String(item).trim().toLowerCase());
+      });
+      return;
+    }
+
+    String(value)
+      .split(",")
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean)
+      .forEach((item) => output.push(item));
+  });
+
+  return [...new Set(output)];
+}
+
+async function notifyMatchingUsers40Km({
+  senderId,
+  latitude,
+  longitude,
+  postType,
+  postId,
+  title,
+  message,
+  keywords = [],
+  matchingRoles = [],
+  listingId = null,
+  requirementId = null,
+  jobId = null,
+}) {
+  if (!senderId || !postId || !Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return 0;
+  }
+
+  const { data, error } = await supabase.rpc(
+    "notify_matching_users_40km",
+    {
+      p_sender_id: senderId,
+      p_latitude: latitude,
+      p_longitude: longitude,
+      p_post_type: postType,
+      p_post_id: postId,
+      p_title: title,
+      p_message: message,
+      p_keywords: cleanMatchingKeywords(keywords),
+      p_matching_roles: matchingRoles,
+      p_listing_id: listingId,
+      p_requirement_id: requirementId,
+      p_job_id: jobId,
+    }
+  );
+
+  if (error) {
+    console.error("40 KM matching notification error:", error);
+    return 0;
+  }
+
+  return Number(data || 0);
+}
+
 export default function FarmerDashboard() {
   const navigate = useNavigate();
 
@@ -170,6 +307,16 @@ export default function FarmerDashboard() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
 
+  // GPS / 40 KM notification status
+  const [locationUpdating, setLocationUpdating] = useState(false);
+  const [locationMessage, setLocationMessage] = useState("");
+  const [locationError, setLocationError] = useState("");
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState(
+    typeof window !== "undefined" && "Notification" in window
+      ? Notification.permission
+      : "unsupported"
+  );
+
   /* =======================================================
      DASHBOARD DATA
   ======================================================= */
@@ -178,6 +325,14 @@ export default function FarmerDashboard() {
   const [requirements, setRequirements] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // MESSAGES CENTER
+  const [showMessages, setShowMessages] = useState(false);
+  const [messageConversations, setMessageConversations] = useState([]);
+  const [unreadByUser, setUnreadByUser] = useState({});
+  const [messageToast, setMessageToast] = useState(null);
+  const messageAudioContextRef = useRef(null);
+  const messageSoundUnlockedRef = useRef(false);
 
   /* =======================================================
      UI STATE
@@ -192,6 +347,42 @@ export default function FarmerDashboard() {
   const [selectedRequirement, setSelectedRequirement] =
     useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
+
+  // CHAT STATE
+  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [showChat, setShowChat] = useState(false);
+  const [messages, setMessages] = useState([]);
+  const [messageText, setMessageText] = useState("");
+  const [chatLoading, setChatLoading] = useState(false);
+
+  // Keep the latest chat/user values available to realtime message listeners.
+  const selectedProfileRef = useRef(null);
+  const showChatRef = useRef(false);
+  const userRef = useRef(null);
+
+  useEffect(() => {
+    selectedProfileRef.current = selectedProfile;
+    showChatRef.current = showChat;
+    userRef.current = user;
+  }, [selectedProfile, showChat, user]);
+
+  /* =======================================================
+     LISTING EXPIRY CLOCK
+     -------------------------------------------------------
+     Supabase sets expires_at when admin approves a listing.
+     This clock displays the remaining time and removes an
+     expired listing from the visible Timber Listings section.
+  ======================================================= */
+
+  const [expiryNow, setExpiryNow] = useState(Date.now());
+
+  useEffect(() => {
+    const expiryTimer = window.setInterval(() => {
+      setExpiryNow(Date.now());
+    }, 1000);
+
+    return () => window.clearInterval(expiryTimer);
+  }, []);
 
   /* =======================================================
      SELL TREE STATE
@@ -266,6 +457,93 @@ export default function FarmerDashboard() {
             payload.new,
             ...previous.filter((item) => item.id !== payload.new.id),
           ]);
+
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            new Notification(
+              payload.new?.title || "TimberMart",
+              {
+                body: payload.new?.message || "New notification",
+              }
+            );
+          }
+        }
+      )
+      .subscribe();
+
+    // Global incoming-message listener. It works even when the chat window
+    // is closed, so the Messages badge can update immediately.
+    const incomingMessageChannel = supabase
+      .channel(`farmer-incoming-messages-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        async (payload) => {
+          const receiverId = payload.new?.receiver_id;
+          const senderId = payload.new?.sender_id;
+          if (!receiverId || !senderId || receiverId !== userRef.current?.id) return;
+
+          // Update the open chat immediately if this conversation is visible.
+          if (showChatRef.current && selectedProfileRef.current?.id === senderId) {
+            setMessages((old) =>
+              old.some((item) => item.id === payload.new.id)
+                ? old
+                : [...old, payload.new]
+            );
+          } else {
+            setUnreadByUser((old) => ({
+              ...old,
+              [senderId]: (old[senderId] || 0) + 1,
+            }));
+          }
+
+          let senderProfile = null;
+
+          try {
+            const { data: fetchedSenderProfile } = await supabase
+              .from("profiles")
+              .select("id,name,role,photo_url,location")
+              .eq("id", senderId)
+              .maybeSingle();
+
+            senderProfile = fetchedSenderProfile;
+
+            if (senderProfile) {
+              setMessageConversations((old) => {
+                const existing = old.find((item) => item.profile.id === senderId);
+                const nextItem = {
+                  profile: senderProfile,
+                  lastMessage: payload.new.body || "New message",
+                  updatedAt: payload.new.created_at || new Date().toISOString(),
+                  unread: showChatRef.current && selectedProfileRef.current?.id === senderId
+                    ? existing?.unread || 0
+                    : (existing?.unread || 0) + 1,
+                };
+                return [
+                  nextItem,
+                  ...old.filter((item) => item.profile.id !== senderId),
+                ];
+              });
+            }
+          } catch (error) {
+            console.error("Incoming message profile error:", error);
+          }
+
+          playFarmerMessageSound();
+          setMessageToast({
+            name: senderProfile?.name || "New message",
+            text: payload.new?.body || "You received a new message.",
+          });
+          window.clearTimeout(window.__tmMessageToastTimer);
+          window.__tmMessageToastTimer = window.setTimeout(() => {
+            setMessageToast(null);
+          }, 4500);
         }
       )
       .subscribe();
@@ -273,9 +551,387 @@ export default function FarmerDashboard() {
     return () => {
       subscription.unsubscribe();
       supabase.removeChannel(notificationChannel);
+      supabase.removeChannel(incomingMessageChannel);
     };
   }, [navigate]);
 
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !("Notification" in window)) {
+      setBrowserNotificationPermission("unsupported");
+      return;
+    }
+
+    setBrowserNotificationPermission(Notification.permission);
+  }, []);
+
+  // Keep the open chat live in real time.
+  useEffect(() => {
+    if (!user?.id || !selectedProfile?.id || !showChat) return;
+
+    const channel = supabase
+      .channel(`farmer-chat-${user.id}-${selectedProfile.id}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+          filter: `sender_id=eq.${selectedProfile.id}`,
+        },
+        (payload) => {
+          if (payload.new?.receiver_id !== user.id) return;
+          setMessages((old) =>
+            old.some((item) => item.id === payload.new.id)
+              ? old
+              : [...old, payload.new]
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, selectedProfile?.id, showChat]);
+
+
+  async function loadChatMessages(otherUserId) {
+    if (!user?.id || !otherUserId) return;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .or(
+        `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`
+      )
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      console.error("Chat messages error:", error);
+      setMessages([]);
+      return false;
+    }
+
+    setMessages(data || []);
+    return true;
+  }
+
+
+  async function sendMessage(event) {
+    event.preventDefault();
+
+    const text = messageText.trim();
+    if (!text || !user?.id || !selectedProfile?.id) return;
+
+    const receiverId = selectedProfile.id;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: user.id,
+        receiver_id: receiverId,
+        body: text,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      console.error("Send message error:", error);
+      alert(error.message || "Unable to send message.");
+      return;
+    }
+
+    setMessages((old) =>
+      old.some((item) => item.id === data.id) ? old : [...old, data]
+    );
+    setMessageConversations((old) => {
+      const existing = old.find((item) => item.profile.id === receiverId);
+      if (!existing) return old;
+      return [
+        {
+          ...existing,
+          lastMessage: text,
+          updatedAt: data.created_at || new Date().toISOString(),
+          unread: 0,
+        },
+        ...old.filter((item) => item.profile.id !== receiverId),
+      ];
+    });
+    setUnreadByUser((old) => ({ ...old, [receiverId]: 0 }));
+    setMessageText("");
+  }
+
+
+  async function openChat(userId, context = {}) {
+    if (!userId || !user?.id) {
+      alert("User information not available.");
+      return;
+    }
+
+    if (userId === user.id) {
+      alert("You cannot chat with yourself.");
+      return;
+    }
+
+    setChatLoading(true);
+
+    try {
+      // Create the listing-interest notification for the listing owner.
+      if (context?.listingId && context.listingOwnerId === userId) {
+        const { error: notificationError } = await supabase.rpc("notify_listing_chat", {
+          p_listing_id: context.listingId,
+        });
+
+        if (notificationError) {
+          console.error("Listing chat notification error:", notificationError);
+        }
+      }
+
+      const { data: person, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!person) {
+        alert("User profile not found.");
+        return;
+      }
+
+      setSelectedProfile(person);
+      setMessageText("");
+      setShowNotifications(false);
+      await loadChatMessages(userId);
+      setShowChat(true);
+    } catch (error) {
+      console.error("Open chat error:", error);
+      alert(error.message || "Unable to open chat.");
+    } finally {
+      setChatLoading(false);
+    }
+  }
+
+
+  // Unlock the browser audio engine after the farmer interacts with the page.
+  // This makes realtime message sounds much more reliable than creating a new
+  // AudioContext only after a websocket event arrives.
+  useEffect(() => {
+    const unlockMessageSound = async () => {
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return;
+        if (!messageAudioContextRef.current) {
+          messageAudioContextRef.current = new AudioContextClass();
+        }
+        const ctx = messageAudioContextRef.current;
+        if (ctx.state === "suspended") await ctx.resume();
+        messageSoundUnlockedRef.current = ctx.state === "running";
+      } catch (error) {
+        console.debug("Audio unlock unavailable:", error);
+      }
+    };
+
+    window.addEventListener("pointerdown", unlockMessageSound, { passive: true });
+    window.addEventListener("keydown", unlockMessageSound);
+    return () => {
+      window.removeEventListener("pointerdown", unlockMessageSound);
+      window.removeEventListener("keydown", unlockMessageSound);
+    };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      const ctx = messageAudioContextRef.current;
+      if (ctx) ctx.close().catch(() => {});
+    };
+  }, []);
+
+  // Special 3-note TimberMart incoming-message sound.
+  function playFarmerMessageSound() {
+    try {
+      const ctx = messageAudioContextRef.current;
+      if (!ctx || ctx.state !== "running") return;
+
+      const now = ctx.currentTime + 0.01;
+      const notes = [
+        { frequency: 659.25, start: 0, duration: 0.13 },
+        { frequency: 783.99, start: 0.14, duration: 0.13 },
+        { frequency: 1046.5, start: 0.28, duration: 0.24 },
+      ];
+
+      notes.forEach(({ frequency, start, duration }) => {
+        const oscillator = ctx.createOscillator();
+        const gain = ctx.createGain();
+        oscillator.type = "triangle";
+        oscillator.frequency.setValueAtTime(frequency, now + start);
+        gain.gain.setValueAtTime(0.0001, now + start);
+        gain.gain.exponentialRampToValueAtTime(0.22, now + start + 0.025);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + start + duration);
+        oscillator.connect(gain);
+        gain.connect(ctx.destination);
+        oscillator.start(now + start);
+        oscillator.stop(now + start + duration + 0.03);
+      });
+    } catch (error) {
+      console.debug("Message sound unavailable:", error);
+    }
+  }
+
+  async function loadMessageConversations(userId) {
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id,sender_id,receiver_id,body,created_at")
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order("created_at", { ascending: false })
+      .limit(150);
+
+    if (error) {
+      console.error("Message inbox error:", error);
+      return;
+    }
+
+    const latestByUser = new Map();
+    (data || []).forEach((message) => {
+      const otherId = message.sender_id === userId
+        ? message.receiver_id
+        : message.sender_id;
+      if (otherId && !latestByUser.has(otherId)) {
+        latestByUser.set(otherId, message);
+      }
+    });
+
+    const otherIds = [...latestByUser.keys()];
+    if (!otherIds.length) {
+      setMessageConversations([]);
+      return;
+    }
+
+    const { data: profilesData, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id,name,role,photo_url,location")
+      .in("id", otherIds);
+
+    if (profilesError) {
+      console.error("Message profile error:", profilesError);
+      return;
+    }
+
+    const profileMap = new Map((profilesData || []).map((item) => [item.id, item]));
+    setMessageConversations(
+      otherIds
+        .map((otherId) => {
+          const message = latestByUser.get(otherId);
+          const person = profileMap.get(otherId);
+          if (!person) return null;
+          return {
+            profile: person,
+            lastMessage: message?.body || "",
+            updatedAt: message?.created_at || new Date().toISOString(),
+            unread: unreadByUser[otherId] || 0,
+          };
+        })
+        .filter(Boolean)
+    );
+  }
+
+  function openMessagesCenter() {
+    setMenuOpen(false);
+    setShowNotifications(false);
+    setShowMessages(true);
+    if (user?.id) loadMessageConversations(user.id);
+  }
+
+  async function openConversationFromMessages(person) {
+    if (!person?.id) return;
+    setUnreadByUser((old) => ({ ...old, [person.id]: 0 }));
+    setMessageConversations((old) =>
+      old.map((item) =>
+        item.profile.id === person.id ? { ...item, unread: 0 } : item
+      )
+    );
+    await openChat(person.id);
+  }
+
+  function closeMessagesCenter() {
+    setShowMessages(false);
+    setShowChat(false);
+    setSelectedProfile(null);
+  }
+
+  async function updateFarmerLocation() {
+    if (!user?.id) return;
+
+    if (!navigator.geolocation) {
+      setLocationError("Your browser does not support GPS location.");
+      return;
+    }
+
+    setLocationUpdating(true);
+    setLocationError("");
+    setLocationMessage("Detecting your current location...");
+
+    try {
+      const coordinates = await getCurrentCoordinates();
+
+      if (!coordinates) {
+        throw new Error("Location permission was denied or GPS is unavailable.");
+      }
+
+      const readableLocation =
+        (await reverseGeocodeLocation(
+          coordinates.latitude,
+          coordinates.longitude
+        )) || profile?.location || "Current GPS Location";
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          location: readableLocation,
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setProfile((previous) => ({
+        ...(previous || {}),
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        location: readableLocation,
+      }));
+
+      setLocationMessage("Location updated. 40 KM alerts are ready.");
+    } catch (error) {
+      console.error("Farmer location update error:", error);
+      setLocationError(error?.message || "Unable to update location.");
+      setLocationMessage("");
+    } finally {
+      setLocationUpdating(false);
+    }
+  }
+
+  async function enableBrowserNotifications() {
+    if (!("Notification" in window)) {
+      setBrowserNotificationPermission("unsupported");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      setBrowserNotificationPermission(permission);
+    } catch (error) {
+      console.error("Browser notification permission error:", error);
+    }
+  }
+
+  const hasFarmerGps =
+    Number.isFinite(Number(profile?.latitude)) &&
+    Number.isFinite(Number(profile?.longitude));
 
   async function loadDashboard() {
     try {
@@ -310,10 +966,15 @@ export default function FarmerDashboard() {
 
       setProfile(profileData);
 
+      if (profileData?.latitude && profileData?.longitude) {
+        setLocationMessage("Saved GPS location is active for 40 KM alerts.");
+      }
+
       await Promise.all([
         loadListings(session.user.id),
         loadRequirements(),
         loadNotifications(session.user.id),
+        loadMessageConversations(session.user.id),
       ]);
     } catch (error) {
       console.error(
@@ -458,6 +1119,12 @@ export default function FarmerDashboard() {
   function goSettings() {
     setMenuOpen(false);
     navigate("/settings");
+  }
+
+
+  function goNotifications() {
+    setMenuOpen(false);
+    setShowNotifications(true);
   }
 
 
@@ -829,6 +1496,62 @@ export default function FarmerDashboard() {
          CREATE LISTING
       ------------------------------------------------ */
 
+      // GPS location only. No IP address is used.
+      let coordinates = await getCurrentCoordinates();
+
+      // If GPS permission is temporarily unavailable, use the user's
+      // previously saved GPS coordinates. They are never shown in the UI.
+      if (!coordinates && Number.isFinite(Number(profile?.latitude)) && Number.isFinite(Number(profile?.longitude))) {
+        coordinates = {
+          latitude: Number(profile.latitude),
+          longitude: Number(profile.longitude),
+        };
+      }
+
+      if (!coordinates) {
+        throw new Error(
+          "Please allow GPS location permission before posting. Your location is required for 40 KM matching notifications."
+        );
+      }
+
+      // Convert GPS to a human-readable location such as:
+      // Guntur, Andhra Pradesh, India
+      const detectedLocation =
+        await reverseGeocodeLocation(
+          coordinates.latitude,
+          coordinates.longitude
+        );
+
+      const displayLocation =
+        detectedLocation ||
+        sellForm.location.trim() ||
+        profile?.location ||
+        "Current Location";
+
+      // Save readable location + hidden coordinates.
+      const { error: profileLocationError } = await supabase
+        .from("profiles")
+        .update({
+          location: displayLocation,
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+        })
+        .eq("id", user.id);
+
+      if (profileLocationError) {
+        console.warn(
+          "Profile location update skipped:",
+          profileLocationError
+        );
+      }
+
+      setProfile((previous) => ({
+        ...(previous || {}),
+        location: displayLocation,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+      }));
+
       const {
         data: newListing,
         error: listingError,
@@ -902,7 +1625,10 @@ export default function FarmerDashboard() {
             null,
 
           location:
-            sellForm.location.trim(),
+            displayLocation,
+
+          latitude: coordinates?.latitude ?? null,
+          longitude: coordinates?.longitude ?? null,
 
           price:
             sellForm.price.trim(),
@@ -1016,6 +1742,34 @@ export default function FarmerDashboard() {
 
 
       /* -----------------------------------------------
+         40 KM MATCHING NOTIFICATIONS
+         The listing remains globally visible.
+         Only matching users within 40 KM are notified.
+      ------------------------------------------------ */
+
+      await notifyMatchingUsers40Km({
+        senderId: user.id,
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        postType: "listing",
+        postId: newListing.id,
+        listingId: newListing.id,
+        title: "New Timber Listing Near You",
+        message: `${sellForm.tree_type || "Timber"} listing is available near your location.`,
+        keywords: [
+          sellForm.tree_type,
+          sellForm.category,
+          sellForm.title,
+          sellForm.description,
+        ],
+        matchingRoles: [
+          "timber_merchant",
+          "sawmill_business",
+          "buyer",
+        ],
+      });
+
+      /* -----------------------------------------------
          REFRESH DASHBOARD
       ------------------------------------------------ */
 
@@ -1100,17 +1854,8 @@ export default function FarmerDashboard() {
   }
 
 
-  function chatUser(otherUserId) {
-    if (!otherUserId) {
-      alert(
-        "User information not available."
-      );
-      return;
-    }
-
-    navigate(
-      `/dashboard/farmer?chat=${otherUserId}`
-    );
+  async function chatUser(otherUserId, context = {}) {
+    return openChat(otherUserId, context);
   }
 
 
@@ -1120,6 +1865,108 @@ export default function FarmerDashboard() {
 
   function openListing(listing) {
     setSelectedListing(listing);
+    setShowNotifications(false);
+  }
+
+
+  async function openNotification(notification) {
+    await markNotificationRead(notification.id);
+    setShowNotifications(false);
+
+    if (!notification) return;
+
+    // -----------------------------------------------------
+    // LISTING NOTIFICATION
+    // -----------------------------------------------------
+    const listingId =
+      notification.listing_id ||
+      (notification.post_type === "listing"
+        ? notification.post_id
+        : null);
+
+    if (listingId) {
+      const { data, error } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            name,
+            role,
+            phone,
+            location,
+            photo_url
+          ),
+          listing_images (
+            id,
+            image_url,
+            storage_path,
+            sort_order
+          )
+        `)
+        .eq("id", listingId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Notification listing error:", error);
+        return;
+      }
+
+      if (data) {
+        setSelectedListing(data);
+      }
+
+      return;
+    }
+
+    // -----------------------------------------------------
+    // REQUIREMENT NOTIFICATION
+    // -----------------------------------------------------
+    const requirementId =
+      notification.requirement_id ||
+      (notification.post_type === "requirement"
+        ? notification.post_id
+        : null);
+
+    if (requirementId) {
+      const { data, error } = await supabase
+        .from("requirements")
+        .select(`
+          *,
+          profiles:user_id (
+            id,
+            name,
+            role,
+            phone,
+            location,
+            photo_url
+          )
+        `)
+        .eq("id", requirementId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Notification requirement error:", error);
+        return;
+      }
+
+      if (data) {
+        setSelectedRequirement(data);
+      }
+
+      return;
+    }
+
+    // Job/service notifications can be opened by the existing
+    // dashboard navigation when those sections are available.
+    if (notification.post_type === "job") {
+      setActiveSection("jobs");
+      return;
+    }
+
+    if (notification.post_type === "service") {
+      setActiveSection("services");
+    }
   }
 
 
@@ -1227,10 +2074,18 @@ export default function FarmerDashboard() {
 
 
   const liveListings = useMemo(() => {
-    return listings.filter(
-      (item) => item.status === "approved"
-    );
-  }, [listings]);
+    return listings.filter((item) => {
+      if (item.status !== "approved") return false;
+
+      const expiryDate = getListingExpiryDate(item);
+
+      // If Supabase has not populated an expiry yet, keep the approved
+      // listing visible instead of breaking the existing dashboard.
+      if (!expiryDate) return true;
+
+      return expiryDate.getTime() > expiryNow;
+    });
+  }, [listings, expiryNow]);
 
   const filteredLiveListings = useMemo(() => {
     const query = searchText.trim().toLowerCase();
@@ -1405,6 +2260,42 @@ export default function FarmerDashboard() {
 
 
           <button
+            className={showMessages ? "active" : ""}
+            onClick={openMessagesCenter}
+          >
+            <MessageCircle size={19} />
+            <span>Messages</span>
+            {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 0 && (
+              <span className="farmer-sidebar-message-badge">
+                {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 9
+                  ? "9+"
+                  : Object.values(unreadByUser).reduce((sum, count) => sum + count, 0)}
+              </span>
+            )}
+          </button>
+
+
+          <button
+            className={showNotifications ? "active" : ""}
+            onClick={goNotifications}
+          >
+            <Bell size={19} />
+
+            <span>
+              Notifications
+            </span>
+
+            {notifications.filter((item) => !item.is_read).length > 0 && (
+              <span className="farmer-sidebar-notification-badge">
+                {notifications.filter((item) => !item.is_read).length > 9
+                  ? "9+"
+                  : notifications.filter((item) => !item.is_read).length}
+              </span>
+            )}
+          </button>
+
+
+          <button
             onClick={goProfile}
           >
             <CircleUserRound
@@ -1532,7 +2423,7 @@ export default function FarmerDashboard() {
                   <div className="farmer-notification-header">
                     <div>
                       <strong>Notifications</strong>
-                      <span>Listing approval updates</span>
+                      <span>Nearby matches, approvals & chat updates</span>
                     </div>
 
                     <button
@@ -1548,7 +2439,7 @@ export default function FarmerDashboard() {
                       <div className="farmer-notification-empty">
                         <Bell size={25} />
                         <strong>No notifications yet</strong>
-                        <span>Admin approval updates will appear here.</span>
+                        <span>Matching posts within 40 KM will appear here in real time.</span>
                       </div>
                     ) : (
                       notifications.map((notification) => (
@@ -1558,20 +2449,29 @@ export default function FarmerDashboard() {
                           className={`farmer-notification-item ${
                             notification.is_read ? "read" : "unread"
                           }`}
-                          onClick={() => markNotificationRead(notification.id)}
+                          onClick={() =>
+                            openNotification(notification)
+                          }
                         >
                           <div className="farmer-notification-item-icon">
                             {notification.type === "listing_approved"
                               ? "✓"
                               : notification.type === "listing_rejected"
                               ? "!"
-                              : "⏳"}
+                              : notification.type === "listing_chat"
+                              ? "💬"
+                              : notification.type === "nearby_match"
+                              ? "📍"
+                              : "🔔"}
                           </div>
 
                           <div>
                             <strong>{notification.title}</strong>
                             <p>{notification.message}</p>
                             <small>
+                              {notification.distance_km != null
+                                ? `📍 ${Number(notification.distance_km).toFixed(1)} KM away • `
+                                : ""}
                               {notification.created_at
                                 ? new Date(notification.created_at).toLocaleString()
                                 : ""}
@@ -1656,9 +2556,9 @@ export default function FarmerDashboard() {
               WELCOME
           ================================================= */}
 
-          <div className="farmer-welcome">
+          <div className="farmer-welcome farmer-welcome-premium">
 
-            <div>
+            <div className="farmer-welcome-copy">
 
               <span className="farmer-welcome-label">
                 Welcome back 👋
@@ -1666,33 +2566,125 @@ export default function FarmerDashboard() {
 
               <h2>
                 {profile?.name ||
-                  user?.email?.split(
-                    "@"
-                  )[0] ||
+                  user?.email?.split("@")[0] ||
                   "Farmer"}
               </h2>
 
               <p>
-                Connect with timber
-                buyers and manage
-                your requirements
-                from one place.
+                Manage your timber listings, connect with buyers,
+                and receive smart nearby opportunities.
               </p>
+
+              <div className="farmer-welcome-pills">
+                <span className="farmer-welcome-pill">
+                  <TreePine size={14} />
+                  Farmer Portal
+                </span>
+
+                <span className={`farmer-welcome-pill ${hasFarmerGps ? "success" : "warning"}`}>
+                  <MapPin size={14} />
+                  {hasFarmerGps ? "GPS Active" : "GPS Not Set"}
+                </span>
+              </div>
 
             </div>
 
+            <div className="farmer-location-summary">
+              <div className="farmer-location-summary-icon">
+                <MapPin size={20} />
+              </div>
 
-            <div className="farmer-location">
+              <div className="farmer-location-summary-copy">
+                <span>Your current location</span>
+                <strong>
+                  {profile?.location || "Location not added"}
+                </strong>
 
-              <MapPin
-                size={17}
-              />
+                <small>
+                  {hasFarmerGps
+                    ? "Used only for 40 KM matching alerts"
+                    : "Set GPS to receive nearby 40 KM alerts"}
+                </small>
+              </div>
 
-              <span>
-                {profile?.location ||
-                  "Location not added"}
-              </span>
+              <button
+                type="button"
+                className="farmer-location-update-button"
+                onClick={updateFarmerLocation}
+                disabled={locationUpdating}
+                title="Update current GPS location"
+              >
+                <LocateFixed size={17} />
+                {locationUpdating ? "Updating..." : "Update"}
+              </button>
+            </div>
 
+          </div>
+
+          <div className="farmer-location-alert-card">
+
+            <div className="farmer-location-alert-icon">
+              <Bell size={21} />
+            </div>
+
+            <div className="farmer-location-alert-copy">
+              <div className="farmer-location-alert-title-row">
+                <h3>Smart 40 KM Alerts</h3>
+                <span className={hasFarmerGps ? "tm-status-live" : "tm-status-off"}>
+                  <i />
+                  {hasFarmerGps ? "ACTIVE" : "SET LOCATION"}
+                </span>
+              </div>
+
+              <p>
+                When a farmer, buyer, merchant or sawmill posts a matching timber
+                opportunity, only relevant users within 40 KM receive a notification.
+                All public posts remain visible globally.
+              </p>
+
+              <div className="farmer-alert-features">
+                <span><MapPin size={14} /> 40 KM radius</span>
+                <span><CheckCircle2 size={14} /> Role matching</span>
+                <span><CheckCircle2 size={14} /> Keyword matching</span>
+                <span><Bell size={14} /> Realtime alerts</span>
+              </div>
+
+              {(locationMessage || locationError) && (
+                <div className={`farmer-location-feedback ${locationError ? "error" : "success"}`}>
+                  {locationError || locationMessage}
+                </div>
+              )}
+            </div>
+
+            <div className="farmer-alert-actions">
+              <button
+                type="button"
+                className="farmer-alert-primary"
+                onClick={updateFarmerLocation}
+                disabled={locationUpdating}
+              >
+                <LocateFixed size={16} />
+                {locationUpdating ? "Locating..." : "Use Current GPS"}
+              </button>
+
+              {browserNotificationPermission !== "granted" &&
+                browserNotificationPermission !== "unsupported" && (
+                  <button
+                    type="button"
+                    className="farmer-alert-secondary"
+                    onClick={enableBrowserNotifications}
+                  >
+                    <Bell size={16} />
+                    Enable Browser Alerts
+                  </button>
+                )}
+
+              {browserNotificationPermission === "granted" && (
+                <span className="farmer-browser-alert-enabled">
+                  <CheckCircle2 size={15} />
+                  Browser alerts enabled
+                </span>
+              )}
             </div>
 
           </div>
@@ -2407,6 +3399,246 @@ export default function FarmerDashboard() {
         />
       )}
 
+
+
+      {/* =====================================================
+          MODERN MESSAGES CENTER
+          -----------------------------------------------------
+          This is an inbox-style chat screen. Existing listing
+          chat functionality remains untouched underneath.
+      ====================================================== */}
+      {messageToast && !showMessages && (
+        <button
+          type="button"
+          className="tm-message-toast"
+          onClick={() => {
+            setMessageToast(null);
+            openMessagesCenter();
+          }}
+        >
+          <span className="tm-toast-icon"><MessageCircle size={20} /></span>
+          <span className="tm-toast-copy">
+            <strong>{messageToast.name}</strong>
+            <small>{messageToast.text}</small>
+          </span>
+          <span className="tm-toast-wave">🔔</span>
+        </button>
+      )}
+
+      {showMessages && (
+        <div className="tm-inbox-overlay" onMouseDown={closeMessagesCenter}>
+          <div className="tm-inbox" onMouseDown={(event) => event.stopPropagation()}>
+            <header className="tm-inbox-topbar">
+              <div className="tm-inbox-brand">
+                <div className="tm-inbox-brand-icon"><MessageCircle size={22} /></div>
+                <div>
+                  <strong>Messages</strong>
+                  <span>TimberMart Inbox • Real-time chat</span>
+                </div>
+              </div>
+              <div className="tm-inbox-top-actions">
+                <span className="tm-inbox-live"><i /> Live chat</span>
+                <button type="button" onClick={closeMessagesCenter} aria-label="Close messages"><X size={20} /></button>
+              </div>
+            </header>
+
+            <div className="tm-inbox-body">
+              <aside className="tm-inbox-list">
+                <div className="tm-inbox-list-head">
+                  <div>
+                    <strong>Chats</strong>
+                    <span>{messageConversations.length} conversations</span>
+                  </div>
+                  {Object.values(unreadByUser).reduce((sum, count) => sum + count, 0) > 0 && (
+                    <b>{Object.values(unreadByUser).reduce((sum, count) => sum + count, 0)} new</b>
+                  )}
+                </div>
+
+                <div className="tm-inbox-conversations">
+                  {messageConversations.length === 0 ? (
+                    <div className="tm-inbox-empty-list">
+                      <div><MessageCircle size={28} /></div>
+                      <strong>No chats yet</strong>
+                      <span>Open any listing and tap Chat to start.</span>
+                    </div>
+                  ) : (
+                    messageConversations.map((conversation) => {
+                      const person = conversation.profile;
+                      const unread = unreadByUser[person.id] || conversation.unread || 0;
+                      return (
+                        <button
+                          key={person.id}
+                          type="button"
+                          className={`tm-conversation ${selectedProfile?.id === person.id ? "active" : ""} ${unread ? "has-unread" : ""}`}
+                          onClick={() => openConversationFromMessages(person)}
+                        >
+                          <div className="tm-conversation-avatar">
+                            {person.photo_url ? <img src={person.photo_url} alt="" /> : <span>{(person.name || "U").charAt(0).toUpperCase()}</span>}
+                            <i />
+                          </div>
+                          <div className="tm-conversation-content">
+                            <div className="tm-conversation-name">
+                              <strong>{person.name || "TimberMart User"}</strong>
+                              <time>{conversation.updatedAt ? new Date(conversation.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</time>
+                            </div>
+                            <small>{person.role || "User"}</small>
+                            <p>{conversation.lastMessage || "Start a conversation"}</p>
+                          </div>
+                          {unread > 0 && <em>{unread > 9 ? "9+" : unread}</em>}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </aside>
+
+              <section className="tm-chat">
+                {selectedProfile ? (
+                  <>
+                    <div className="tm-chat-head">
+                      <div className="tm-chat-person">
+                        <div className="tm-chat-avatar">
+                          {selectedProfile.photo_url ? <img src={selectedProfile.photo_url} alt="" /> : <span>{(selectedProfile.name || "U").charAt(0).toUpperCase()}</span>}
+                          <i />
+                        </div>
+                        <div>
+                          <strong>{selectedProfile.name || "TimberMart User"}</strong>
+                          <span>{selectedProfile.role || "User"}{selectedProfile.location ? ` • ${selectedProfile.location}` : ""}</span>
+                        </div>
+                      </div>
+                      <div className="tm-chat-actions">
+                        {selectedProfile.phone && <a href={`tel:${selectedProfile.phone}`} title="Call"><Phone size={18} /></a>}
+                        <button type="button" onClick={() => { setShowChat(false); setSelectedProfile(null); }} title="Close conversation"><X size={18} /></button>
+                      </div>
+                    </div>
+
+                    <div className="tm-chat-stream">
+                      {chatLoading ? (
+                        <div className="tm-chat-status">Loading messages...</div>
+                      ) : messages.length === 0 ? (
+                        <div className="tm-chat-welcome">
+                          <div className="tm-chat-welcome-icon"><MessageCircle size={30} /></div>
+                          <strong>Start chatting with {selectedProfile.name || "this user"}</strong>
+                          <span>Send a message about timber, listings or requirements.</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="tm-chat-day">Today</div>
+                          {messages.map((message) => {
+                            const mine = message.sender_id === user?.id;
+                            return (
+                              <div key={message.id} className={`tm-message-row ${mine ? "mine" : "other"}`}>
+                                <div className="tm-message-bubble">
+                                  <span>{message.body}</span>
+                                  <small>{message.created_at ? new Date(message.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}{mine ? "  ✓" : ""}</small>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </>
+                      )}
+                    </div>
+
+                    <form className="tm-chat-composer" onSubmit={sendMessage}>
+                      <button type="button" className="tm-composer-plus" title="More options"><Plus size={19} /></button>
+                      <input
+                        value={messageText}
+                        onChange={(event) => setMessageText(event.target.value)}
+                        placeholder={`Message ${selectedProfile.name || "user"}...`}
+                        autoComplete="off"
+                        disabled={chatLoading}
+                      />
+                      <button type="submit" className="tm-composer-send" disabled={chatLoading || !messageText.trim()} title="Send message"><MessageCircle size={18} /></button>
+                    </form>
+                  </>
+                ) : (
+                  <div className="tm-chat-no-selection">
+                    <div className="tm-chat-no-selection-icon"><MessageCircle size={42} /></div>
+                    <h3>Your messages</h3>
+                    <p>Select a chat from the left to continue the conversation.</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          CHAT MODAL
+      ====================================================== */}
+      {showChat && selectedProfile && !showMessages && (
+        <div
+          className="farmer-modal-overlay farmer-chat-overlay"
+          onMouseDown={() => setShowChat(false)}
+        >
+          <div
+            className="farmer-chat-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="farmer-chat-header">
+              <div className="farmer-chat-user">
+                <div className="farmer-chat-avatar">
+                  {selectedProfile.photo_url ? (
+                    <img src={selectedProfile.photo_url} alt="" />
+                  ) : (
+                    <User size={20} />
+                  )}
+                </div>
+                <div>
+                  <strong>{selectedProfile.name || "TimberMart User"}</strong>
+                  <span>{selectedProfile.role || "User"}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="farmer-close"
+                onClick={() => setShowChat(false)}
+                title="Close chat"
+              >
+                <X size={21} />
+              </button>
+            </div>
+
+            <div className="farmer-chat-messages">
+              {chatLoading ? (
+                <div className="farmer-chat-empty">Loading chat...</div>
+              ) : messages.length === 0 ? (
+                <div className="farmer-chat-empty">
+                  <MessageCircle size={34} />
+                  <h3>Start Conversation</h3>
+                  <p>Send a message to {selectedProfile.name || "this user"}.</p>
+                </div>
+              ) : (
+                messages.map((message) => {
+                  const mine = message.sender_id === user?.id;
+                  return (
+                    <div
+                      key={message.id}
+                      className={mine ? "farmer-message farmer-message-mine" : "farmer-message"}
+                    >
+                      {message.body}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <form className="farmer-chat-form" onSubmit={sendMessage}>
+              <input
+                value={messageText}
+                onChange={(event) => setMessageText(event.target.value)}
+                placeholder="Type a message..."
+                disabled={chatLoading}
+                autoComplete="off"
+              />
+              <button type="submit" disabled={chatLoading || !messageText.trim()}>
+                <MessageCircle size={19} />
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4018,6 +5250,68 @@ function RequirementCard({
 
 
 /* ===========================================================
+   LISTING EXPIRY DISPLAY
+=========================================================== */
+
+function getListingExpiryDate(listing) {
+  if (!listing) return null;
+
+  // Preferred value: Supabase expiry created at admin approval.
+  if (listing.expires_at) {
+    const directDate = new Date(listing.expires_at);
+    if (!Number.isNaN(directDate.getTime())) return directDate;
+  }
+
+  // Safe fallback for older approved rows created before expires_at
+  // was added. For approved listings, reviewed_at is the approval time.
+  const baseValue =
+    listing.reviewed_at ||
+    (listing.status === "approved" ? listing.created_at : null);
+
+  if (!baseValue) return null;
+
+  const baseDate = new Date(baseValue);
+  if (Number.isNaN(baseDate.getTime())) return null;
+
+  return new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+}
+
+function getExpiryInfo(listing) {
+  const expiryDate = getListingExpiryDate(listing);
+
+  if (!expiryDate) {
+    return {
+      expired: false,
+      text: "Expiry: Pending",
+      dateText: "",
+    };
+  }
+
+  const expiryTime = expiryDate.getTime();
+  const remaining = expiryTime - Date.now();
+
+  if (remaining <= 0) {
+    return {
+      expired: true,
+      text: "Expired",
+      dateText: expiryDate.toLocaleString(),
+    };
+  }
+
+  const totalSeconds = Math.floor(remaining / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return {
+    expired: false,
+    text: `Expires in ${days}d ${hours}h ${minutes}m ${seconds}s`,
+    dateText: expiryDate.toLocaleString(),
+  };
+}
+
+/* ===========================================================
    LISTING CARD
 =========================================================== */
 
@@ -4045,18 +5339,34 @@ function ListingCard({
   const image =
     images[0]?.image_url;
 
+  const expiryInfo = getExpiryInfo(listing);
+
   return (
     <article className="farmer-listing-card">
 
-      <div className="farmer-listing-image">
+      <div
+        className="farmer-listing-image farmer-listing-image-clickable"
+        onClick={onOpen}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") onOpen();
+        }}
+        title="Click image to view listing"
+      >
 
         {image ? (
-          <img
-            src={image}
-            alt={
-              listing.title
-            }
-          />
+          <>
+            <img
+              src={image}
+              alt={
+                listing.title
+              }
+            />
+            <span className="farmer-image-view-hint">
+              <Eye size={16} /> View photo
+            </span>
+          </>
         ) : (
           <div className="farmer-no-image">
 
@@ -4222,10 +5532,54 @@ function ListingCard({
             </strong>
           )}
 
+          {/* =================================================
+              LISTING EXPIRY
+              Shows the live countdown and exact expiry time.
+          ================================================= */}
+          <span
+            className={`farmer-listing-expiry ${
+              expiryInfo.expired ? "expired" : ""
+            }`}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+              marginTop: "8px",
+              padding: "7px 10px",
+              borderRadius: "10px",
+              fontSize: "12px",
+              fontWeight: 700,
+              lineHeight: 1.35,
+              background: expiryInfo.expired
+                ? "rgba(220, 38, 38, 0.10)"
+                : "rgba(245, 158, 11, 0.10)",
+              color: expiryInfo.expired
+                ? "#b91c1c"
+                : "#b45309",
+              width: "fit-content",
+            }}
+            title={
+              expiryInfo.dateText
+                ? `Expires on ${expiryInfo.dateText}`
+                : "Expiry will be set after admin approval"
+            }
+          >
+            ⏳ {expiryInfo.text}
+          </span>
+
         </button>
 
 
         <div className="farmer-card-actions">
+
+          <button
+            className="farmer-view-listing-button"
+            onClick={onOpen}
+            type="button"
+          >
+            <Eye size={16} />
+            View
+          </button>
 
           <button
             onClick={() =>
@@ -4266,7 +5620,12 @@ function ListingCard({
           <button
             onClick={() =>
               onChat(
-                owner?.id
+                owner?.id,
+                {
+                  listingId: listing.id,
+                  listingOwnerId: listing.user_id,
+                  listingTitle: listing.title,
+                }
               )
             }
             disabled={
@@ -4314,6 +5673,20 @@ function ListingModal({
       (b.sort_order || 0)
   );
 
+  const [lightboxImage, setLightboxImage] = useState(null);
+  const expiryInfo = getExpiryInfo(listing);
+
+  useEffect(() => {
+    if (!lightboxImage) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") setLightboxImage(null);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [lightboxImage]);
+
   return (
     <div
       className="farmer-modal-backdrop"
@@ -4357,6 +5730,13 @@ function ListingModal({
               }
             </h2>
 
+            <div className={`farmer-modal-expiry ${expiryInfo.expired ? "expired" : ""}`}>
+              <span>⏳ {expiryInfo.text}</span>
+              {expiryInfo.dateText && (
+                <small>Expires on {expiryInfo.dateText}</small>
+              )}
+            </div>
+
           </div>
 
         </div>
@@ -4367,16 +5747,22 @@ function ListingModal({
           <div className="farmer-modal-images">
 
             {images.map(
-              (image) => (
-                <img
-                  key={
-                    image.id
-                  }
-                  src={
-                    image.image_url
-                  }
-                  alt=""
-                />
+              (image, index) => (
+                <button
+                  key={image.id}
+                  type="button"
+                  className="farmer-modal-image-button"
+                  onClick={() => setLightboxImage(image.image_url)}
+                  title="Click to enlarge"
+                >
+                  <img
+                    src={image.image_url}
+                    alt={`${listing.title} photo ${index + 1}`}
+                  />
+                  <span className="farmer-modal-image-zoom">
+                    <Eye size={18} />
+                  </span>
+                </button>
               )
             )}
 
@@ -4511,6 +5897,13 @@ function ListingModal({
           )}
 
 
+          {expiryInfo.dateText && (
+            <DetailRow
+              label="Listing Expires"
+              value={expiryInfo.dateText}
+            />
+          )}
+
           {listing.description && (
             <div className="farmer-description">
 
@@ -4613,7 +6006,12 @@ function ListingModal({
             <button
               onClick={() =>
                 onChat(
-                  owner?.id
+                  owner?.id,
+                  {
+                    listingId: listing.id,
+                    listingOwnerId: listing.user_id,
+                    listingTitle: listing.title,
+                  }
                 )
               }
               disabled={
@@ -4630,6 +6028,32 @@ function ListingModal({
         )}
 
       </div>
+
+
+      {lightboxImage && (
+        <div
+          className="farmer-image-lightbox"
+          onClick={() => setLightboxImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Large listing image"
+        >
+          <button
+            type="button"
+            className="farmer-lightbox-close"
+            onClick={() => setLightboxImage(null)}
+            aria-label="Close image"
+          >
+            <X size={26} />
+          </button>
+          <img
+            src={lightboxImage}
+            alt={listing.title}
+            onClick={(event) => event.stopPropagation()}
+          />
+          <span className="farmer-lightbox-caption">Click anywhere outside the image to close</span>
+        </div>
+      )}
 
     </div>
   );

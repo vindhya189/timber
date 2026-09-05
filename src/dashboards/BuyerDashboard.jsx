@@ -67,7 +67,9 @@ function roleLabel(role) {
   const labels = {
     farmer: "Farmer",
     merchant: "Timber Merchant",
+    timber_merchant: "Timber Merchant",
     sawmill: "Sawmill / Business",
+    sawmill_business: "Sawmill / Business",
     carpenter: "Carpenter",
     worker: "Worker",
     buyer: "Buyer",
@@ -127,6 +129,14 @@ export default function BuyerDashboard() {
   const [messageText, setMessageText] = useState("");
   const [sendingMessage, setSendingMessage] = useState(false);
 
+  // Chat list + notification state
+  const [chatContacts, setChatContacts] = useState([]);
+  const [showChatList, setShowChatList] = useState(false);
+
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+
   const [favourites, setFavourites] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("timbermart_buyer_favourites") || "[]");
@@ -136,6 +146,126 @@ export default function BuyerDashboard() {
   });
 
   const [showFilters, setShowFilters] = useState(false);
+  const [supplierMode, setSupplierMode] = useState(null);
+  const [locationSaving, setLocationSaving] = useState(false);
+  const [locationError, setLocationError] = useState("");
+
+  /* -------------------------------------------------------
+     LOCATION - 40 KM NOTIFICATION SUPPORT
+  ------------------------------------------------------- */
+
+  async function saveCurrentLocation() {
+    if (!session?.user?.id) return;
+
+    if (!navigator.geolocation) {
+      setLocationError("This browser does not support GPS location.");
+      return;
+    }
+
+    setLocationSaving(true);
+    setLocationError("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = position.coords.latitude;
+        const longitude = position.coords.longitude;
+
+        let readableLocation = profile?.location || "Current location";
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`,
+            { headers: { Accept: "application/json" } }
+          );
+          if (response.ok) {
+            const data = await response.json();
+            const address = data?.address || {};
+            const parts = [
+              address.city || address.town || address.village || address.municipality,
+              address.state_district,
+              address.state,
+            ].filter(Boolean);
+            if (parts.length) readableLocation = parts.join(", ");
+          }
+        } catch (geocodeError) {
+          console.warn("Reverse geocoding failed:", geocodeError);
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .update({
+            latitude,
+            longitude,
+            location: readableLocation,
+          })
+          .eq("id", session.user.id)
+          .select("*")
+          .single();
+
+        setLocationSaving(false);
+
+        if (error) {
+          console.error("Buyer location save error:", error);
+          setLocationError(error.message || "Could not save your location.");
+          return;
+        }
+
+        setProfile(data || { ...profile, latitude, longitude, location: readableLocation });
+      },
+      (error) => {
+        setLocationSaving(false);
+        const messages = {
+          1: "Location permission was denied. Allow location access in your browser.",
+          2: "Your location could not be determined.",
+          3: "Location request timed out. Please try again.",
+        };
+        setLocationError(messages[error.code] || "Could not get your location.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 300000,
+      }
+    );
+  }
+
+  const hasLocation =
+    Number.isFinite(Number(profile?.latitude)) &&
+    Number.isFinite(Number(profile?.longitude));
+
+  /* -------------------------------------------------------
+     SUPPLIER DIRECTORY
+  ------------------------------------------------------- */
+
+  const supplierListings = useMemo(() => {
+    const mode = supplierMode;
+    if (!mode) return [];
+
+    return listings.filter((listing) => {
+      const text = [
+        listing.title,
+        listing.description,
+        listing.wood_type,
+        listing.product_type,
+        listing.service_type,
+        listing.category,
+        listing.location,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (mode === "imported") {
+        return /imported|bulk|wholesale|container|foreign|malaysian|african|burma/.test(text);
+      }
+
+      if (mode === "patta") {
+        return /patta teak|patta|indian teak/.test(text);
+      }
+
+      return false;
+    });
+  }, [listings, supplierMode]);
 
   /* -------------------------------------------------------
      AUTH + PROFILE
@@ -205,6 +335,8 @@ export default function BuyerDashboard() {
 
       await loadListings();
       await loadOrders(currentSession.user.id);
+      await loadNotifications(currentSession.user.id);
+      await loadChatContacts(currentSession.user.id);
 
       if (mounted) {
         setLoading(false);
@@ -234,7 +366,14 @@ export default function BuyerDashboard() {
           sort_order
         )
       `)
-      .in("role", ["farmer", "merchant", "sawmill", "carpenter"])
+      .in("role", [
+        "farmer",
+        "merchant",
+        "timber_merchant",
+        "sawmill",
+        "sawmill_business",
+        "carpenter",
+      ])
       .order("created_at", { ascending: false });
 
     if (!error) {
@@ -276,6 +415,313 @@ export default function BuyerDashboard() {
       setOrders([]);
     }
   }
+
+  /* -------------------------------------------------------
+     LOAD NOTIFICATIONS
+  ------------------------------------------------------- */
+
+  async function loadNotifications(userId = session?.user?.id) {
+    if (!userId) return;
+
+    setNotificationLoading(true);
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (!error) {
+      setNotifications(data || []);
+    } else {
+      console.error("Buyer notifications error:", error);
+      setNotifications([]);
+    }
+
+    setNotificationLoading(false);
+  }
+
+  /* -------------------------------------------------------
+     LOAD CHAT CONTACTS
+  ------------------------------------------------------- */
+
+  async function loadChatContacts(userId = session?.user?.id) {
+    if (!userId) return;
+
+    const { data, error } = await supabase
+      .from("messages")
+      .select("sender_id, receiver_id, created_at")
+      .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+      .order("created_at", { ascending: false })
+      .limit(200);
+
+    if (error) {
+      console.error("Chat contacts error:", error);
+      setChatContacts([]);
+      return;
+    }
+
+    const ids = [];
+    for (const row of data || []) {
+      const otherId =
+        row.sender_id === userId ? row.receiver_id : row.sender_id;
+
+      if (otherId && !ids.includes(otherId)) {
+        ids.push(otherId);
+      }
+    }
+
+    if (!ids.length) {
+      setChatContacts([]);
+      return;
+    }
+
+    const { data: profiles, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, name, role, phone, photo_url, location")
+      .in("id", ids);
+
+    if (profileError) {
+      console.error("Chat profile error:", profileError);
+      setChatContacts([]);
+      return;
+    }
+
+    const ordered = ids
+      .map((id) => (profiles || []).find((profile) => profile.id === id))
+      .filter(Boolean);
+
+    setChatContacts(ordered);
+  }
+
+  /* -------------------------------------------------------
+     MARK NOTIFICATION READ
+  ------------------------------------------------------- */
+
+  async function markNotificationRead(notificationId) {
+    if (!notificationId || !session?.user?.id) return;
+
+    setNotifications((current) =>
+      current.map((item) =>
+        item.id === notificationId
+          ? { ...item, is_read: true }
+          : item
+      )
+    );
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId)
+      .eq("user_id", session.user.id);
+
+    if (error) {
+      console.error("Mark notification read error:", error);
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    if (!session?.user?.id) return;
+
+    setNotifications((current) =>
+      current.map((item) => ({ ...item, is_read: true }))
+    );
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", session.user.id)
+      .eq("is_read", false);
+
+    if (error) {
+      console.error("Mark all notifications error:", error);
+    }
+  }
+
+  async function openBuyerNotification(notification) {
+    if (!notification) return;
+
+    await markNotificationRead(notification.id);
+    setShowNotifications(false);
+
+    // Listing notification
+    if (notification.listing_id || notification.post_type === "listing") {
+      const listingId = notification.listing_id || notification.post_id;
+
+      if (!listingId) return;
+
+      const { data, error } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          listing_images (
+            id,
+            image_url,
+            storage_path,
+            sort_order
+          )
+        `)
+        .eq("id", listingId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Notification listing error:", error);
+        return;
+      }
+
+      if (data) {
+        setSelectedListing(data);
+      }
+
+      return;
+    }
+
+    // Requirement notification
+    if (
+      notification.requirement_id ||
+      notification.post_type === "requirement"
+    ) {
+      const requirementId =
+        notification.requirement_id || notification.post_id;
+
+      if (!requirementId) return;
+
+      const { data, error } = await supabase
+        .from("requirements")
+        .select("*")
+        .eq("id", requirementId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Notification requirement error:", error);
+        return;
+      }
+
+      if (data) {
+        alert(
+          `${data.title || "Requirement"}\n\n${
+            data.description || "Requirement details are available."
+          }`
+        );
+      }
+
+      return;
+    }
+
+    // Generic post notification
+    if (notification.post_id) {
+      alert(
+        `${notification.title || "New TimberMart post"}\n\n${
+          notification.message || "Open the related post from TimberMart."
+        }`
+      );
+    }
+  }
+
+  /* -------------------------------------------------------
+     INITIAL LOAD FOR NOTIFICATIONS + CHATS
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    loadNotifications(session.user.id);
+    loadChatContacts(session.user.id);
+  }, [session?.user?.id]);
+
+  /* -------------------------------------------------------
+     REALTIME NOTIFICATIONS
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const userId = session.user.id;
+
+    const channel = supabase
+      .channel(`buyer-notifications-${userId}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+        },
+        (payload) => {
+          if (payload.new?.user_id !== userId) return;
+
+          setNotifications((current) => [
+            payload.new,
+            ...current.filter((item) => item.id !== payload.new.id),
+          ]);
+
+          if (
+            "Notification" in window &&
+            Notification.permission === "granted"
+          ) {
+            try {
+              new Notification(
+                payload.new.title || "TimberMart Notification",
+                {
+                  body:
+                    payload.new.message ||
+                    "You have a new notification.",
+                }
+              );
+            } catch (notificationError) {
+              console.warn(
+                "Browser notification error:",
+                notificationError
+              );
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
+  /* -------------------------------------------------------
+     REALTIME CHAT LIST
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const userId = session.user.id;
+
+    const channel = supabase
+      .channel(`buyer-chat-list-${userId}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const message = payload.new;
+
+          if (
+            message.sender_id !== userId &&
+            message.receiver_id !== userId
+          ) {
+            return;
+          }
+
+          loadChatContacts(userId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
 
   /* -------------------------------------------------------
      REALTIME LISTINGS
@@ -541,6 +987,8 @@ export default function BuyerDashboard() {
     } else {
       console.error("Chat loading error:", error);
     }
+
+    await loadChatContacts(session.user.id);
   }
 
   useEffect(() => {
@@ -620,6 +1068,7 @@ export default function BuyerDashboard() {
     });
 
     setMessageText("");
+    await loadChatContacts(session.user.id);
   }
 
   /* -------------------------------------------------------
@@ -753,10 +1202,19 @@ export default function BuyerDashboard() {
           </button>
 
           <button
-            className="buyer-icon-button"
+            className="buyer-icon-button buyer-notification-button"
             title="Notifications"
+            onClick={() => setShowNotifications((value) => !value)}
           >
             <Bell size={20} />
+            {notifications.filter((item) => !item.is_read).length > 0 && (
+              <span className="buyer-notification-count">
+                {Math.min(
+                  notifications.filter((item) => !item.is_read).length,
+                  99
+                )}
+              </span>
+            )}
           </button>
 
           <button
@@ -837,6 +1295,10 @@ export default function BuyerDashboard() {
                 {profile.location}
               </small>
             )}
+
+            <em className={hasLocation ? "buyer-gps-status on" : "buyer-gps-status"}>
+              {hasLocation ? "● Location active" : "○ Location not set"}
+            </em>
           </div>
 
         </div>
@@ -882,6 +1344,39 @@ export default function BuyerDashboard() {
           </button>
 
           <button
+            className={showChatList ? "active" : ""}
+            onClick={() => {
+              setShowChatList(true);
+              setSidebarOpen(false);
+              loadChatContacts();
+            }}
+          >
+            <MessageCircle size={18} />
+            <span>Chats</span>
+            {chatContacts.length > 0 && <b>{chatContacts.length}</b>}
+          </button>
+
+          <button
+            className={showNotifications ? "active" : ""}
+            onClick={() => {
+              setShowNotifications(true);
+              setSidebarOpen(false);
+              loadNotifications();
+            }}
+          >
+            <Bell size={18} />
+            <span>Notifications</span>
+            {notifications.filter((item) => !item.is_read).length > 0 && (
+              <b>
+                {Math.min(
+                  notifications.filter((item) => !item.is_read).length,
+                  99
+                )}
+              </b>
+            )}
+          </button>
+
+          <button
             onClick={() => {
               setActiveTab("favourites");
               setSidebarOpen(false);
@@ -900,6 +1395,34 @@ export default function BuyerDashboard() {
           >
             <SlidersHorizontal size={18} />
             <span>Requirement Wall</span>
+          </button>
+
+          <button
+            className={supplierMode === "imported" ? "active" : ""}
+            onClick={() => {
+              setSupplierMode("imported");
+              setSidebarOpen(false);
+              setTimeout(() => {
+                document.querySelector(".buyer-supplier-section")?.scrollIntoView({ behavior: "smooth" });
+              }, 50);
+            }}
+          >
+            <span className="buyer-nav-emoji">🌍</span>
+            <span>Imported Wood Bulk Suppliers</span>
+          </button>
+
+          <button
+            className={supplierMode === "patta" ? "active" : ""}
+            onClick={() => {
+              setSupplierMode("patta");
+              setSidebarOpen(false);
+              setTimeout(() => {
+                document.querySelector(".buyer-supplier-section")?.scrollIntoView({ behavior: "smooth" });
+              }, 50);
+            }}
+          >
+            <span className="buyer-nav-emoji">🌳</span>
+            <span>Indian Patta Teak Supplier</span>
           </button>
 
           <div className="buyer-sidebar-divider" />
@@ -963,12 +1486,30 @@ export default function BuyerDashboard() {
               nearby sellers on TimberMart.
             </p>
 
-            <div className="buyer-location-pill">
-              <MapPin size={17} />
-              <span>
-                {profile?.location || "Set your location in profile"}
-              </span>
+            <div className="buyer-location-row">
+              <div className={`buyer-location-pill ${hasLocation ? "ready" : "needs-location"}`}>
+                <MapPin size={17} />
+                <span>
+                  {profile?.location || "Location needed for 40 KM alerts"}
+                </span>
+                <b>{hasLocation ? "GPS ON" : "GPS OFF"}</b>
+              </div>
+
+              <button
+                className="buyer-location-button"
+                onClick={saveCurrentLocation}
+                disabled={locationSaving}
+              >
+                <MapPin size={16} />
+                {locationSaving ? "Saving..." : hasLocation ? "Update Location" : "Enable Location"}
+              </button>
             </div>
+
+            {locationError && (
+              <div className="buyer-location-error">
+                {locationError}
+              </div>
+            )}
 
           </div>
 
@@ -1302,6 +1843,70 @@ export default function BuyerDashboard() {
 
         </section>
 
+        {/* ================= SUPPLIER DIRECTORY ================= */}
+
+        {supplierMode && (
+          <section className="buyer-supplier-section">
+            <div className="buyer-section-heading">
+              <div>
+                <span className="buyer-eyebrow">SUPPLIER NETWORK</span>
+                <h2>
+                  {supplierMode === "imported"
+                    ? "Imported Wood Bulk Suppliers"
+                    : "Indian Patta Teak Supplier"}
+                </h2>
+                <p className="buyer-section-subtitle">
+                  {supplierMode === "imported"
+                    ? "Bulk and imported-wood listings currently available on TimberMart."
+                    : "Listings tagged with Patta Teak / Indian Teak from sellers on TimberMart."}
+                </p>
+              </div>
+              <button onClick={() => setSupplierMode(null)}>Close</button>
+            </div>
+
+            {supplierListings.length === 0 ? (
+              <div className="buyer-supplier-empty">
+                <div>🪵</div>
+                <h3>No matching supplier listings yet</h3>
+                <p>
+                  When a seller posts a matching imported/bulk or Patta Teak listing,
+                  it will automatically appear here.
+                </p>
+                <button
+                  onClick={() => {
+                    setSupplierMode(null);
+                    document.querySelector(".buyer-listings-section")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                >
+                  Browse All Listings
+                </button>
+              </div>
+            ) : (
+              <div className="buyer-supplier-grid">
+                {supplierListings.map((listing) => (
+                  <article className="buyer-supplier-card" key={listing.id}>
+                    <div className="buyer-supplier-icon">🪵</div>
+                    <div className="buyer-supplier-main">
+                      <span>{listing.wood_type || listing.product_type || "Timber"}</span>
+                      <h3>{listing.title || "Timber Supplier Listing"}</h3>
+                      <p>
+                        <MapPin size={13} /> {listing.location || "Location not added"}
+                      </p>
+                      <strong>
+                        {listing.price ? `₹ ${listing.price}` : "Price on contact"}
+                      </strong>
+                    </div>
+                    <button onClick={() => openProduct(listing)}>
+                      View
+                      <ChevronRight size={16} />
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
+
         {/* FAVOURITES */}
 
         {favourites.length > 0 && (
@@ -1488,6 +2093,200 @@ export default function BuyerDashboard() {
         </section>
 
       </main>
+
+      {/* ================= CHAT LIST PANEL ================= */}
+
+      {showChatList && (
+        <div
+          className="buyer-panel-backdrop"
+          onClick={() => setShowChatList(false)}
+        >
+          <aside
+            className="buyer-chat-list-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="buyer-chat-list-header">
+              <div>
+                <span>MESSAGES</span>
+                <h2>Chats</h2>
+              </div>
+
+              <button
+                onClick={() => setShowChatList(false)}
+                aria-label="Close chats"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="buyer-chat-list-body">
+              {chatContacts.length === 0 ? (
+                <div className="buyer-chat-list-empty">
+                  <MessageCircle size={34} />
+                  <strong>No chats yet</strong>
+                  <p>
+                    Open a timber listing and tap Chat Now to start
+                    a conversation with a seller.
+                  </p>
+                </div>
+              ) : (
+                chatContacts.map((contact) => (
+                  <button
+                    key={contact.id}
+                    className="buyer-chat-contact"
+                    onClick={() => {
+                      setShowChatList(false);
+                      openChat(contact);
+                    }}
+                  >
+                    <div className="buyer-chat-contact-avatar">
+                      {contact.photo_url ? (
+                        <img
+                          src={contact.photo_url}
+                          alt={contact.name || "User"}
+                        />
+                      ) : (
+                        <span>
+                          {(contact.name || "U")
+                            .charAt(0)
+                            .toUpperCase()}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="buyer-chat-contact-info">
+                      <strong>
+                        {contact.name || "TimberMart User"}
+                      </strong>
+                      <small>
+                        {roleLabel(contact.role)}
+                      </small>
+                      {contact.location && (
+                        <span>
+                          <MapPin size={11} />
+                          {contact.location}
+                        </span>
+                      )}
+                    </div>
+
+                    <ChevronRight size={17} />
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* ================= NOTIFICATIONS PANEL ================= */}
+
+      {showNotifications && (
+        <div
+          className="buyer-notification-backdrop"
+          onClick={() => setShowNotifications(false)}
+        >
+          <aside
+            className="buyer-notification-panel"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="buyer-notification-header">
+              <div>
+                <span>UPDATES</span>
+                <h2>Notifications</h2>
+              </div>
+
+              <div className="buyer-notification-header-actions">
+                {notifications.some((item) => !item.is_read) && (
+                  <button onClick={markAllNotificationsRead}>
+                    Mark all read
+                  </button>
+                )}
+
+                <button
+                  onClick={() => setShowNotifications(false)}
+                  aria-label="Close notifications"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            <div className="buyer-notification-body">
+              {notificationLoading ? (
+                <div className="buyer-notification-empty">
+                  Loading notifications...
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="buyer-notification-empty">
+                  <Bell size={35} />
+                  <strong>No notifications</strong>
+                  <p>
+                    Matching nearby posts and account updates will
+                    appear here.
+                  </p>
+                </div>
+              ) : (
+                notifications.map((notification) => (
+                  <button
+                    key={notification.id}
+                    className={`buyer-notification-item ${
+                      !notification.is_read ? "unread" : ""
+                    }`}
+                    onClick={() =>
+                      openBuyerNotification(notification)
+                    }
+                  >
+                    <div className="buyer-notification-icon">
+                      {notification.type === "nearby_listing" ||
+                      notification.post_type === "listing" ? (
+                        "🪵"
+                      ) : notification.type === "message" ? (
+                        "💬"
+                      ) : (
+                        "🔔"
+                      )}
+                    </div>
+
+                    <div className="buyer-notification-content">
+                      <strong>
+                        {notification.title ||
+                          "TimberMart Notification"}
+                      </strong>
+
+                      <p>
+                        {notification.message ||
+                          "You have a new TimberMart update."}
+                      </p>
+
+                      <div className="buyer-notification-meta">
+                        {notification.distance_km != null && (
+                          <span>
+                            📍{" "}
+                            {Number(
+                              notification.distance_km
+                            ).toFixed(1)}{" "}
+                            km away
+                          </span>
+                        )}
+
+                        <small>
+                          {formatDate(
+                            notification.created_at
+                          )}
+                        </small>
+                      </div>
+                    </div>
+
+                    {!notification.is_read && (
+                      <span className="buyer-unread-dot" />
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {/* ================= PRODUCT DETAIL MODAL ================= */}
 

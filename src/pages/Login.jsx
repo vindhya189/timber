@@ -54,6 +54,12 @@ const ROLE_INFO = {
     description: "Find suitable timber industry jobs.",
   },
 
+  admin: {
+    emoji: "🛡️",
+    title: "Administrator",
+    description: "Manage TimberMart users, listings and approvals.",
+  },
+
   buyer: {
     emoji: "🏠",
     title: "Buyer / Homeowner",
@@ -108,6 +114,9 @@ function normalizeRole(role) {
     buyer: "buyer",
     "buyer / homeowner": "buyer",
     homeowner: "buyer",
+
+    admin: "admin",
+    administrator: "admin",
   };
 
   return roleMap[value] || null;
@@ -428,13 +437,6 @@ export default function Login() {
       return;
     }
 
-    if (!selectedRole) {
-      setError(
-        "Please select your role."
-      );
-      return;
-    }
-
     try {
       setLoading(true);
 
@@ -523,8 +525,30 @@ export default function Login() {
         );
 
       /* ---------------------------------------------------
-         ADMIN ACCOUNTS ARE NEVER CHANGED TO THE SELECTED
-         NORMAL USER ROLE.
+         ADMIN DIRECT LOGIN
+         --------------------------------------------------- */
+
+      console.log("TimberMart login profile role:", profile?.role);
+      console.log("TimberMart normalized role:", profileRole);
+
+      if (profileRole === "admin") {
+        const adminProfile = {
+          ...profile,
+          role: "admin",
+        };
+
+        saveLocalUser(user, adminProfile);
+        setMessage("Admin login successful!");
+
+        setTimeout(() => {
+          navigate("/admin", { replace: true });
+        }, 300);
+
+        return;
+      }
+
+      /* ---------------------------------------------------
+         NORMAL USER ROLE
          --------------------------------------------------- */
 
       if (
@@ -569,30 +593,6 @@ export default function Login() {
           ...profile,
           role: selectedRole,
         };
-      }
-
-      /* ---------------------------------------------------
-         ADMIN DIRECT LOGIN
-         ---------------------------------------------------
-         Admin role comes from Supabase profiles.role.
-         Never overwrite it with the Role Select value.
-         --------------------------------------------------- */
-
-      if (normalizeRole(profile?.role) === "admin") {
-        const adminProfile = {
-          ...profile,
-          role: "admin",
-        };
-
-        saveLocalUser(user, adminProfile);
-
-        setMessage("Admin login successful!");
-
-        setTimeout(() => {
-          navigate("/admin", { replace: true });
-        }, 300);
-
-        return;
       }
 
       /* ---------------------------------------------------

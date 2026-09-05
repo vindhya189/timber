@@ -26,6 +26,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./SawmillDashboard.css";
+import TreeLoader from "../components/TreeLoader";
 
 const JOB_CATEGORIES = [
   "Machine Operator",
@@ -941,24 +942,10 @@ export default function SawmillDashboard() {
   ===================================================== */
 
   if (loading) {
-    return (
-      <div className="sawmill-loading">
-
-        <div className="sawmill-loading-icon">
-          🏭
-        </div>
-
-        <h2>
-          Loading TimberMart...
-        </h2>
-
-        <p>
-          Preparing your Sawmill dashboard
-        </p>
-
-      </div>
-    );
-  }
+  return (
+    <TreeLoader text="Growing your requirements..." />
+  );
+}
 
   /* =====================================================
      MAIN UI
