@@ -929,6 +929,19 @@ export default function BuyerDashboard() {
      PRODUCT DETAILS
   ------------------------------------------------------- */
 
+  useEffect(() => {
+    const modalOpen = Boolean(selectedListing);
+
+    if (!modalOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedListing]);
+
   async function openProduct(listing) {
     if (!listing?.id) return;
 
@@ -1788,8 +1801,17 @@ export default function BuyerDashboard() {
                   >
 
                     <div
-                      className="buyer-product-image"
+                      className="buyer-product-image buyer-product-image-clickable"
                       onClick={() => openProduct(listing)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openProduct(listing);
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`View details for ${listing.title || "timber listing"}`}
                     >
 
                       {image ? (
@@ -2645,13 +2667,7 @@ export default function BuyerDashboard() {
                       </button>
                     </div>
 
-                    <button
-                      className="buyer-direct-deal-btn"
-                      onClick={() => createOrder(selectedListing)}
-                    >
-                      <ShoppingBag size={18} />
-                      Send Deal Request
-                    </button>
+                    
                   </div>
                 </div>
               );
