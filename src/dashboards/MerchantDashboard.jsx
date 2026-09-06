@@ -27,6 +27,9 @@ import {
   ImagePlus,
   ClipboardList,
   CheckCircle2,
+  LocateFixed,
+  Image as ImageIcon,
+  MapPinned,
 } from "lucide-react";
 
 import { useNavigate } from "react-router-dom";
@@ -104,14 +107,49 @@ function formatDate(date) {
   });
 }
 
+function getImages(listing) {
+  const relationImages = Array.isArray(listing?.listing_images)
+    ? [...listing.listing_images]
+        .filter((item) => item?.image_url)
+        .sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0))
+        .map((item) => item.image_url)
+    : [];
+
+  if (relationImages.length) return [...new Set(relationImages)];
+
+  const candidates = [listing?.images, listing?.image_urls, listing?.photos];
+  for (const value of candidates) {
+    if (Array.isArray(value)) {
+      const urls = value.filter(Boolean);
+      if (urls.length) return [...new Set(urls)];
+    }
+    if (typeof value === "string") {
+      try {
+        const parsed = JSON.parse(value);
+        if (Array.isArray(parsed) && parsed.length) return [...new Set(parsed.filter(Boolean))];
+      } catch {}
+    }
+  }
+
+  return listing?.image_url || listing?.photo_url ? [listing.image_url || listing.photo_url] : [];
+}
+
 function getImage(listing) {
-  if (!listing?.listing_images?.length) return "";
+  return getImages(listing)[0] || "";
+}
 
-  const images = [...listing.listing_images].sort(
-    (a, b) => (a.sort_order || 0) - (b.sort_order || 0)
-  );
-
-  return images[0]?.image_url || "";
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const a = Number(lat1);
+  const b = Number(lon1);
+  const c = Number(lat2);
+  const d = Number(lon2);
+  if (![a, b, c, d].every(Number.isFinite)) return null;
+  const R = 6371;
+  const rad = (value) => (value * Math.PI) / 180;
+  const dLat = rad(c - a);
+  const dLon = rad(d - b);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a)) * Math.cos(rad(c)) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
 }
 
 function roleName(role) {
@@ -233,6 +271,17 @@ export default function MerchantDashboard() {
   const [postingJob, setPostingJob] = useState(false);
 
   /* =====================================================
+     LOCATION / NOTIFICATIONS / SUPPLIER HUB
+  ===================================================== */
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [locationBusy, setLocationBusy] = useState(false);
+  const [locationMessage, setLocationMessage] = useState("");
+  const [listingViewer, setListingViewer] = useState({ open: false, index: 0 });
+
+
+  /* =====================================================
      INITIAL LOAD
   ===================================================== */
 
@@ -321,6 +370,7 @@ export default function MerchantDashboard() {
         loadJobs(),
         loadWorkers(),
         loadOrders(currentSession.user.id),
+        loadNotifications(),
       ]);
 
       if (mounted) {
@@ -354,7 +404,9 @@ export default function MerchantDashboard() {
       .in("role", [
         "farmer",
         "merchant",
+        "timber_merchant",
         "sawmill",
+        "sawmill_business",
         "carpenter",
       ])
       .order("created_at", {
@@ -459,6 +511,142 @@ export default function MerchantDashboard() {
   }
 
   /* =====================================================
+     NOTIFICATIONS
+  ===================================================== */
+
+  async function loadNotifications() {
+    if (!session?.user?.id) return;
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", session.user.id)
+      .order("created_at", { ascending: false })
+      .limit(80);
+
+    if (error) {
+      console.error("Notifications error:", error);
+      return;
+    }
+    setNotifications(data || []);
+  }
+
+  const unreadNotificationCount = notifications.filter((item) => !item.is_read).length;
+
+  async function markNotificationRead(id) {
+    if (!id) return;
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", id)
+      .eq("user_id", session.user.id);
+    if (!error) {
+      setNotifications((current) => current.map((item) => item.id === id ? { ...item, is_read: true } : item));
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    if (!session?.user?.id || !unreadNotificationCount) return;
+    setNotificationBusy(true);
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", session.user.id)
+      .eq("is_read", false);
+    if (!error) setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
+    setNotificationBusy(false);
+  }
+
+  function notificationDistance(item) {
+    if (Number.isFinite(Number(item?.distance_km))) return Number(item.distance_km);
+    return haversineKm(profile?.latitude, profile?.longitude, item?.latitude, item?.longitude);
+  }
+
+  /* =====================================================
+     LOCATION UPDATE
+  ===================================================== */
+
+  async function updateMerchantLocation() {
+    if (!session?.user?.id) return;
+    if (!navigator.geolocation) {
+      setLocationMessage("Location is not supported by this browser.");
+      return;
+    }
+
+    setLocationBusy(true);
+    setLocationMessage("");
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const latitude = Number(position.coords.latitude);
+        const longitude = Number(position.coords.longitude);
+        let readableLocation = profile?.location || "Current location";
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+          );
+          if (response.ok) {
+            const json = await response.json();
+            readableLocation =
+              json?.display_name ||
+              [json?.address?.city, json?.address?.town, json?.address?.state].filter(Boolean).join(", ") ||
+              readableLocation;
+          }
+        } catch (error) {
+          console.warn("Reverse geocoding failed", error);
+        }
+
+        const { data, error } = await supabase
+          .from("profiles")
+          .update({ latitude, longitude, location: readableLocation })
+          .eq("id", session.user.id)
+          .select("*")
+          .single();
+
+        if (error) {
+          console.error("Location update error:", error);
+          setLocationMessage(error.message || "Could not update location.");
+        } else {
+          setProfile(data);
+          setSellForm((old) => ({ ...old, location: readableLocation }));
+          setRequirementForm((old) => ({ ...old, location: readableLocation }));
+          setJobForm((old) => ({ ...old, location: readableLocation }));
+          setLocationMessage("Location updated successfully.");
+          await loadNotifications();
+        }
+
+        setLocationBusy(false);
+      },
+      (error) => {
+        setLocationBusy(false);
+        setLocationMessage(error?.message || "Please allow location access and try again.");
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 }
+    );
+  }
+
+  /* =====================================================
+     SPECIALTY SUPPLIER HUBS
+  ===================================================== */
+  const pattaTeakListings = useMemo(() => {
+    return listings.filter((item) => {
+      const text = [item.title, item.wood_type, item.product_type, item.description, item.category]
+        .filter(Boolean).join(" ").toLowerCase();
+      return /patta teak|patta|indian teak/.test(text) &&
+        (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
+    });
+  }, [listings, session?.user?.id]);
+
+  const importedTeakListings = useMemo(() => {
+    return listings.filter((item) => {
+      const text = [item.title, item.wood_type, item.product_type, item.description, item.category]
+        .filter(Boolean).join(" ").toLowerCase();
+      return /imported teak|imported|burma teak|african teak|malaysian teak/.test(text) &&
+        (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
+    });
+  }, [listings, session?.user?.id]);
+
+  /* =====================================================
      REALTIME
   ===================================================== */
 
@@ -517,6 +705,9 @@ export default function MerchantDashboard() {
     const loc = locationFilter.trim().toLowerCase();
 
     return listings.filter((item) => {
+      const visible = item.user_id === session?.user?.id || item.status == null || item.status === "approved";
+      if (!visible) return false;
+
       const title = String(item.title || "").toLowerCase();
       const wood = String(item.wood_type || "").toLowerCase();
       const product = String(
@@ -582,6 +773,7 @@ export default function MerchantDashboard() {
     woodType,
     locationFilter,
     maxPrice,
+    session?.user?.id,
   ]);
 
   /* =====================================================
@@ -599,6 +791,7 @@ export default function MerchantDashboard() {
       session?.user?.id
         ? loadOrders(session.user.id)
         : Promise.resolve(),
+      loadNotifications(),
     ]);
 
     setRefreshing(false);
@@ -610,18 +803,20 @@ export default function MerchantDashboard() {
 
   function handlePhotoSelect(event) {
     const files = Array.from(event.target.files || []);
-
     if (!files.length) return;
 
-    const remaining = Math.max(
-      0,
-      10 - sellPhotos.length
-    );
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith("image/")) return false;
+      if (file.size > 5 * 1024 * 1024) {
+        alert(`${file.name} is larger than 5 MB.`);
+        return false;
+      }
+      return true;
+    });
 
-    setSellPhotos((current) => [
-      ...current,
-      ...files.slice(0, remaining),
-    ]);
+    const remaining = Math.max(0, 10 - sellPhotos.length);
+    setSellPhotos((current) => [...current, ...validFiles.slice(0, remaining)]);
+    event.target.value = "";
   }
 
   function removeSellPhoto(index) {
@@ -656,6 +851,9 @@ export default function MerchantDashboard() {
       .insert({
         user_id: session.user.id,
         role: "merchant",
+        status: "pending",
+        latitude: profile?.latitude ?? null,
+        longitude: profile?.longitude ?? null,
         title: sellForm.title.trim(),
         wood_type: sellForm.wood_type.trim(),
         product_type: sellForm.product_type,
@@ -735,8 +933,9 @@ export default function MerchantDashboard() {
     setShowSellModal(false);
 
     await loadListings();
+    await loadNotifications();
 
-    alert("Timber listing posted successfully.");
+    alert("Timber listing submitted for admin approval. You will be notified after review.");
   }
 
   /* =====================================================
@@ -1096,6 +1295,20 @@ export default function MerchantDashboard() {
   }
 
   useEffect(() => {
+    if (!session?.user?.id) return;
+    const channel = supabase
+      .channel(`merchant-notifications-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${session.user.id}` },
+        () => loadNotifications()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [session?.user?.id]);
+
+  useEffect(() => {
     if (
       !chatOpen ||
       !chatUser?.id ||
@@ -1309,8 +1522,15 @@ export default function MerchantDashboard() {
             />
           </button>
 
-          <button className="merchant-icon-btn">
+          <button
+            className={`merchant-icon-btn merchant-notification-trigger ${unreadNotificationCount ? "has-unread" : ""}`}
+            onClick={() => setNotificationOpen((value) => !value)}
+            aria-label="Notifications"
+          >
             <Bell size={19} />
+            {unreadNotificationCount > 0 && (
+              <span className="merchant-notification-count">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>
+            )}
           </button>
 
           <button
@@ -1483,17 +1703,43 @@ export default function MerchantDashboard() {
           <button
             onClick={() => {
               setSidebarOpen(false);
-              document
-                .querySelector(
-                  ".merchant-workers-section"
-                )
-                ?.scrollIntoView({
-                  behavior: "smooth",
-                });
+              document.querySelector(".merchant-workers-section")?.scrollIntoView({ behavior: "smooth" });
             }}
           >
             <Users size={18} />
             Find Workers
+          </button>
+
+          <button
+            className="merchant-special-nav"
+            onClick={() => {
+              setSidebarOpen(false);
+              document.querySelector(".merchant-patta-section")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            🌿
+            Patta Teak Suppliers
+            <b>{pattaTeakListings.length}</b>
+          </button>
+
+          <button
+            className="merchant-special-nav imported"
+            onClick={() => {
+              setSidebarOpen(false);
+              document.querySelector(".merchant-imported-section")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            🌎
+            Imported Teak Suppliers
+            <b>{importedTeakListings.length}</b>
+          </button>
+
+          <button
+            className="merchant-location-nav"
+            onClick={() => { setSidebarOpen(false); updateMerchantLocation(); }}
+          >
+            <LocateFixed size={18} />
+            {locationBusy ? "Updating Location..." : "Update My Location"}
           </button>
 
           <div className="merchant-nav-divider" />
@@ -1574,11 +1820,17 @@ export default function MerchantDashboard() {
               connect with workers.
             </p>
 
-            <div className="merchant-location">
-              <MapPin size={16} />
-              {profile?.location ||
-                "Add your location"}
+            <div className="merchant-location-row">
+              <div className="merchant-location">
+                <MapPin size={16} />
+                {profile?.location || "Add your location"}
+              </div>
+              <button className="merchant-location-update" onClick={updateMerchantLocation} disabled={locationBusy}>
+                <LocateFixed size={15} />
+                {locationBusy ? "Updating..." : "Update GPS"}
+              </button>
             </div>
+            {locationMessage && <small className="merchant-location-message">{locationMessage}</small>}
 
           </div>
 
@@ -1855,8 +2107,8 @@ export default function MerchantDashboard() {
               {filteredListings.map(
                 (listing) => {
 
-                  const image =
-                    getImage(listing);
+                  const images = getImages(listing);
+                  const image = images[0] || "";
 
                   const saved =
                     favourites.includes(
@@ -1870,28 +2122,18 @@ export default function MerchantDashboard() {
                     >
 
                       <div
-                        className="merchant-product-photo"
-                        onClick={() =>
-                          setSelectedListing(
-                            listing
-                          )
-                        }
+                        className="merchant-product-photo merchant-photo-gallery-preview"
+                        onClick={() => setSelectedListing(listing)}
                       >
 
                         {image ? (
-                          <img
-                            src={image}
-                            alt={
-                              listing.title
-                            }
-                          />
+                          <img src={image} alt={listing.title} />
                         ) : (
-                          <div>
-                            🪵
-                            <small>
-                              No photo
-                            </small>
-                          </div>
+                          <div className="merchant-no-photo">🪵<small>No photo</small></div>
+                        )}
+
+                        {images.length > 0 && (
+                          <div className="merchant-photo-count-pill"><ImageIcon size={13} /> {images.length} photo{images.length > 1 ? "s" : ""}</div>
                         )}
 
                         <button
@@ -1918,6 +2160,16 @@ export default function MerchantDashboard() {
                         </button>
 
                       </div>
+
+                      {images.length > 0 && (
+                        <div className="merchant-photo-strip" aria-label="All listing photos">
+                          {images.map((url, photoIndex) => (
+                            <button key={`${url}-${photoIndex}`} type="button" onClick={() => setSelectedListing(listing)} title={`Photo ${photoIndex + 1}`}>
+                              <img src={url} alt="" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
 
                       <div className="merchant-product-body">
 
@@ -1973,6 +2225,63 @@ export default function MerchantDashboard() {
             </div>
           )}
 
+        </section>
+
+        {/* =================================================
+            SPECIALTY SUPPLIER HUBS
+        ================================================= */}
+        <section className="merchant-special-section merchant-patta-section">
+          <div className="merchant-special-header">
+            <div>
+              <span>VERIFIED CATEGORY HUB</span>
+              <h2>🌿 Patta Teak Suppliers</h2>
+              <p>Real merchant and seller listings tagged for Patta / Indian Teak.</p>
+            </div>
+            <span className="merchant-special-count">{pattaTeakListings.length}</span>
+          </div>
+          <div className="merchant-special-grid">
+            {pattaTeakListings.length === 0 ? (
+              <div className="merchant-empty-small merchant-special-empty">No Patta Teak supplier listings yet.</div>
+            ) : pattaTeakListings.map((listing) => {
+              const images = getImages(listing);
+              return (
+                <article className="merchant-special-card" key={`patta-${listing.id}`} onClick={() => setSelectedListing(listing)}>
+                  <div className="merchant-special-photo">
+                    {images[0] ? <img src={images[0]} alt={listing.title} /> : <ImageIcon size={30} />}
+                    {images.length > 1 && <span>{images.length} photos</span>}
+                  </div>
+                  <div><strong>{listing.title}</strong><small>{listing.location || "Location not added"}</small><b>{listing.wood_type || "Patta Teak"}</b></div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="merchant-special-section merchant-imported-section">
+          <div className="merchant-special-header">
+            <div>
+              <span>TRADE CATEGORY HUB</span>
+              <h2>🌎 Imported Teak Suppliers</h2>
+              <p>Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.</p>
+            </div>
+            <span className="merchant-special-count">{importedTeakListings.length}</span>
+          </div>
+          <div className="merchant-special-grid">
+            {importedTeakListings.length === 0 ? (
+              <div className="merchant-empty-small merchant-special-empty">No imported teak supplier listings yet.</div>
+            ) : importedTeakListings.map((listing) => {
+              const images = getImages(listing);
+              return (
+                <article className="merchant-special-card" key={`imported-${listing.id}`} onClick={() => setSelectedListing(listing)}>
+                  <div className="merchant-special-photo">
+                    {images[0] ? <img src={images[0]} alt={listing.title} /> : <ImageIcon size={30} />}
+                    {images.length > 1 && <span>{images.length} photos</span>}
+                  </div>
+                  <div><strong>{listing.title}</strong><small>{listing.location || "Location not added"}</small><b>{listing.wood_type || "Imported Teak"}</b></div>
+                </article>
+              );
+            })}
+          </div>
         </section>
 
         {/* MY LISTINGS */}
@@ -2035,16 +2344,11 @@ export default function MerchantDashboard() {
                     key={listing.id}
                   >
 
-                    {getImage(listing) ? (
-                      <img
-                        src={getImage(
-                          listing
-                        )}
-                        alt=""
-                      />
-                    ) : (
-                      <div>🪵</div>
-                    )}
+                    <div className="merchant-my-photo-stack">
+                      {getImages(listing).length ? getImages(listing).map((url, index) => (
+                        <img key={`${url}-${index}`} src={url} alt="" onClick={() => setSelectedListing(listing)} />
+                      )) : <div>🪵</div>}
+                    </div>
 
                     <section>
                       <strong>
@@ -2058,6 +2362,9 @@ export default function MerchantDashboard() {
                       <small>
                         {listing.location}
                       </small>
+                      <span className={`merchant-status-badge status-${String(listing.status || "approved").toLowerCase()}`}>
+                        {String(listing.status || "approved").toLowerCase() === "pending" ? "Pending Admin Approval" : String(listing.status || "approved").toLowerCase() === "rejected" ? "Rejected" : "Approved & Live"}
+                      </span>
                     </section>
 
                     <button
@@ -2544,6 +2851,66 @@ export default function MerchantDashboard() {
         </footer>
 
       </main>
+
+      {/* =================================================
+          NOTIFICATION PANEL
+      ================================================= */}
+      {notificationOpen && (
+        <div className="merchant-notification-popover" onClick={() => setNotificationOpen(false)}>
+          <section className="merchant-notification-panel" onClick={(e) => e.stopPropagation()}>
+            <header>
+              <div>
+                <span>LIVE UPDATES</span>
+                <h3>Notifications {unreadNotificationCount > 0 && <b>{unreadNotificationCount} new</b>}</h3>
+              </div>
+              <div className="merchant-notification-actions">
+                <button onClick={markAllNotificationsRead} disabled={notificationBusy || !unreadNotificationCount}>Mark all read</button>
+                <button onClick={() => setNotificationOpen(false)}><X size={18} /></button>
+              </div>
+            </header>
+
+            <div className="merchant-notification-list">
+              {notifications.length === 0 ? (
+                <div className="merchant-notification-empty">
+                  <Bell size={28} />
+                  <strong>No notifications yet</strong>
+                  <p>Admin approvals, nearby activity and marketplace updates will appear here.</p>
+                </div>
+              ) : notifications.map((item) => {
+                const distance = notificationDistance(item);
+                const admin = item.source === "admin" || item.source === "admin_post" || item.sender_name === "TimberMart Admin";
+                const near = Number.isFinite(distance) && distance <= 40;
+                return (
+                  <button
+                    className={`merchant-notification-item ${item.is_read ? "read" : "unread"}`}
+                    key={item.id}
+                    onClick={async () => {
+                      await markNotificationRead(item.id);
+                      setNotificationOpen(false);
+                      if (item.listing_id) {
+                        const { data } = await supabase.from("listings").select(`*, listing_images(id,image_url,storage_path,sort_order)`).eq("id", item.listing_id).maybeSingle();
+                        if (data) setSelectedListing(data);
+                      }
+                    }}
+                  >
+                    {item.image_url ? <img src={item.image_url} alt="" className="merchant-notification-image" /> : <span className="merchant-notification-icon">{admin ? "🛡️" : near ? "📍" : "🔔"}</span>}
+                    <span className="merchant-notification-copy">
+                      <span className="merchant-notification-title">{item.title || "TimberMart Update"}</span>
+                      <span className="merchant-notification-message">{item.message}</span>
+                      <span className="merchant-notification-meta">
+                        {admin && <b>ADMIN</b>}
+                        {near && <b className="near">NEARBY • {distance.toFixed(1)} KM</b>}
+                        <time>{formatDate(item.created_at)}</time>
+                      </span>
+                    </span>
+                    {!item.is_read && <i />}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        </div>
+      )}
 
       {/* =================================================
           SELL MODAL
@@ -3369,24 +3736,35 @@ export default function MerchantDashboard() {
               <X size={20} />
             </button>
 
-            <div className="merchant-detail-image">
-
-              {getImage(
-                selectedListing
-              ) ? (
-                <img
-                  src={getImage(
-                    selectedListing
+            {(() => {
+              const detailImages = getImages(selectedListing);
+              const activeIndex = Math.min(listingViewer.index, Math.max(detailImages.length - 1, 0));
+              return (
+                <div className="merchant-detail-gallery">
+                  <div className="merchant-detail-image merchant-detail-image-large">
+                    {detailImages.length ? (
+                      <img src={detailImages[activeIndex] || detailImages[0]} alt={selectedListing.title} />
+                    ) : <div>🪵</div>}
+                    {detailImages.length > 1 && (
+                      <>
+                        <button className="merchant-gallery-nav prev" onClick={() => setListingViewer((v) => ({ open: true, index: (activeIndex - 1 + detailImages.length) % detailImages.length }))}><ChevronLeft size={20} /></button>
+                        <button className="merchant-gallery-nav next" onClick={() => setListingViewer((v) => ({ open: true, index: (activeIndex + 1) % detailImages.length }))}><ChevronRight size={20} /></button>
+                      </>
+                    )}
+                    {detailImages.length > 0 && <span className="merchant-gallery-counter">{activeIndex + 1} / {detailImages.length}</span>}
+                  </div>
+                  {detailImages.length > 0 && (
+                    <div className="merchant-detail-thumbs">
+                      {detailImages.map((url, index) => (
+                        <button key={`${url}-${index}`} className={index === activeIndex ? "active" : ""} onClick={() => setListingViewer({ open: true, index })}>
+                          <img src={url} alt="" />
+                        </button>
+                      ))}
+                    </div>
                   )}
-                  alt={
-                    selectedListing.title
-                  }
-                />
-              ) : (
-                <div>🪵</div>
-              )}
-
-            </div>
+                </div>
+              );
+            })()}
 
             <div className="merchant-detail-body">
 

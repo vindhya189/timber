@@ -3,7 +3,13 @@ import {
   Bell,
   Briefcase,
   Building2,
+  BellRing,
   Check,
+  CheckCircle2,
+  Globe2,
+  ImagePlus,
+  LocateFixed,
+  UploadCloud,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -71,6 +77,29 @@ export default function SawmillDashboard() {
   const [jobs, setJobs] = useState([]);
   const [workers, setWorkers] = useState([]);
   const [applications, setApplications] = useState([]);
+
+  const [timberListings, setTimberListings] = useState([]);
+  const [requirements, setRequirements] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [locationUpdating, setLocationUpdating] = useState(false);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [selectedRequirement, setSelectedRequirement] = useState(null);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [supplierMode, setSupplierMode] = useState("");
+  const [showTimberModal, setShowTimberModal] = useState(false);
+  const [timberSaving, setTimberSaving] = useState(false);
+  const [timberPhotos, setTimberPhotos] = useState([]);
+  const [timberForm, setTimberForm] = useState({
+    title: "",
+    wood_type: "Teak",
+    product_type: "Timber",
+    quantity: "",
+    location: "",
+    price: "",
+    description: "",
+  });
 
   /* =====================================================
      UI
@@ -214,10 +243,18 @@ export default function SawmillDashboard() {
 
       setProfile(userProfile);
 
+      setTimberForm((old) => ({
+        ...old,
+        location: userProfile.location || "",
+      }));
+
       await Promise.all([
         loadJobs(currentSession.user.id),
         loadWorkers(),
         loadApplications(currentSession.user.id),
+        loadTimberListings(),
+        loadRequirements(),
+        loadNotifications(currentSession.user.id),
       ]);
     } catch (error) {
       console.error(
@@ -399,9 +436,504 @@ export default function SawmillDashboard() {
     setApplications(result);
   }
 
+
+  /* =====================================================
+     MARKETPLACE / REQUIREMENTS / NOTIFICATIONS
+  ===================================================== */
+
+  function getListingImages(item) {
+    const nested = Array.isArray(item?.listing_images)
+      ? [...item.listing_images]
+          .filter((x) => x?.image_url)
+          .sort(
+            (a, b) =>
+              Number(a?.sort_order || 0) - Number(b?.sort_order || 0)
+          )
+          .map((x) => x.image_url)
+      : [];
+
+    if (nested.length) return [...new Set(nested)];
+
+    const candidates = [];
+    if (item?.image_url) candidates.push(item.image_url);
+    if (item?.photo_url) candidates.push(item.photo_url);
+
+    for (const key of ["image_urls", "images", "photos"]) {
+      const value = item?.[key];
+      if (Array.isArray(value)) candidates.push(...value.filter(Boolean));
+      else if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) candidates.push(...parsed.filter(Boolean));
+        } catch {
+          if (value.startsWith("http")) candidates.push(value);
+        }
+      }
+    }
+
+    return [...new Set(candidates)];
+  }
+
+  function getRequirementImages(item) {
+    const candidates = [];
+    for (const key of [
+      "image_url",
+      "photo_url",
+      "image_urls",
+      "images",
+      "photos",
+      "photo_urls",
+    ]) {
+      const value = item?.[key];
+      if (Array.isArray(value)) candidates.push(...value.filter(Boolean));
+      else if (typeof value === "string") {
+        try {
+          const parsed = JSON.parse(value);
+          if (Array.isArray(parsed)) candidates.push(...parsed.filter(Boolean));
+          else if (value.startsWith("http")) candidates.push(value);
+        } catch {
+          if (value.startsWith("http")) candidates.push(value);
+        }
+      }
+    }
+    if (Array.isArray(item?.requirement_images)) {
+      candidates.push(
+        ...item.requirement_images
+          .map((x) => x?.image_url || x?.url)
+          .filter(Boolean)
+      );
+    }
+    return [...new Set(candidates)];
+  }
+
+  async function loadTimberListings() {
+    let { data, error } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        listing_images (
+          id,
+          image_url,
+          storage_path,
+          sort_order
+        )
+      `)
+      .in("role", [
+        "farmer",
+        "merchant",
+        "sawmill",
+        "sawmill_business",
+        "carpenter",
+        "timber_merchant",
+      ])
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      const fallback = await supabase
+        .from("listings")
+        .select("*")
+        .in("role", [
+          "farmer",
+          "merchant",
+          "sawmill",
+          "sawmill_business",
+          "carpenter",
+          "timber_merchant",
+        ])
+        .order("created_at", { ascending: false });
+      data = fallback.data || [];
+      error = fallback.error;
+    }
+
+    if (error) {
+      console.error("Timber listings:", error);
+      setTimberListings([]);
+      return;
+    }
+
+    setTimberListings(data || []);
+  }
+
+  async function loadRequirements() {
+    const { data, error } = await supabase
+      .from("requirements")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Requirements:", error);
+      setRequirements([]);
+      return;
+    }
+
+    let result = data || [];
+    const ids = result.map((x) => x.id).filter(Boolean);
+
+    if (ids.length) {
+      const { data: imagesData } = await supabase
+        .from("requirement_images")
+        .select("id, requirement_id, image_url, storage_path, sort_order")
+        .in("requirement_id", ids)
+        .order("sort_order", { ascending: true });
+
+      if (imagesData?.length) {
+        const map = {};
+        imagesData.forEach((img) => {
+          if (!map[img.requirement_id]) map[img.requirement_id] = [];
+          if (img.image_url) map[img.requirement_id].push(img.image_url);
+        });
+        result = result.map((item) => ({
+          ...item,
+          requirement_images: map[item.id] || [],
+        }));
+      }
+    }
+
+    setRequirements(result);
+  }
+
+  async function loadNotifications(userId = session?.user?.id) {
+    if (!userId) return;
+    setNotificationLoading(true);
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) {
+      console.error("Notifications:", error);
+      setNotifications([]);
+    } else {
+      setNotifications(data || []);
+    }
+
+    setNotificationLoading(false);
+  }
+
+  async function markNotificationRead(id) {
+    if (!id) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", id)
+      .eq("user_id", session?.user?.id);
+
+    setNotifications((old) =>
+      old.map((item) =>
+        item.id === id ? { ...item, is_read: true } : item
+      )
+    );
+  }
+
+  async function markAllNotificationsRead() {
+    if (!session?.user?.id) return;
+    await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", session.user.id)
+      .eq("is_read", false);
+
+    setNotifications((old) =>
+      old.map((item) => ({ ...item, is_read: true }))
+    );
+  }
+
+  async function updateSawmillLocation() {
+    if (!session?.user?.id || !navigator.geolocation) {
+      alert("Location service is not available in this browser.");
+      return;
+    }
+
+    setLocationUpdating(true);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+
+          let location = profile?.location || "GPS location";
+          try {
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+            );
+            if (response.ok) {
+              const data = await response.json();
+              location =
+                data?.display_name ||
+                data?.address?.city ||
+                data?.address?.town ||
+                data?.address?.village ||
+                location;
+            }
+          } catch {
+            // keep fallback location
+          }
+
+          const { data, error } = await supabase
+            .from("profiles")
+            .update({
+              latitude,
+              longitude,
+              location,
+            })
+            .eq("id", session.user.id)
+            .select()
+            .single();
+
+          if (error) throw error;
+
+          setProfile(data);
+          setJobForm((old) => ({ ...old, location }));
+          setTimberForm((old) => ({ ...old, location }));
+          alert("✅ Business location updated.");
+        } catch (error) {
+          console.error("Location update:", error);
+          alert(error?.message || "Unable to update location.");
+        } finally {
+          setLocationUpdating(false);
+        }
+      },
+      (error) => {
+        console.error(error);
+        setLocationUpdating(false);
+        alert("Please allow location permission and try again.");
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    );
+  }
+
+  function chooseSupplierMode(mode) {
+    setSupplierMode(mode);
+    setMobileMenu(false);
+    window.setTimeout(() => {
+      document
+        .getElementById("sawmill-timber-marketplace")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+
+  const visibleTimberListings = useMemo(() => {
+    return timberListings.filter((item) => {
+      const status = String(item.status || "").toLowerCase();
+      const isMine = item.user_id === session?.user?.id;
+      return isMine || !status || status === "approved" || status === "active";
+    });
+  }, [timberListings, session?.user?.id]);
+
+  const filteredSupplierListings = useMemo(() => {
+    if (!supplierMode) return visibleTimberListings;
+
+    const text = visibleTimberListings
+      .map((item) =>
+        [
+          item.title,
+          item.wood_type,
+          item.product_type,
+          item.description,
+          item.category,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+      )
+      .map((value) => value);
+
+    const matcher =
+      supplierMode === "patta"
+        ? /(patta\s*teak|patta|indian teak|native teak|farm teak)/i
+        : /(imported teak|burma teak|myanmar teak|african teak|malaysian teak|indonesia|imported|foreign teak)/i;
+
+    return visibleTimberListings.filter((item, index) =>
+      matcher.test(text[index] || "")
+    );
+  }, [supplierMode, visibleTimberListings]);
+
+  const unreadNotifications = notifications.filter(
+    (item) => !item.is_read
+  ).length;
+
+  async function submitTimberListing(event) {
+    event.preventDefault();
+
+    if (!session?.user?.id) return;
+
+    if (!timberForm.title.trim() || !timberForm.wood_type.trim()) {
+      alert("Please enter listing title and wood type.");
+      return;
+    }
+
+    if (!timberPhotos.length) {
+      alert("Please upload at least one timber photo.");
+      return;
+    }
+
+    setTimberSaving(true);
+
+    try {
+      const payload = {
+        user_id: session.user.id,
+        role: "sawmill",
+        status: "pending",
+        title: timberForm.title.trim(),
+        wood_type: timberForm.wood_type.trim(),
+        product_type: timberForm.product_type,
+        quantity: timberForm.quantity.trim(),
+        location:
+          timberForm.location.trim() || profile?.location || "",
+        latitude: profile?.latitude ?? null,
+        longitude: profile?.longitude ?? null,
+        price: timberForm.price.trim(),
+        description: timberForm.description.trim() || null,
+      };
+
+      const { data: listing, error } = await supabase
+        .from("listings")
+        .insert(payload)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      let uploadedCount = 0;
+
+      for (let index = 0; index < timberPhotos.length; index += 1) {
+        const file = timberPhotos[index];
+        const safeName = file.name
+          .replace(/[^a-zA-Z0-9.-]/g, "-")
+          .toLowerCase();
+        const storagePath = `${session.user.id}/${listing.id}/${Date.now()}-${index}-${safeName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("listing-photos")
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type,
+          });
+
+        if (uploadError) {
+          console.error("Photo upload:", uploadError);
+          continue;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("listing-photos")
+          .getPublicUrl(storagePath);
+
+        const imageUrl = publicUrlData?.publicUrl;
+        if (!imageUrl) continue;
+
+        const { error: imageError } = await supabase
+          .from("listing_images")
+          .insert({
+            listing_id: listing.id,
+            user_id: session.user.id,
+            image_url: imageUrl,
+            storage_path: storagePath,
+            sort_order: index,
+          });
+
+        if (!imageError) uploadedCount += 1;
+      }
+
+      if (!uploadedCount) {
+        await supabase.from("listings").delete().eq("id", listing.id);
+        throw new Error("No photo could be uploaded. Please try again.");
+      }
+
+      await supabase.rpc("notify_admin_new_listing", {
+        p_listing_id: listing.id,
+      });
+
+      await loadTimberListings();
+
+      setShowTimberModal(false);
+      setTimberPhotos([]);
+      setTimberForm({
+        title: "",
+        wood_type: "Teak",
+        product_type: "Timber",
+        quantity: "",
+        location: profile?.location || "",
+        price: "",
+        description: "",
+      });
+
+      alert(
+        "✅ Timber listing submitted. It is pending Admin approval."
+      );
+    } catch (error) {
+      console.error("Timber listing:", error);
+      alert(error?.message || "Unable to post timber listing.");
+    } finally {
+      setTimberSaving(false);
+    }
+  }
+
+  function handleTimberPhotoSelect(event) {
+    const selected = Array.from(event.target.files || []).filter(
+      (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
+    );
+
+    setTimberPhotos((old) =>
+      [...old, ...selected].slice(0, 10)
+    );
+
+    event.target.value = "";
+  }
+
+  function removeTimberPhoto(index) {
+    setTimberPhotos((old) => old.filter((_, i) => i !== index));
+  }
+
+  function openListingGallery(listing) {
+    setSelectedListing(listing);
+    setGalleryIndex(0);
+  }
+
+  function openRequirementGallery(requirement) {
+    setSelectedRequirement(requirement);
+    setGalleryIndex(0);
+  }
+
+  async function openNotification(item) {
+    await markNotificationRead(item.id);
+    setNotificationOpen(false);
+
+    if (item.listing_id) {
+      const { data } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          listing_images (
+            id,
+            image_url,
+            storage_path,
+            sort_order
+          )
+        `)
+        .eq("id", item.listing_id)
+        .maybeSingle();
+
+      if (data) {
+        openListingGallery(data);
+        return;
+      }
+    }
+  }
+
   /* =====================================================
      FORM
   ===================================================== */
+
 
   function updateJobForm(name, value) {
     setJobForm((old) => ({
@@ -925,6 +1457,42 @@ export default function SawmillDashboard() {
       searchWorkers,
     ]);
 
+
+  /* =====================================================
+     LIVE MARKETPLACE / NOTIFICATIONS
+  ===================================================== */
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const channel = supabase
+      .channel(`sawmill-live-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        () => loadNotifications(session.user.id)
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "listings",
+        },
+        () => loadTimberListings()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [session?.user?.id]);
+
   /* =====================================================
      LOGOUT
   ===================================================== */
@@ -987,8 +1555,17 @@ export default function SawmillDashboard() {
 
         <div className="sawmill-header-right">
 
-          <button className="sawmill-bell">
+          <button
+            className="sawmill-bell"
+            onClick={() => setNotificationOpen(true)}
+            aria-label="Notifications"
+          >
             <Bell size={20} />
+            {unreadNotifications > 0 && (
+              <span className="sawmill-bell-badge">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            )}
           </button>
 
 
@@ -1218,6 +1795,67 @@ export default function SawmillDashboard() {
 
             <button
               onClick={() => {
+                document
+                  .getElementById("sawmill-timber-marketplace")
+                  ?.scrollIntoView({ behavior: "smooth" });
+                setMobileMenu(false);
+              }}
+            >
+              <Building2 size={18} />
+              Timber Listings
+            </button>
+
+            <button
+              onClick={() => chooseSupplierMode("patta")}
+            >
+              🌿
+              Patta Teak Suppliers
+              <b>
+                {visibleTimberListings.filter((item) =>
+                  /(patta\s*teak|patta|indian teak|native teak|farm teak)/i.test(
+                    `${item.title || ""} ${item.wood_type || ""} ${item.description || ""}`
+                  )
+                ).length}
+              </b>
+            </button>
+
+            <button
+              onClick={() => chooseSupplierMode("imported")}
+            >
+              <Globe2 size={18} />
+              Imported Teak Suppliers
+              <b>
+                {visibleTimberListings.filter((item) =>
+                  /(imported teak|burma teak|myanmar teak|african teak|malaysian teak|imported|foreign teak)/i.test(
+                    `${item.title || ""} ${item.wood_type || ""} ${item.description || ""}`
+                  )
+                ).length}
+              </b>
+            </button>
+
+            <button
+              onClick={() => {
+                setNotificationOpen(true);
+                setMobileMenu(false);
+              }}
+            >
+              <Bell size={18} />
+              Notifications
+              {unreadNotifications > 0 && <b>{unreadNotifications}</b>}
+            </button>
+
+            <button
+              onClick={updateSawmillLocation}
+              disabled={locationUpdating}
+            >
+              <LocateFixed size={18} />
+              {locationUpdating ? "Updating..." : "Update My Location"}
+            </button>
+
+            <div className="sawmill-nav-divider" />
+
+            <button
+              onClick={() => {
                 openMyProfile();
 
                 setMobileMenu(
@@ -1350,6 +1988,15 @@ export default function SawmillDashboard() {
                   Post a Job
                 </button>
 
+
+                <button
+                  className="sawmill-secondary"
+                  onClick={updateSawmillLocation}
+                  disabled={locationUpdating}
+                >
+                  <LocateFixed size={17} />
+                  {locationUpdating ? "Updating..." : "Update GPS"}
+                </button>
 
                 <button
                   className="sawmill-secondary"
@@ -3867,6 +4514,602 @@ export default function SawmillDashboard() {
 
       )}
 
+
+
+      {/* =====================================================
+          TIMBER LISTING MODAL
+      ===================================================== */}
+      {showTimberModal && (
+        <div
+          className="sawmill-modal-overlay"
+          onMouseDown={() => !timberSaving && setShowTimberModal(false)}
+        >
+          <div
+            className="sawmill-modal sawmill-timber-create-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="sawmill-modal-header">
+              <div>
+                <span>SELL TIMBER</span>
+                <h2>Post a Timber Listing</h2>
+                <p>
+                  Upload real timber photos. Your listing goes to Admin for approval.
+                </p>
+              </div>
+
+              <button onClick={() => setShowTimberModal(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form className="sawmill-timber-form" onSubmit={submitTimberListing}>
+              <div className="sawmill-form-grid">
+                <div>
+                  <label>Listing Title *</label>
+                  <input
+                    className="sawmill-input"
+                    value={timberForm.title}
+                    onChange={(e) =>
+                      setTimberForm((old) => ({
+                        ...old,
+                        title: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: Premium Teak Timber Planks"
+                  />
+                </div>
+
+                <div>
+                  <label>Wood Type *</label>
+                  <select
+                    className="sawmill-input"
+                    value={timberForm.wood_type}
+                    onChange={(e) =>
+                      setTimberForm((old) => ({
+                        ...old,
+                        wood_type: e.target.value,
+                      }))
+                    }
+                  >
+                    <option>Teak</option>
+                    <option>Patta Teak</option>
+                    <option>Indian Teak</option>
+                    <option>Burma Teak</option>
+                    <option>Imported Teak</option>
+                    <option>Neem</option>
+                    <option>Pine</option>
+                    <option>Rosewood</option>
+                    <option>Eucalyptus</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label>Product Type</label>
+                  <select
+                    className="sawmill-input"
+                    value={timberForm.product_type}
+                    onChange={(e) =>
+                      setTimberForm((old) => ({
+                        ...old,
+                        product_type: e.target.value,
+                      }))
+                    }
+                  >
+                    <option>Timber</option>
+                    <option>Timber Planks</option>
+                    <option>Logs</option>
+                    <option>Beams</option>
+                    <option>Battens</option>
+                    <option>Sawn Wood</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label>Quantity</label>
+                  <input
+                    className="sawmill-input"
+                    value={timberForm.quantity}
+                    onChange={(e) =>
+                      setTimberForm((old) => ({
+                        ...old,
+                        quantity: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: 50 CFT"
+                  />
+                </div>
+
+                <div>
+                  <label>Price</label>
+                  <input
+                    className="sawmill-input"
+                    value={timberForm.price}
+                    onChange={(e) =>
+                      setTimberForm((old) => ({
+                        ...old,
+                        price: e.target.value,
+                      }))
+                    }
+                    placeholder="Example: 45000"
+                  />
+                </div>
+
+                <div>
+                  <label>Location</label>
+                  <div className="sawmill-input-icon">
+                    <MapPin size={17} />
+                    <input
+                      value={timberForm.location}
+                      onChange={(e) =>
+                        setTimberForm((old) => ({
+                          ...old,
+                          location: e.target.value,
+                        }))
+                      }
+                      placeholder="Business location"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label>Description</label>
+                <textarea
+                  className="sawmill-input"
+                  rows="4"
+                  value={timberForm.description}
+                  onChange={(e) =>
+                    setTimberForm((old) => ({
+                      ...old,
+                      description: e.target.value,
+                    }))
+                  }
+                  placeholder="Describe timber grade, size, age, finish and availability..."
+                />
+              </div>
+
+              <div className="sawmill-upload-box">
+                <div className="sawmill-upload-title">
+                  <div>
+                    <UploadCloud size={22} />
+                    <strong>Upload Timber Photos</strong>
+                    <small>
+                      JPG, PNG or WebP • up to 5 MB each • up to 10 photos
+                    </small>
+                  </div>
+
+                  <label className="sawmill-upload-btn">
+                    <ImagePlus size={16} />
+                    Choose Photos
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleTimberPhotoSelect}
+                    />
+                  </label>
+                </div>
+
+                {timberPhotos.length > 0 && (
+                  <div className="sawmill-upload-preview">
+                    {timberPhotos.map((file, index) => (
+                      <div className="sawmill-upload-thumb" key={`${file.name}-${index}`}>
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt=""
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeTimberPhoto(index)}
+                        >
+                          <X size={14} />
+                        </button>
+                        {index === 0 && <span>Cover</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="sawmill-approval-note">
+                <CheckCircle2 size={18} />
+                <div>
+                  <strong>Admin approval required</strong>
+                  <span>
+                    After posting, the listing will remain Pending until an
+                    administrator approves it.
+                  </span>
+                </div>
+              </div>
+
+              <div className="sawmill-modal-buttons">
+                <button
+                  type="button"
+                  onClick={() => setShowTimberModal(false)}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary"
+                  disabled={timberSaving}
+                >
+                  {timberSaving ? "Uploading..." : "Submit for Approval"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          NOTIFICATION DRAWER
+      ===================================================== */}
+      {notificationOpen && (
+        <div
+          className="sawmill-notification-overlay"
+          onMouseDown={() => setNotificationOpen(false)}
+        >
+          <aside
+            className="sawmill-notification-drawer"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="sawmill-notification-head">
+              <div>
+                <span>LIVE ALERTS</span>
+                <h2>Notifications</h2>
+                <p>
+                  Admin approvals, nearby listings and TimberMart updates.
+                </p>
+              </div>
+
+              <button onClick={() => setNotificationOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="sawmill-notification-actions">
+              <span>{notifications.length} total</span>
+              <button onClick={markAllNotificationsRead}>
+                Mark all read
+              </button>
+            </div>
+
+            <div className="sawmill-notification-list">
+              {notificationLoading ? (
+                <div className="sawmill-notification-empty">
+                  Loading notifications...
+                </div>
+              ) : notifications.length === 0 ? (
+                <div className="sawmill-notification-empty">
+                  <BellRing size={28} />
+                  <strong>No notifications yet</strong>
+                  <span>
+                    New admin, approval and nearby notifications will appear here.
+                  </span>
+                </div>
+              ) : (
+                notifications.map((item) => (
+                  <button
+                    key={item.id}
+                    className={`sawmill-notification-item ${
+                      item.is_read ? "" : "unread"
+                    }`}
+                    onClick={() => openNotification(item)}
+                  >
+                    {item.image_url ? (
+                      <img
+                        src={item.image_url}
+                        alt=""
+                      />
+                    ) : (
+                      <div className="sawmill-notification-icon">
+                        {item.source === "admin" ||
+                        item.source === "admin_post"
+                          ? "🛡️"
+                          : item.distance_km
+                          ? "📍"
+                          : "🔔"}
+                      </div>
+                    )}
+
+                    <div>
+                      <div className="sawmill-notification-title">
+                        <strong>{item.title || "TimberMart Notification"}</strong>
+                        {!item.is_read && <i />}
+                      </div>
+
+                      {(item.source === "admin" ||
+                        item.source === "admin_post" ||
+                        item.sender_name === "TimberMart Admin") && (
+                        <span className="sawmill-admin-badge">
+                          TIMBERMART ADMIN
+                        </span>
+                      )}
+
+                      <p>{item.message || ""}</p>
+
+                      {item.distance_km != null && (
+                        <small>
+                          📍 {Number(item.distance_km).toFixed(1)} km away
+                        </small>
+                      )}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* =====================================================
+          TIMBER GALLERY
+      ===================================================== */}
+      {selectedListing && (
+        <div
+          className="sawmill-gallery-overlay"
+          onMouseDown={() => setSelectedListing(null)}
+        >
+          <div
+            className="sawmill-gallery-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="sawmill-gallery-head">
+              <div>
+                <span>TIMBER LISTING</span>
+                <h2>
+                  {selectedListing.title || "Timber Listing"}
+                </h2>
+                <p>
+                  {selectedListing.location || "Location not added"}
+                </p>
+              </div>
+
+              <button onClick={() => setSelectedListing(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {getListingImages(selectedListing).length > 0 ? (
+              <>
+                <div className="sawmill-gallery-main">
+                  <img
+                    src={
+                      getListingImages(selectedListing)[galleryIndex] ||
+                      getListingImages(selectedListing)[0]
+                    }
+                    alt={selectedListing.title || "Timber"}
+                  />
+
+                  {getListingImages(selectedListing).length > 1 && (
+                    <>
+                      <button
+                        className="sawmill-gallery-nav left"
+                        onClick={() =>
+                          setGalleryIndex((index) =>
+                            index === 0
+                              ? getListingImages(selectedListing).length - 1
+                              : index - 1
+                          )
+                        }
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+
+                      <button
+                        className="sawmill-gallery-nav right"
+                        onClick={() =>
+                          setGalleryIndex((index) =>
+                            index === getListingImages(selectedListing).length - 1
+                              ? 0
+                              : index + 1
+                          )
+                        }
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
+
+                  <span className="sawmill-gallery-counter">
+                    {galleryIndex + 1} / {getListingImages(selectedListing).length}
+                  </span>
+                </div>
+
+                <div className="sawmill-gallery-thumbs">
+                  {getListingImages(selectedListing).map((image, index) => (
+                    <button
+                      key={`${image}-${index}`}
+                      className={index === galleryIndex ? "active" : ""}
+                      onClick={() => setGalleryIndex(index)}
+                    >
+                      <img src={image} alt="" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="sawmill-gallery-no-photo">
+                🪵
+                <span>No photos uploaded</span>
+              </div>
+            )}
+
+            <div className="sawmill-gallery-info">
+              <div>
+                <small>Wood Type</small>
+                <strong>
+                  {selectedListing.wood_type || "Timber"}
+                </strong>
+              </div>
+              <div>
+                <small>Quantity</small>
+                <strong>
+                  {selectedListing.quantity || "On request"}
+                </strong>
+              </div>
+              <div>
+                <small>Price</small>
+                <strong>
+                  {selectedListing.price
+                    ? `₹ ${selectedListing.price}`
+                    : "On contact"}
+                </strong>
+              </div>
+              <div>
+                <small>Status</small>
+                <strong>
+                  {String(selectedListing.status || "Approved")}
+                </strong>
+              </div>
+            </div>
+
+            {selectedListing.description && (
+              <p className="sawmill-gallery-description">
+                {selectedListing.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          REQUIREMENT GALLERY
+      ===================================================== */}
+      {selectedRequirement && (
+        <div
+          className="sawmill-gallery-overlay"
+          onMouseDown={() => setSelectedRequirement(null)}
+        >
+          <div
+            className="sawmill-gallery-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="sawmill-gallery-head">
+              <div>
+                <span>REQUIREMENT</span>
+                <h2>
+                  {selectedRequirement.title || "Customer Requirement"}
+                </h2>
+                <p>
+                  {selectedRequirement.location || "Location not added"}
+                </p>
+              </div>
+
+              <button onClick={() => setSelectedRequirement(null)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            {getRequirementImages(selectedRequirement).length > 0 ? (
+              <>
+                <div className="sawmill-gallery-main">
+                  <img
+                    src={
+                      getRequirementImages(selectedRequirement)[galleryIndex] ||
+                      getRequirementImages(selectedRequirement)[0]
+                    }
+                    alt={selectedRequirement.title || "Requirement"}
+                  />
+
+                  {getRequirementImages(selectedRequirement).length > 1 && (
+                    <>
+                      <button
+                        className="sawmill-gallery-nav left"
+                        onClick={() =>
+                          setGalleryIndex((index) =>
+                            index === 0
+                              ? getRequirementImages(selectedRequirement).length - 1
+                              : index - 1
+                          )
+                        }
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+
+                      <button
+                        className="sawmill-gallery-nav right"
+                        onClick={() =>
+                          setGalleryIndex((index) =>
+                            index === getRequirementImages(selectedRequirement).length - 1
+                              ? 0
+                              : index + 1
+                          )
+                        }
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
+
+                  <span className="sawmill-gallery-counter">
+                    {galleryIndex + 1} / {getRequirementImages(selectedRequirement).length}
+                  </span>
+                </div>
+
+                <div className="sawmill-gallery-thumbs">
+                  {getRequirementImages(selectedRequirement).map((image, index) => (
+                    <button
+                      key={`${image}-${index}`}
+                      className={index === galleryIndex ? "active" : ""}
+                      onClick={() => setGalleryIndex(index)}
+                    >
+                      <img src={image} alt="" />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="sawmill-gallery-no-photo">
+                📋
+                <span>No photos uploaded</span>
+              </div>
+            )}
+
+            <div className="sawmill-gallery-info">
+              <div>
+                <small>Category</small>
+                <strong>
+                  {selectedRequirement.category_label ||
+                    selectedRequirement.category ||
+                    "Requirement"}
+                </strong>
+              </div>
+
+              <div>
+                <small>Quantity</small>
+                <strong>
+                  {selectedRequirement.quantity || "On request"}
+                </strong>
+              </div>
+
+              <div>
+                <small>Budget</small>
+                <strong>
+                  {selectedRequirement.budget
+                    ? `₹ ${selectedRequirement.budget}`
+                    : "Not specified"}
+                </strong>
+              </div>
+
+              <div>
+                <small>Location</small>
+                <strong>
+                  {selectedRequirement.location || "Not added"}
+                </strong>
+              </div>
+            </div>
+
+            {selectedRequirement.description && (
+              <p className="sawmill-gallery-description">
+                {selectedRequirement.description}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* =====================================================
           CHAT MODAL

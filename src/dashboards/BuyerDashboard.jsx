@@ -88,13 +88,17 @@ function formatDate(date) {
   });
 }
 
-function getListingImage(listing) {
-  if (listing?.listing_images?.length) {
-    return listing.listing_images
-      .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))[0]?.image_url;
-  }
+function getListingImages(listing) {
+  if (!listing?.listing_images?.length) return [];
 
-  return "";
+  return [...listing.listing_images]
+    .filter((item) => item?.image_url)
+    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+    .map((item) => item.image_url);
+}
+
+function getListingImage(listing) {
+  return getListingImages(listing)[0] || "";
 }
 
 export default function BuyerDashboard() {
@@ -119,6 +123,7 @@ export default function BuyerDashboard() {
   const [maxPrice, setMaxPrice] = useState("");
 
   const [selectedListing, setSelectedListing] = useState(null);
+  const [selectedDetailImage, setSelectedDetailImage] = useState("");
   const [selectedAdminPost, setSelectedAdminPost] = useState(null);
   const [selectedSeller, setSelectedSeller] = useState(null);
 
@@ -581,7 +586,9 @@ export default function BuyerDashboard() {
     // Requirement notification
     if (
       notification.requirement_id ||
-      notification.post_type === "requirement"
+      notification.post_type === "requirement" ||
+      notification.type === "requirement_approved" ||
+      notification.type === "requirement_rejected"
     ) {
       const requirementId =
         notification.requirement_id || notification.post_id;
@@ -589,7 +596,7 @@ export default function BuyerDashboard() {
       if (!requirementId) return;
 
       const { data, error } = await supabase
-        .from("requirements")
+        .from("buyer_requirements")
         .select("*")
         .eq("id", requirementId)
         .maybeSingle();
@@ -611,7 +618,11 @@ export default function BuyerDashboard() {
     }
 
     // Official Admin Post / Advertisement notification
-    if (notification.post_id || notification.source === "admin_post") {
+    if (
+      notification.post_id ||
+      notification.source === "admin_post" ||
+      ["announcement", "admin_post", "advertisement", "ad"].includes(String(notification.type || "").toLowerCase())
+    ) {
       const postId = notification.post_id;
 
       if (postId) {
@@ -918,8 +929,36 @@ export default function BuyerDashboard() {
      PRODUCT DETAILS
   ------------------------------------------------------- */
 
-  function openProduct(listing) {
+  async function openProduct(listing) {
+    if (!listing?.id) return;
+
+    // Use the already-loaded listing immediately so the modal opens fast.
+    const localImages = getListingImages(listing);
     setSelectedListing(listing);
+    setSelectedDetailImage(localImages[0] || "");
+
+    // Then fetch the complete listing again so every image/detail is present.
+    const { data, error } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        listing_images (
+          id,
+          image_url,
+          storage_path,
+          sort_order
+        )
+      `)
+      .eq("id", listing.id)
+      .maybeSingle();
+
+    if (!error && data) {
+      const images = getListingImages(data);
+      setSelectedListing(data);
+      setSelectedDetailImage(images[0] || "");
+    } else if (error) {
+      console.error("Product details error:", error);
+    }
   }
 
   /* -------------------------------------------------------
@@ -1346,20 +1385,6 @@ export default function BuyerDashboard() {
           >
             <Search size={18} />
             <span>Search Listings</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setActiveTab("orders");
-              setSidebarOpen(false);
-              document
-                .querySelector(".buyer-orders-section")
-                ?.scrollIntoView({ behavior: "smooth" });
-            }}
-          >
-            <Package size={18} />
-            <span>My Orders</span>
-            <b>{orders.length}</b>
           </button>
 
           <button
@@ -2368,197 +2393,270 @@ export default function BuyerDashboard() {
 
       {selectedListing && (
         <div
-          className="buyer-modal-backdrop"
+          className="buyer-modal-backdrop buyer-product-detail-backdrop"
           onClick={() => setSelectedListing(null)}
         >
-
           <div
-            className="buyer-product-modal"
+            className="buyer-product-modal buyer-product-detail-modal"
             onClick={(e) => e.stopPropagation()}
           >
-
             <button
               className="buyer-modal-close"
               onClick={() => setSelectedListing(null)}
+              aria-label="Close product details"
             >
               <X size={21} />
             </button>
 
-            <div className="buyer-detail-image">
+            {(() => {
+              const detailImages = getListingImages(selectedListing);
+              const activeImage =
+                selectedDetailImage || detailImages[0] || "";
 
-              {getListingImage(selectedListing) ? (
-                <img
-                  src={getListingImage(selectedListing)}
-                  alt={selectedListing.title}
-                />
-              ) : (
-                <div>🪵</div>
-              )}
+              return (
+                <div className="buyer-detail-layout">
+                  {/* ================= ALL PRODUCT PHOTOS ================= */}
+                  <div className="buyer-detail-gallery">
+                    <div className="buyer-detail-main-image">
+                      {activeImage ? (
+                        <img
+                          src={activeImage}
+                          alt={selectedListing.title || "Timber listing"}
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                          }}
+                        />
+                      ) : (
+                        <div className="buyer-detail-no-image">
+                          <span>🪵</span>
+                          <small>No photos available</small>
+                        </div>
+                      )}
 
-            </div>
+                      {detailImages.length > 0 && (
+                        <span className="buyer-detail-photo-count">
+                          {detailImages.length} photo{detailImages.length !== 1 ? "s" : ""}
+                        </span>
+                      )}
+                    </div>
 
-            <div className="buyer-detail-body">
-
-              <span className="buyer-detail-tag">
-                {selectedListing.wood_type ||
-                  selectedListing.product_type ||
-                  "Timber"}
-              </span>
-
-              <h2>{selectedListing.title}</h2>
-
-              <div className="buyer-detail-price">
-                {selectedListing.price
-                  ? `₹ ${selectedListing.price}`
-                  : "Price on contact"}
-              </div>
-
-              <div className="buyer-detail-quick">
-
-                <span>
-                  <Package size={16} />
-                  {selectedListing.quantity ||
-                    "Available quantity not specified"}
-                </span>
-
-                <span>
-                  <MapPin size={16} />
-                  {selectedListing.location ||
-                    "Location not specified"}
-                </span>
-
-              </div>
-
-              <div className="buyer-detail-info">
-
-                <h3>Product Information</h3>
-
-                {selectedListing.wood_type && (
-                  <div>
-                    <span>Wood Type</span>
-                    <strong>{selectedListing.wood_type}</strong>
+                    {detailImages.length > 0 && (
+                      <div className="buyer-detail-thumbnails">
+                        {detailImages.map((imageUrl, index) => (
+                          <button
+                            type="button"
+                            key={`${imageUrl}-${index}`}
+                            className={
+                              activeImage === imageUrl
+                                ? "buyer-detail-thumb active"
+                                : "buyer-detail-thumb"
+                            }
+                            onClick={() => setSelectedDetailImage(imageUrl)}
+                            aria-label={`View photo ${index + 1}`}
+                          >
+                            <img
+                              src={imageUrl}
+                              alt={`${selectedListing.title || "Timber"} ${index + 1}`}
+                            />
+                            <span>{index + 1}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
 
-                {selectedListing.product_type && (
-                  <div>
-                    <span>Product Type</span>
-                    <strong>
-                      {selectedListing.product_type}
-                    </strong>
+                  {/* ================= COMPLETE DETAILS ================= */}
+                  <div className="buyer-detail-body">
+                    <span className="buyer-detail-tag">
+                      {selectedListing.wood_type ||
+                        selectedListing.product_type ||
+                        selectedListing.category ||
+                        "Timber"}
+                    </span>
+
+                    <h2>{selectedListing.title || "Timber Listing"}</h2>
+
+                    <div className="buyer-detail-price">
+                      {selectedListing.price
+                        ? `₹ ${selectedListing.price}`
+                        : "Price on contact"}
+                    </div>
+
+                    <div className="buyer-detail-quick">
+                      <span>
+                        <Package size={16} />
+                        {selectedListing.quantity ||
+                          "Available quantity not specified"}
+                      </span>
+
+                      <span>
+                        <MapPin size={16} />
+                        {selectedListing.location ||
+                          "Location not specified"}
+                      </span>
+                    </div>
+
+                    <div className="buyer-detail-info">
+                      <h3>Complete Product Information</h3>
+
+                      <div>
+                        <span>Listing Title</span>
+                        <strong>{selectedListing.title || "—"}</strong>
+                      </div>
+
+                      <div>
+                        <span>Wood Type</span>
+                        <strong>
+                          {selectedListing.wood_type || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Product Type</span>
+                        <strong>
+                          {selectedListing.product_type || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Category</span>
+                        <strong>
+                          {selectedListing.category || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Service Type</span>
+                        <strong>
+                          {selectedListing.service_type || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Quantity / Stock</span>
+                        <strong>
+                          {selectedListing.quantity || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Price</span>
+                        <strong>
+                          {selectedListing.price
+                            ? `₹ ${selectedListing.price}`
+                            : "Price on contact"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Location</span>
+                        <strong>
+                          {selectedListing.location || "Not specified"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Posted On</span>
+                        <strong>
+                          {formatDate(selectedListing.created_at) || "—"}
+                        </strong>
+                      </div>
+
+                      <div>
+                        <span>Photos</span>
+                        <strong>
+                          {detailImages.length} uploaded
+                        </strong>
+                      </div>
+                    </div>
+
+                    <div className="buyer-description">
+                      <h3>Description</h3>
+                      <p>
+                        {selectedListing.description ||
+                          "The seller has not added a description for this listing."}
+                      </p>
+                    </div>
+
+                    <div className="buyer-seller-preview">
+                      <div className="buyer-seller-preview-avatar">
+                        👤
+                      </div>
+
+                      <div>
+                        <span>Seller</span>
+                        <strong>View seller profile</strong>
+                      </div>
+
+                      <button
+                        onClick={() =>
+                          openSellerProfile(selectedListing.user_id)
+                        }
+                        aria-label="View seller profile"
+                      >
+                        <ExternalLink size={16} />
+                      </button>
+                    </div>
+
+                    {/* ================= CALL / WHATSAPP / CHAT ================= */}
+                    <div className="buyer-contact-actions">
+                      <button
+                        className="buyer-call-btn"
+                        onClick={() =>
+                          callUser(selectedListing.user_id)
+                        }
+                      >
+                        <Phone size={18} />
+                        Call Seller
+                      </button>
+
+                      <button
+                        className="buyer-whatsapp-btn"
+                        onClick={() =>
+                          whatsappUser(
+                            selectedListing.user_id,
+                            "",
+                            selectedListing.title || "Timber"
+                          )
+                        }
+                      >
+                        WhatsApp
+                      </button>
+
+                      <button
+                        className="buyer-chat-btn"
+                        onClick={async () => {
+                          const { data } = await supabase
+                            .from("profiles")
+                            .select("*")
+                            .eq("id", selectedListing.user_id)
+                            .maybeSingle();
+
+                          if (data) {
+                            setSelectedListing(null);
+                            openChat(data);
+                          } else {
+                            alert("Seller profile could not be loaded.");
+                          }
+                        }}
+                      >
+                        <MessageCircle size={18} />
+                        Chat Now
+                      </button>
+                    </div>
+
+                    <button
+                      className="buyer-direct-deal-btn"
+                      onClick={() => createOrder(selectedListing)}
+                    >
+                      <ShoppingBag size={18} />
+                      Send Deal Request
+                    </button>
                   </div>
-                )}
-
-                {selectedListing.quantity && (
-                  <div>
-                    <span>Quantity</span>
-                    <strong>
-                      {selectedListing.quantity}
-                    </strong>
-                  </div>
-                )}
-
-                {selectedListing.location && (
-                  <div>
-                    <span>Location</span>
-                    <strong>
-                      {selectedListing.location}
-                    </strong>
-                  </div>
-                )}
-
-                <div>
-                  <span>Posted On</span>
-                  <strong>
-                    {formatDate(selectedListing.created_at)}
-                  </strong>
                 </div>
-
-              </div>
-
-              {selectedListing.description && (
-                <div className="buyer-description">
-                  <h3>Description</h3>
-                  <p>{selectedListing.description}</p>
-                </div>
-              )}
-
-              <div className="buyer-seller-preview">
-
-                <div className="buyer-seller-preview-avatar">
-                  👤
-                </div>
-
-                <div>
-                  <span>Seller</span>
-                  <strong>View seller profile</strong>
-                </div>
-
-                <button
-                  onClick={() =>
-                    openSellerProfile(
-                      selectedListing.user_id
-                    )
-                  }
-                >
-                  <ExternalLink size={16} />
-                </button>
-
-              </div>
-
-              <div className="buyer-contact-actions">
-
-                <button
-                  className="buyer-call-btn"
-                  onClick={() =>
-                    callUser(selectedListing.user_id)
-                  }
-                >
-                  <Phone size={18} />
-                  Call Seller
-                </button>
-
-                <button
-                  className="buyer-whatsapp-btn"
-                  onClick={() =>
-                    whatsappUser(selectedListing.user_id)
-                  }
-                >
-                  WhatsApp
-                </button>
-
-                <button
-                  className="buyer-chat-btn"
-                  onClick={async () => {
-                    const { data } = await supabase
-                      .from("profiles")
-                      .select("*")
-                      .eq("id", selectedListing.user_id)
-                      .maybeSingle();
-
-                    if (data) {
-                      openChat(data);
-                    }
-                  }}
-                >
-                  <MessageCircle size={18} />
-                  Chat Now
-                </button>
-
-              </div>
-
-              <button
-                className="buyer-direct-deal-btn"
-                onClick={() => createOrder(selectedListing)}
-              >
-                <ShoppingBag size={18} />
-                Send Deal Request
-              </button>
-
-            </div>
-
+              );
+            })()}
           </div>
-
         </div>
       )}
 

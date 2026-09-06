@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
   Bell,
+  LocateFixed,
   BriefcaseBusiness,
   Camera,
   Check,
@@ -10,6 +11,8 @@ import {
   Eye,
   Home,
   Image as ImageIcon,
+  Upload,
+  ShieldCheck,
   LogOut,
   MapPin,
   Menu,
@@ -51,6 +54,20 @@ export default function CarpenterDashboard() {
   const [serviceProfile, setServiceProfile] = useState(null);
   const [portfolio, setPortfolio] = useState([]);
   const [requirements, setRequirements] = useState([]);
+  const [timberListings, setTimberListings] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationLoading, setNotificationLoading] = useState(false);
+  const [locationUpdating, setLocationUpdating] = useState(false);
+  const [locationUpdatedAt, setLocationUpdatedAt] = useState(null);
+  const [selectedListing, setSelectedListing] = useState(null);
+  const [showListing, setShowListing] = useState(false);
+  const [showTimberForm, setShowTimberForm] = useState(false);
+  const [timberSaving, setTimberSaving] = useState(false);
+  const [timberError, setTimberError] = useState("");
+  const [timberPhotos, setTimberPhotos] = useState([]);
+  const [timberPhotoPreviews, setTimberPhotoPreviews] = useState([]);
+  const [timberForm, setTimberForm] = useState({ title:"", category:"timber_products", tree_type:"", quantity:"", quantity_unit:"Ton", price:"", condition:"", location:"", description:"" });
 
   const [mobileMenu, setMobileMenu] = useState(false);
   const [search, setSearch] = useState("");
@@ -150,6 +167,8 @@ export default function CarpenterDashboard() {
         loadServiceProfile(currentSession.user.id),
         loadPortfolio(currentSession.user.id),
         loadRequirements(),
+        loadTimberListings(currentSession.user.id),
+        loadNotifications(currentSession.user.id),
       ]);
     } catch (error) {
       console.error("Carpenter dashboard error:", error);
@@ -234,6 +253,424 @@ export default function CarpenterDashboard() {
 
     setRequirements(data || []);
   }
+
+
+  /* =========================================================
+     TIMBER LISTINGS
+     Loads listing_images so mobile/desktop can show ALL photos.
+  ========================================================= */
+  async function loadTimberListings(userId = session?.user?.id) {
+    const { data, error } = await supabase
+      .from("listings")
+      .select(`
+        *,
+        listing_images (
+          id,
+          image_url,
+          storage_path,
+          sort_order,
+          display_order
+        ),
+        profiles (
+          id,
+          name,
+          role,
+          phone,
+          location,
+          photo_url
+        )
+      `)
+      .in("role", ["farmer", "merchant", "timber_merchant", "sawmill", "sawmill_business", "carpenter"])
+      .or(`status.eq.approved,user_id.eq.${userId || "00000000-0000-0000-0000-000000000000"}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Carpenter timber listings error:", error);
+      setTimberListings([]);
+      return;
+    }
+
+    setTimberListings(data || []);
+  }
+
+  function getAllImages(item) {
+    if (!item) return [];
+
+    const relationImages = Array.isArray(item.listing_images)
+      ? item.listing_images
+          .slice()
+          .sort(
+            (a, b) =>
+              Number(a.display_order ?? a.sort_order ?? 0) -
+              Number(b.display_order ?? b.sort_order ?? 0)
+          )
+          .map((image) => image?.image_url)
+          .filter(Boolean)
+      : [];
+
+    const directImages = [
+      item.image_url,
+      item.photo_url,
+      ...(Array.isArray(item.images) ? item.images : []),
+      ...(Array.isArray(item.image_urls) ? item.image_urls : []),
+      ...(Array.isArray(item.photos) ? item.photos : []),
+    ].filter(Boolean);
+
+    return [...new Set([...relationImages, ...directImages])];
+  }
+
+  function getRequirementImages(item) {
+    if (!item) return [];
+    const values = [
+      item.image_url,
+      item.photo_url,
+      ...(Array.isArray(item.images) ? item.images : []),
+      ...(Array.isArray(item.image_urls) ? item.image_urls : []),
+      ...(Array.isArray(item.photos) ? item.photos : []),
+    ];
+    return [...new Set(values.filter(Boolean))];
+  }
+
+  /* =========================================================
+     CREATE TIMBER LISTING — DIRECT PHOTO UPLOAD + ADMIN APPROVAL
+  ========================================================= */
+  function openTimberForm() {
+    setTimberError("");
+    setTimberForm((p) => ({ ...p, location: profile?.location || serviceProfile?.location || "" }));
+    setShowTimberForm(true);
+  }
+
+  function handleTimberPhotos(event) {
+    const files = Array.from(event.target.files || []);
+    const valid = files.filter((file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024);
+    if (files.length !== valid.length) setTimberError("Only image files up to 5 MB each are allowed.");
+    const next = [...timberPhotos, ...valid].slice(0, 8);
+    setTimberPhotos(next);
+    setTimberPhotoPreviews(next.map((file) => URL.createObjectURL(file)));
+    event.target.value = "";
+  }
+
+  function removeTimberPhoto(index) {
+    const next = timberPhotos.filter((_, i) => i !== index);
+    setTimberPhotos(next);
+    setTimberPhotoPreviews(next.map((file) => URL.createObjectURL(file)));
+  }
+
+  async function publishCarpenterTimberListing(event) {
+    event.preventDefault();
+    const userId = session?.user?.id;
+    if (!userId) return setTimberError("Your session has expired. Please login again.");
+    const location = timberForm.location.trim() || profile?.location || serviceProfile?.location || "";
+    if (!timberForm.title.trim() || !timberForm.tree_type.trim() || !timberForm.quantity.trim()) return setTimberError("Please enter title, wood type and quantity.");
+    if (!location) return setTimberError("Please update your GPS location before posting.");
+    if (!timberPhotos.length) return setTimberError("Please upload at least one timber photo.");
+    try {
+      setTimberSaving(true); setTimberError("");
+      const { data: listing, error: listingError } = await supabase.from("listings").insert({
+        user_id: userId, role: "carpenter", status: "pending", category: timberForm.category,
+        tree_type: timberForm.tree_type.trim(), title: timberForm.title.trim(), wood_type: timberForm.tree_type.trim(),
+        product_type: timberForm.tree_type.trim(), quantity: timberForm.quantity.trim(), quantity_unit: timberForm.quantity_unit,
+        price: timberForm.price.trim() || null, condition: timberForm.condition.trim() || null, location,
+        description: timberForm.description.trim() || null, contact_preference: "Call / WhatsApp / Chat"
+      }).select("*").single();
+      if (listingError) throw listingError;
+      let uploaded = 0;
+      for (let i=0; i<timberPhotos.length; i++) {
+        const file = timberPhotos[i];
+        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${userId}/${listing.id}/${Date.now()}-${i}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("listing-photos").upload(path, file, { cacheControl:"3600", upsert:false, contentType:file.type });
+        if (uploadError) { console.error(uploadError); continue; }
+        const { data: urlData } = supabase.storage.from("listing-photos").getPublicUrl(path);
+        const imageUrl = urlData?.publicUrl;
+        if (!imageUrl) continue;
+        const { error: imageError } = await supabase.from("listing_images").insert({ listing_id:listing.id, user_id:userId, image_url:imageUrl, storage_path:path, sort_order:i });
+        if (!imageError) uploaded++;
+      }
+      if (!uploaded) { await supabase.from("listings").delete().eq("id", listing.id); throw new Error("Photos could not be uploaded. Check Supabase Storage policies."); }
+      setShowTimberForm(false); setTimberPhotos([]); setTimberPhotoPreviews([]);
+      setTimberForm({ title:"", category:"timber_products", tree_type:"", quantity:"", quantity_unit:"Ton", price:"", condition:"", location:profile?.location || serviceProfile?.location || "", description:"" });
+      await loadTimberListings(); await loadNotifications(userId);
+      alert("Timber listing submitted successfully. Admin approval is pending.");
+    } catch (error) { setTimberError(error?.message || "Unable to submit timber listing."); }
+    finally { setTimberSaving(false); }
+  }
+
+  /* =========================================================
+     NOTIFICATIONS
+     Admin announcements/posts arrive in this same inbox.
+  ========================================================= */
+  async function loadNotifications(userId = session?.user?.id) {
+    if (!userId) return;
+
+    setNotificationLoading(true);
+
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.error("Carpenter notifications error:", error);
+      setNotifications([]);
+    } else {
+      setNotifications(data || []);
+    }
+
+    setNotificationLoading(false);
+  }
+
+  async function markNotificationRead(notificationId) {
+    if (!notificationId || !session?.user?.id) return;
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("id", notificationId)
+      .eq("user_id", session.user.id);
+
+    if (!error) {
+      setNotifications((old) =>
+        old.map((item) =>
+          item.id === notificationId
+            ? { ...item, is_read: true }
+            : item
+        )
+      );
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    if (!session?.user?.id) return;
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ is_read: true })
+      .eq("user_id", session.user.id)
+      .eq("is_read", false);
+
+    if (!error) {
+      setNotifications((old) =>
+        old.map((item) => ({ ...item, is_read: true }))
+      );
+    }
+  }
+
+  async function openCarpenterNotification(notification) {
+    if (!notification) return;
+
+    await markNotificationRead(notification.id);
+
+    if (
+      notification.listing_id ||
+      notification.post_type === "listing"
+    ) {
+      const listingId =
+        notification.listing_id || notification.post_id;
+
+      const { data, error } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          listing_images (
+            id,
+            image_url,
+            storage_path,
+            sort_order,
+            display_order
+          ),
+          profiles (
+            id,
+            name,
+            role,
+            phone,
+            location,
+            photo_url
+          )
+        `)
+        .eq("id", listingId)
+        .maybeSingle();
+
+      if (!error && data) {
+        setSelectedListing(data);
+        setShowListing(true);
+        setShowNotifications(false);
+      }
+      return;
+    }
+
+    if (notification.post_id) {
+      const { data, error } = await supabase
+        .from("admin_posts")
+        .select("*")
+        .eq("id", notification.post_id)
+        .maybeSingle();
+
+      if (!error && data) {
+        setSelectedListing(null);
+        setShowNotifications(false);
+        alert(
+          `${data.title}\n\n${data.message}`
+        );
+      }
+    }
+  }
+
+  /* =========================================================
+     LOCATION
+     Browser GPS only. Coordinates are stored privately.
+  ========================================================= */
+  async function updateCarpenterLocation() {
+    if (!session?.user?.id) return;
+
+    if (!navigator.geolocation) {
+      alert("Location is not supported by this browser.");
+      return;
+    }
+
+    setLocationUpdating(true);
+
+    try {
+      const position = await new Promise((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
+          }
+        );
+      });
+
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
+
+      let readableLocation = profile?.location || "";
+
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`,
+          {
+            headers: {
+              Accept: "application/json",
+            },
+          }
+        );
+
+        if (response.ok) {
+          const geo = await response.json();
+          const address = geo.address || {};
+
+          readableLocation =
+            [
+              address.city ||
+                address.town ||
+                address.village ||
+                address.municipality,
+              address.district ||
+                address.county,
+              address.state,
+            ]
+              .filter(Boolean)
+              .join(", ") ||
+            geo.display_name ||
+            readableLocation;
+        }
+      } catch (geoError) {
+        console.warn("Reverse geocoding failed:", geoError);
+      }
+
+      const { data: updatedProfile, error } = await supabase
+        .from("profiles")
+        .update({
+          latitude,
+          longitude,
+          location: readableLocation,
+        })
+        .eq("id", session.user.id)
+        .select("*")
+        .single();
+
+      if (error) throw error;
+
+      setProfile(updatedProfile || {
+        ...profile,
+        latitude,
+        longitude,
+        location: readableLocation,
+      });
+
+      setServiceForm((old) => ({
+        ...old,
+        location: readableLocation || old.location,
+      }));
+
+      setLocationUpdatedAt(new Date().toISOString());
+      alert("📍 Location updated successfully.");
+    } catch (error) {
+      console.error("Carpenter location update error:", error);
+      alert(
+        error?.message ||
+          "Unable to update your location. Please allow browser location access."
+      );
+    } finally {
+      setLocationUpdating(false);
+    }
+  }
+
+  /* =========================================================
+     LIVE NOTIFICATIONS + LISTINGS
+  ========================================================= */
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    const notificationChannel = supabase
+      .channel(`carpenter-notifications-${session.user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          setNotifications((old) => [
+            payload.new,
+            ...old.filter((item) => item.id !== payload.new.id),
+          ]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(notificationChannel);
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel("carpenter-timber-listings-live")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "listings",
+        },
+        () => {
+          loadTimberListings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   function toggleSkill(skill) {
     setServiceForm((old) => ({
@@ -648,8 +1085,23 @@ export default function CarpenterDashboard() {
 
         <div className="carpenter-header-right">
 
-          <button className="carpenter-bell">
+          <button
+            className="carpenter-bell"
+            title="Notifications"
+            onClick={() => {
+              setShowNotifications(true);
+              loadNotifications(session?.user?.id);
+            }}
+          >
             <Bell size={20} />
+            {notifications.filter((item) => !item.is_read).length > 0 && (
+              <span className="carpenter-notification-count">
+                {Math.min(
+                  notifications.filter((item) => !item.is_read).length,
+                  99
+                )}
+              </span>
+            )}
           </button>
 
           <button
@@ -777,6 +1229,36 @@ export default function CarpenterDashboard() {
             <button
               onClick={() => {
                 setMobileMenu(false);
+                setShowNotifications(true);
+                loadNotifications(session.user.id);
+              }}
+            >
+              <Bell size={18} />
+              Notifications
+              {notifications.filter((item) => !item.is_read).length > 0 && (
+                <span className="carpenter-side-notification-badge">
+                  {Math.min(
+                    notifications.filter((item) => !item.is_read).length,
+                    99
+                  )}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => {
+                setMobileMenu(false);
+                updateCarpenterLocation();
+              }}
+              disabled={locationUpdating}
+            >
+              <LocateFixed size={18} />
+              {locationUpdating ? "Updating Location..." : "Update Location"}
+            </button>
+
+            <button
+              onClick={() => {
+                setMobileMenu(false);
                 openUserProfile(session.user.id);
               }}
             >
@@ -855,11 +1337,31 @@ export default function CarpenterDashboard() {
               </p>
 
 
-              <div className="carpenter-hero-location">
-                <MapPin size={16} />
-                {profile?.location ||
-                  serviceProfile?.location ||
-                  "Add your service location"}
+              <div className="carpenter-location-card">
+                <div className="carpenter-hero-location">
+                  <MapPin size={16} />
+                  {profile?.location ||
+                    serviceProfile?.location ||
+                    "Location not added"}
+                </div>
+
+                <div className="carpenter-location-actions">
+                  <span className={profile?.latitude && profile?.longitude ? "gps-on" : "gps-off"}>
+                    <span className="gps-dot" />
+                    {profile?.latitude && profile?.longitude
+                      ? "GPS Location Saved"
+                      : "GPS Location Not Set"}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={updateCarpenterLocation}
+                    disabled={locationUpdating}
+                  >
+                    <LocateFixed size={15} />
+                    {locationUpdating ? "Updating..." : "Update Location"}
+                  </button>
+                </div>
               </div>
 
 
@@ -1044,6 +1546,10 @@ export default function CarpenterDashboard() {
                 </small>
               </button>
 
+              <button className="carpenter-tool-highlight" onClick={openTimberForm}>
+                <span>🪵</span><strong>Post Timber Listing</strong><small>Upload photos & send for Admin approval</small>
+              </button>
+
             </div>
 
           </section>
@@ -1093,6 +1599,14 @@ export default function CarpenterDashboard() {
           {/* =================================================
               PORTFOLIO
           ================================================= */}
+
+          <section className="carpenter-listing-create-card" id="post-timber">
+            <div className="carpenter-listing-create-copy"><div className="carpenter-listing-create-icon">🪵</div><div>
+              <span className="carpenter-section-kicker">SELL ON TIMBERMART</span><h2>Post Timber Listing</h2>
+              <p>Upload real timber photos directly from your phone. New listings go to Admin Approval Center before buyers can see them.</p>
+              <div className="carpenter-approval-flow"><span><strong>1</strong> Upload</span><ChevronRight size={15}/><span><strong>2</strong> Admin Review</span><ChevronRight size={15}/><span><strong>3</strong> Approved</span></div>
+            </div></div><button className="carpenter-post-timber-btn" type="button" onClick={openTimberForm}><Plus size={18}/> Post Timber</button>
+          </section>
 
           <section
             className="carpenter-section"
@@ -1304,6 +1818,27 @@ export default function CarpenterDashboard() {
 
                         </div>
 
+                        {getRequirementImages(requirement).length > 0 && (
+                          <div className="carpenter-requirement-images">
+                            {getRequirementImages(requirement)
+                              .map((image, index) => (
+                                <img
+                                  key={`${requirement.id}-image-${index}`}
+                                  src={image}
+                                  alt={`${requirement.title || "Requirement"} ${index + 1}`}
+                                  loading="lazy"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = "none";
+                                  }}
+                                />
+                              ))}
+                            {getRequirementImages(requirement).length > 6 && (
+                              <span>
+                                +{getRequirementImages(requirement).length - 6}
+                              </span>
+                            )}
+                          </div>
+                        )}
 
                         <h3>
                           {requirement.title}
@@ -1373,6 +1908,130 @@ export default function CarpenterDashboard() {
 
           </section>
 
+
+          {/* =================================================
+              TIMBER LISTINGS
+              ALL listing photos are shown and mobile friendly.
+          ================================================= */}
+          <section className="carpenter-section" id="timber-listings">
+            <div className="carpenter-section-title">
+              <div>
+                <span className="carpenter-section-kicker">TIMBER MARKETPLACE</span>
+                <h2>Timber Listings</h2>
+                <p>
+                  View standing trees and timber products posted on TimberMart.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="carpenter-refresh-btn"
+                onClick={loadTimberListings}
+              >
+                ↻ Refresh
+              </button>
+            </div>
+
+            {timberListings.length === 0 ? (
+              <div className="carpenter-empty">
+                <div>🪵</div>
+                <h3>No timber listings available</h3>
+                <p>New farmer, merchant and sawmill listings will appear here.</p>
+              </div>
+            ) : (
+              <div className="carpenter-listing-grid">
+                {timberListings.map((listing) => {
+                  const images = getAllImages(listing);
+                  const seller = listing.profiles;
+                  const isTree = listing.category === "standing_trees";
+
+                  return (
+                    <article className="carpenter-timber-card" key={listing.id}>
+                      <button
+                        type="button"
+                        className="carpenter-listing-photo-button"
+                        onClick={() => {
+                          setSelectedListing(listing);
+                          setShowListing(true);
+                        }}
+                      >
+                        {images.length > 0 ? (
+                          <div className="carpenter-listing-photo-grid">
+                            {images.map((image, index) => (
+                              <img
+                                key={`${listing.id}-${image}-${index}`}
+                                src={image}
+                                alt={`${listing.title || "Timber"} ${index + 1}`}
+                                loading="lazy"
+                                onError={(event) => {
+                                  event.currentTarget.style.display = "none";
+                                }}
+                              />
+                            ))}
+                            {images.length > 6 && (
+                              <span className="carpenter-more-photos">
+                                +{images.length - 6} more
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="carpenter-listing-placeholder">
+                            {isTree ? "🌳" : "🪵"}
+                          </div>
+                        )}
+                      </button>
+
+                      <div className="carpenter-timber-card-body">
+                        <span className="carpenter-listing-type">
+                          {isTree ? "🌳 Standing Tree" : "🪵 Timber Product"}
+                        </span>
+                        <span className={`carpenter-listing-status ${String(listing.status || "").toLowerCase()}`}>
+                          {String(listing.status || "pending").toLowerCase() === "approved" ? "✓ Approved" : String(listing.status || "pending").toLowerCase() === "rejected" ? "✕ Rejected" : "◷ Pending Admin Approval"}
+                        </span>
+
+                        <h3>{listing.title || listing.wood_type || "Timber Listing"}</h3>
+
+                        <p>
+                          {listing.description ||
+                            listing.subcategory ||
+                            listing.wood_type ||
+                            "Timber available on TimberMart."}
+                        </p>
+
+                        <div className="carpenter-listing-meta">
+                          <span>
+                            <MapPin size={14} />
+                            {listing.location ||
+                              seller?.location ||
+                              "Location not added"}
+                          </span>
+
+                          {listing.quantity != null && (
+                            <span>Qty: {listing.quantity}</span>
+                          )}
+                        </div>
+
+                        <div className="carpenter-listing-footer">
+                          <small>
+                            {seller?.name || "TimberMart Seller"}
+                          </small>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedListing(listing);
+                              setShowListing(true);
+                            }}
+                          >
+                            View <Eye size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           {/* =================================================
               FOOTER DISCLAIMER
@@ -2286,6 +2945,20 @@ export default function CarpenterDashboard() {
 
               <div className="carpenter-detail-body">
 
+                {getRequirementImages(selectedRequirement).length > 0 && (
+                  <div className="carpenter-requirement-detail-images">
+                    {getRequirementImages(selectedRequirement).map(
+                      (image, index) => (
+                        <img
+                          key={`${selectedRequirement.id}-detail-${index}`}
+                          src={image}
+                          alt={`${selectedRequirement.title || "Requirement"} ${index + 1}`}
+                        />
+                      )
+                    )}
+                  </div>
+                )}
+
                 <div className="carpenter-detail-grid">
 
                   <div>
@@ -2739,6 +3412,229 @@ export default function CarpenterDashboard() {
 
           </div>
         )}
+
+      {/* =====================================================
+          NOTIFICATIONS PANEL
+      ===================================================== */}
+      {showNotifications && (
+        <div
+          className="carpenter-notification-overlay"
+          onMouseDown={() => setShowNotifications(false)}
+        >
+          <aside
+            className="carpenter-notification-panel"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="carpenter-notification-header">
+              <div>
+                <span>UPDATES</span>
+                <h2>Notifications</h2>
+                <small>TimberMart updates & admin announcements</small>
+              </div>
+              <button type="button" onClick={() => setShowNotifications(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="carpenter-notification-actions">
+              {notifications.some((item) => !item.is_read) && (
+                <button type="button" onClick={markAllNotificationsRead}>
+                  Mark all read
+                </button>
+              )}
+            </div>
+
+            <div className="carpenter-notification-body">
+              {notificationLoading ? (
+                <div className="carpenter-notification-empty">Loading notifications...</div>
+              ) : notifications.length === 0 ? (
+                <div className="carpenter-notification-empty">
+                  <Bell size={36} />
+                  <strong>No notifications</strong>
+                  <p>Admin announcements and TimberMart activity will appear here.</p>
+                </div>
+              ) : (
+                notifications.map((notification) => {
+                  const adminNotification =
+                    notification.source === "admin" ||
+                    notification.source === "admin_post" ||
+                    notification.sender_name === "TimberMart Admin";
+
+                  return (
+                    <button
+                      type="button"
+                      key={notification.id}
+                      className={`carpenter-notification-item ${
+                        !notification.is_read ? "unread" : ""
+                      }`}
+                      onClick={() => openCarpenterNotification(notification)}
+                    >
+                      <div className="carpenter-notification-icon">
+                        {adminNotification
+                          ? "📢"
+                          : notification.type === "message"
+                          ? "💬"
+                          : notification.post_type === "listing"
+                          ? "🪵"
+                          : "🔔"}
+                      </div>
+
+                      <div className="carpenter-notification-content">
+                        {adminNotification && (
+                          <span className="carpenter-admin-badge">TIMBERMART ADMIN</span>
+                        )}
+                        <strong>{notification.title || "TimberMart Notification"}</strong>
+                        <p>{notification.message || "You have a new TimberMart update."}</p>
+
+                        {notification.image_url && (
+                          <img
+                            className="carpenter-notification-image"
+                            src={notification.image_url}
+                            alt="TimberMart announcement"
+                            loading="lazy"
+                            onError={(event) => {
+                              event.currentTarget.style.display = "none";
+                            }}
+                          />
+                        )}
+
+                        <small>
+                          {notification.created_at
+                            ? new Date(notification.created_at).toLocaleString()
+                            : ""}
+                        </small>
+                      </div>
+
+                      {!notification.is_read && <span className="carpenter-notification-dot" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {showTimberForm && (
+        <div className="carpenter-modal-overlay" onMouseDown={() => !timberSaving && setShowTimberForm(false)}>
+          <div className="carpenter-modal carpenter-timber-create-modal" onMouseDown={(e)=>e.stopPropagation()}>
+            <div className="carpenter-modal-head"><div><span className="carpenter-section-kicker">NEW LISTING</span><h2>Post Timber Listing</h2><p>Upload photos directly — no photo URL required.</p></div><button className="carpenter-close" type="button" onClick={()=>!timberSaving&&setShowTimberForm(false)}><X size={20}/></button></div>
+            <form className="carpenter-timber-form" onSubmit={publishCarpenterTimberListing}>
+              {timberError && <div className="carpenter-form-error">{timberError}</div>}
+              <div className="carpenter-form-grid">
+                <label>Listing Title *<input value={timberForm.title} onChange={e=>setTimberForm(p=>({...p,title:e.target.value}))} placeholder="e.g. Seasoned Teak Wood"/></label>
+                <label>Wood / Timber Type *<input value={timberForm.tree_type} onChange={e=>setTimberForm(p=>({...p,tree_type:e.target.value}))} placeholder="Teak, Rosewood, Pine..."/></label>
+                <label>Quantity *<input value={timberForm.quantity} onChange={e=>setTimberForm(p=>({...p,quantity:e.target.value}))} placeholder="10"/></label>
+                <label>Unit<select value={timberForm.quantity_unit} onChange={e=>setTimberForm(p=>({...p,quantity_unit:e.target.value}))}><option>Ton</option><option>Kg</option><option>CFT</option><option>Piece</option><option>Load</option></select></label>
+                <label>Expected Price<input value={timberForm.price} onChange={e=>setTimberForm(p=>({...p,price:e.target.value}))} placeholder="₹ Expected price"/></label>
+                <label>Condition<select value={timberForm.condition} onChange={e=>setTimberForm(p=>({...p,condition:e.target.value}))}><option value="">Select condition</option><option>Fresh</option><option>Seasoned</option><option>Dry</option><option>Used / Reclaimed</option></select></label>
+              </div>
+              <label className="carpenter-full-field">Location *<div className="carpenter-location-input-row"><MapPin size={17}/><input value={timberForm.location} onChange={e=>setTimberForm(p=>({...p,location:e.target.value}))} placeholder="Current / saved location"/><button type="button" onClick={updateCarpenterLocation}><LocateFixed size={15}/> Update GPS</button></div></label>
+              <label className="carpenter-full-field">Description<textarea rows="4" value={timberForm.description} onChange={e=>setTimberForm(p=>({...p,description:e.target.value}))} placeholder="Describe timber quality, dimensions, usage, availability..."/></label>
+              <div className="carpenter-photo-upload-box"><div className="carpenter-photo-upload-top"><div><strong><ImageIcon size={18}/> Timber Photos *</strong><small>Up to 8 photos · JPG/PNG/WebP · max 5 MB each</small></div><label className="carpenter-upload-photo-btn"><Upload size={17}/> Choose Photos<input type="file" accept="image/*" multiple onChange={handleTimberPhotos}/></label></div>
+                {timberPhotoPreviews.length ? <div className="carpenter-timber-preview-grid">{timberPhotoPreviews.map((src,i)=><div className="carpenter-timber-preview" key={`${src}-${i}`}><img src={src} alt={`Timber ${i+1}`}/><button type="button" onClick={()=>removeTimberPhoto(i)}><X size={15}/></button>{i===0&&<span>Cover</span>}</div>)}</div> : <div className="carpenter-upload-empty"><Camera size={28}/><strong>Select timber photos</strong><span>Real photos help Admin review faster.</span></div>}
+              </div>
+              <div className="carpenter-approval-note"><ShieldCheck size={21}/><div><strong>Admin approval required</strong><span>Listing is saved as <b>Pending</b> and sent to Admin Approval Center.</span></div></div>
+              <div className="carpenter-form-actions"><button type="button" className="carpenter-secondary-btn" disabled={timberSaving} onClick={()=>setShowTimberForm(false)}>Cancel</button><button type="submit" className="carpenter-primary-btn" disabled={timberSaving}>{timberSaving?"Uploading & submitting...":"Submit for Admin Approval"}{!timberSaving&&<Check size={17}/>}</button></div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================
+          TIMBER LISTING DETAIL MODAL
+      ===================================================== */}
+      {showListing && selectedListing && (
+        <div
+          className="carpenter-modal-overlay"
+          onMouseDown={() => setShowListing(false)}
+        >
+          <div
+            className="carpenter-modal carpenter-listing-detail-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="carpenter-modal-header">
+              <div>
+                <span>TIMBER LISTING</span>
+                <h2>
+                  {selectedListing.title ||
+                    selectedListing.wood_type ||
+                    "Timber Listing"}
+                </h2>
+              </div>
+              <button className="carpenter-close" type="button" onClick={() => setShowListing(false)}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="carpenter-listing-detail-body">
+              {getAllImages(selectedListing).length > 0 ? (
+                <div className="carpenter-detail-image-gallery">
+                  {getAllImages(selectedListing).map((image, index) => (
+                    <img
+                      key={`${selectedListing.id}-full-${index}`}
+                      src={image}
+                      alt={`${selectedListing.title || "Timber"} ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="carpenter-listing-detail-placeholder">
+                  {selectedListing.category === "standing_trees" ? "🌳" : "🪵"}
+                </div>
+              )}
+
+              <div className="carpenter-detail-grid">
+                <div>
+                  <span>Category</span>
+                  <strong>
+                    {selectedListing.category === "standing_trees"
+                      ? "Standing Trees"
+                      : "Timber Products"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Wood Type</span>
+                  <strong>
+                    {selectedListing.wood_type || selectedListing.subcategory || "-"}
+                  </strong>
+                </div>
+                <div>
+                  <span>Quantity</span>
+                  <strong>{selectedListing.quantity ?? "-"}</strong>
+                </div>
+                <div>
+                  <span>Location</span>
+                  <strong>
+                    {selectedListing.location ||
+                      selectedListing.profiles?.location ||
+                      "-"}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="carpenter-detail-description">
+                <h4>Description</h4>
+                <p>{selectedListing.description || "No additional description."}</p>
+              </div>
+
+              <div className="carpenter-customer-detail">
+                <div className="carpenter-customer-avatar">
+                  {selectedListing.profiles?.photo_url ? (
+                    <img src={selectedListing.profiles.photo_url} alt="" />
+                  ) : (
+                    <User size={22} />
+                  )}
+                </div>
+                <div>
+                  <strong>{selectedListing.profiles?.name || "TimberMart Seller"}</strong>
+                  <span>{selectedListing.profiles?.role || "Seller"}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );
