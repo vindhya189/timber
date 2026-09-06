@@ -407,3 +407,1873 @@ textarea.sawmill-input{height:auto;padding:11px 12px;resize:vertical}
   .sawmill-myjob-icon{width:42px;height:42px}
   .sawmill-myjob>button{grid-column:2;justify-self:start}
 }
+
+
+/* =========================================================
+   FIXED TIMBER MARKETPLACE
+   Shows ALL seller timber posts + filters + 15-day expiry.
+   ========================================================= */
+
+.sawmill-timber-marketplace{
+  scroll-margin-top:90px;
+}
+
+.sawmill-marketplace-heading{
+  gap:18px;
+}
+
+.sawmill-section-kicker{
+  display:inline-flex;
+  align-items:center;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  margin-bottom:7px;
+  opacity:.72;
+}
+
+.sawmill-marketplace-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  gap:8px;
+}
+
+.sawmill-marketplace-actions button{
+  border:1px solid var(--sm-border,#dfe6df);
+  background:#fff;
+  color:var(--sm-ink,#1f2b20);
+  min-height:40px;
+  padding:8px 12px;
+  border-radius:10px;
+  font-weight:800;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+
+.sawmill-marketplace-actions button.active{
+  background:var(--sm-green,#2f7045);
+  color:#fff;
+  border-color:var(--sm-green,#2f7045);
+}
+
+.sawmill-marketplace-actions button.primary{
+  background:var(--sm-green,#2f7045);
+  color:#fff;
+  border-color:var(--sm-green,#2f7045);
+}
+
+.sawmill-marketplace-summary{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  margin:14px 0 18px;
+  padding:12px 14px;
+  border:1px solid var(--sm-border,#dfe6df);
+  border-radius:12px;
+  background:#f8fbf8;
+  font-size:14px;
+}
+
+.sawmill-marketplace-summary strong{
+  font-weight:900;
+}
+
+.sawmill-timber-market-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:18px;
+}
+
+.sawmill-timber-card{
+  min-width:0;
+  overflow:hidden;
+  border:1px solid var(--sm-border,#dfe6df);
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 8px 26px rgba(30,60,35,.07);
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+
+.sawmill-timber-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 14px 34px rgba(30,60,35,.11);
+}
+
+.sawmill-timber-card.expired{
+  opacity:.78;
+}
+
+.sawmill-timber-card-image{
+  position:relative;
+  height:220px;
+  overflow:hidden;
+  background:#e9eee9;
+}
+
+.sawmill-timber-card-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.sawmill-timber-image-placeholder{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  font-size:56px;
+}
+
+.sawmill-listing-status{
+  position:absolute;
+  top:11px;
+  left:11px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:#e5f4e8;
+  color:#22613a;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.05em;
+}
+
+.sawmill-listing-status.pending{
+  background:#fff3cd;
+  color:#795900;
+}
+
+.sawmill-listing-status.expired{
+  background:#ffe1e1;
+  color:#9b2d2d;
+}
+
+.sawmill-photo-count{
+  position:absolute;
+  right:11px;
+  bottom:11px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(20,27,22,.78);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+}
+
+.sawmill-timber-card-body{
+  padding:17px;
+}
+
+.sawmill-timber-type-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+  margin-bottom:8px;
+}
+
+.sawmill-timber-type-row span{
+  padding:5px 8px;
+  border-radius:7px;
+  background:#edf6ef;
+  color:#28613b;
+  font-size:11px;
+  font-weight:900;
+}
+
+.sawmill-timber-card-body h3{
+  margin:4px 0 9px;
+  font-size:20px;
+  line-height:1.25;
+}
+
+.sawmill-timber-seller,
+.sawmill-timber-location{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin:6px 0;
+  color:#657066;
+  font-size:13px;
+}
+
+.sawmill-timber-seller strong{
+  color:#27352a;
+}
+
+.sawmill-timber-details{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin:14px 0;
+  padding:12px 0;
+  border-top:1px solid #edf0ed;
+  border-bottom:1px solid #edf0ed;
+}
+
+.sawmill-timber-details div{
+  min-width:0;
+}
+
+.sawmill-timber-details small,
+.sawmill-expiry-box small{
+  display:block;
+  margin-bottom:4px;
+  color:#778178;
+  font-size:11px;
+  font-weight:700;
+}
+
+.sawmill-timber-details strong{
+  font-size:14px;
+  word-break:break-word;
+}
+
+.sawmill-expiry-box{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 11px;
+  border:1px solid #dbeadf;
+  border-radius:11px;
+  background:#f3faf4;
+  color:#2d6840;
+}
+
+.sawmill-expiry-box.expired{
+  border-color:#f0cccc;
+  background:#fff5f5;
+  color:#a13636;
+}
+
+.sawmill-expiry-box div{
+  min-width:0;
+  flex:1;
+}
+
+.sawmill-expiry-box strong{
+  display:block;
+  font-size:13px;
+}
+
+.sawmill-expiry-box>b{
+  white-space:nowrap;
+  font-size:11px;
+}
+
+.sawmill-timber-card-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:13px;
+}
+
+.sawmill-timber-card-footer small{
+  color:#788178;
+  font-size:11px;
+}
+
+.sawmill-timber-card-footer button{
+  border:0;
+  background:#285f3b;
+  color:#fff;
+  border-radius:9px;
+  padding:9px 11px;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  font-weight:900;
+  font-size:12px;
+}
+
+.sawmill-timber-empty button{
+  cursor:pointer;
+}
+
+.sawmill-listing-contact-row{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid #e9eee9;
+}
+
+.sawmill-listing-contact-row>span{
+  flex:1 1 100%;
+  font-weight:800;
+  color:#304033;
+}
+
+.sawmill-listing-contact-row button{
+  border:1px solid #d7e2d8;
+  background:#f8fbf8;
+  color:#245d37;
+  border-radius:9px;
+  padding:8px 10px;
+  font-weight:800;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+
+.sawmill-lang-te .sawmill-timber-card-body,
+.sawmill-lang-te .sawmill-marketplace-summary,
+.sawmill-lang-te .sawmill-marketplace-actions button{
+  font-family:"Noto Sans Telugu","Nirmala UI","Gautami",sans-serif;
+}
+
+.sawmill-lang-te .sawmill-timber-card-body h3{
+  font-size:21px;
+}
+
+@media(max-width:1050px){
+  .sawmill-timber-market-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .sawmill-marketplace-heading{
+    align-items:flex-start;
+  }
+  .sawmill-marketplace-actions{
+    justify-content:flex-start;
+    width:100%;
+  }
+}
+
+@media(max-width:700px){
+  .sawmill-timber-market-grid{
+    grid-template-columns:1fr;
+  }
+  .sawmill-timber-card-image{
+    height:230px;
+  }
+  .sawmill-marketplace-summary{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .sawmill-marketplace-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+  .sawmill-marketplace-actions button{
+    justify-content:center;
+  }
+  .sawmill-marketplace-actions button.primary{
+    grid-column:1/-1;
+  }
+}
+
+@media(max-width:430px){
+  .sawmill-marketplace-actions{
+    grid-template-columns:1fr;
+  }
+  .sawmill-marketplace-actions button.primary{
+    grid-column:auto;
+  }
+  .sawmill-timber-card-footer{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .sawmill-timber-card-footer button{
+    width:100%;
+    justify-content:center;
+  }
+}
+
+
+/* =========================================================
+   FINAL TIMBER VIEW + SELL TREE FORM
+   ========================================================= */
+
+.sawmill-timber-marketplace{
+  scroll-margin-top:92px;
+}
+
+.sawmill-marketplace-heading{
+  align-items:flex-start;
+}
+
+.sawmill-marketplace-actions{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
+
+.sawmill-marketplace-actions button{
+  border:1px solid #d7e1d7;
+  background:#fff;
+  color:#263629;
+  border-radius:10px;
+  min-height:42px;
+  padding:9px 13px;
+  font-weight:850;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+}
+
+.sawmill-marketplace-actions button.active,
+.sawmill-marketplace-actions button.primary{
+  background:#2d6a3f;
+  color:#fff;
+  border-color:#2d6a3f;
+}
+
+.sawmill-marketplace-summary{
+  margin:16px 0;
+  padding:13px 16px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  border:1px solid #e0e8df;
+  border-radius:12px;
+  background:#f7faf7;
+}
+
+.sawmill-timber-market-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:20px;
+}
+
+.sawmill-timber-card{
+  overflow:hidden;
+  background:#fff;
+  border:1px solid #dfe7df;
+  border-radius:16px;
+  box-shadow:0 8px 26px rgba(30,55,34,.07);
+}
+
+.sawmill-timber-card-image{
+  height:235px;
+  position:relative;
+  overflow:hidden;
+  background:#edf2ed;
+}
+
+.sawmill-timber-card-image img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+
+.sawmill-timber-no-image{
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:64px;
+}
+
+.sawmill-status-badge,
+.sawmill-photo-count{
+  position:absolute;
+  top:12px;
+  border-radius:999px;
+  padding:7px 10px;
+  font-size:11px;
+  font-weight:900;
+}
+
+.sawmill-status-badge{
+  left:12px;
+  background:#e1f5e6;
+  color:#216039;
+}
+
+.sawmill-status-badge.expired{
+  background:#ffe3e3;
+  color:#a22d2d;
+}
+
+.sawmill-photo-count{
+  right:12px;
+  background:rgba(0,0,0,.68);
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+.sawmill-timber-card-body{
+  padding:18px;
+}
+
+.sawmill-timber-card-topline{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+}
+
+.sawmill-timber-card-topline span{
+  color:#2c7044;
+  font-size:12px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+.sawmill-timber-card-topline small{
+  color:#6c776d;
+  font-weight:800;
+}
+
+.sawmill-timber-card-body h3{
+  margin:8px 0 5px;
+  font-size:21px;
+  line-height:1.25;
+}
+
+.sawmill-timber-seller,
+.sawmill-timber-location{
+  margin:6px 0;
+  color:#657066;
+  font-size:13px;
+}
+
+.sawmill-timber-location{
+  display:flex;
+  align-items:flex-start;
+  gap:5px;
+}
+
+.sawmill-timber-details{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:15px;
+  padding:13px 0;
+  border-top:1px solid #edf0ed;
+  border-bottom:1px solid #edf0ed;
+}
+
+.sawmill-timber-details div{
+  min-width:0;
+}
+
+.sawmill-timber-details small,
+.sawmill-expiry-box small,
+.sawmill-gallery-extra-details small{
+  display:block;
+  margin-bottom:4px;
+  color:#788178;
+  font-size:11px;
+  font-weight:750;
+}
+
+.sawmill-timber-details strong{
+  display:block;
+  font-size:14px;
+  word-break:break-word;
+}
+
+.sawmill-expiry-box{
+  margin-top:12px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:10px 11px;
+  border:1px solid #d7e9da;
+  border-radius:11px;
+  background:#f3faf4;
+  color:#2d6840;
+}
+
+.sawmill-expiry-box.expired{
+  border-color:#efcaca;
+  background:#fff5f5;
+  color:#a13636;
+}
+
+.sawmill-expiry-box div{
+  min-width:0;
+  flex:1;
+}
+
+.sawmill-expiry-box strong{
+  display:block;
+  font-size:13px;
+}
+
+.sawmill-expiry-box>b{
+  white-space:nowrap;
+  font-size:11px;
+}
+
+.sawmill-timber-card-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:14px;
+}
+
+.sawmill-timber-card-footer small{
+  color:#7b847c;
+  font-size:11px;
+}
+
+.sawmill-timber-card-footer button{
+  border:0;
+  background:#2b673e;
+  color:#fff;
+  border-radius:9px;
+  padding:10px 14px;
+  font-weight:900;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.sawmill-gallery-extra-details{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+  margin:14px 18px 0;
+  padding:14px;
+  border:1px solid #e0e7e0;
+  border-radius:12px;
+  background:#fafcf9;
+}
+
+.sawmill-gallery-extra-details strong{
+  display:block;
+  font-size:13px;
+  word-break:break-word;
+}
+
+.sawmill-gallery-expiry{
+  margin:14px 18px 0;
+  padding:12px 14px;
+  border-radius:11px;
+  background:#edf8ef;
+  color:#27633a;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.sawmill-gallery-expiry.expired{
+  background:#fff0f0;
+  color:#a13636;
+}
+
+.sawmill-listing-contact-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:9px;
+  align-items:center;
+  margin:16px 18px 18px;
+  padding-top:15px;
+  border-top:1px solid #e6ebe6;
+}
+
+.sawmill-listing-contact-row>span{
+  flex:1 1 100%;
+  font-weight:900;
+  color:#304034;
+}
+
+.sawmill-listing-contact-row button{
+  border:1px solid #cfded1;
+  background:#f7fbf7;
+  color:#245f37;
+  border-radius:9px;
+  padding:10px 13px;
+  font-weight:850;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+
+.sawmill-listing-contact-row button:hover{
+  background:#e9f4ea;
+}
+
+.sawmill-listing-contact-row button:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+/* SellTreeForm is a full-screen modal, so the dashboard stays usable underneath. */
+.sell-tree-overlay{
+  z-index:10050 !important;
+}
+
+.sawmill-sidebar .sawmill-nav button{
+  cursor:pointer;
+}
+
+.sawmill-sidebar .sawmill-nav button.active{
+  background:#e9f4ea;
+  color:#245f37;
+}
+
+@media(max-width:1050px){
+  .sawmill-timber-market-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .sawmill-gallery-extra-details{
+    grid-template-columns:repeat(2,1fr);
+  }
+  .sawmill-marketplace-actions{
+    width:100%;
+    justify-content:flex-start;
+  }
+}
+
+@media(max-width:650px){
+  .sawmill-timber-market-grid{
+    grid-template-columns:1fr;
+  }
+  .sawmill-timber-card-image{
+    height:220px;
+  }
+  .sawmill-gallery-extra-details{
+    grid-template-columns:1fr;
+    margin-left:12px;
+    margin-right:12px;
+  }
+  .sawmill-gallery-expiry,
+  .sawmill-listing-contact-row{
+    margin-left:12px;
+    margin-right:12px;
+  }
+  .sawmill-marketplace-actions button{
+    flex:1 1 calc(50% - 8px);
+    justify-content:center;
+  }
+  .sawmill-lang-te .sawmill-timber-card-body{
+    font-family:"Noto Sans Telugu","Nirmala UI","Gautami",sans-serif;
+  }
+}
+
+
+/* ================= EMBEDDED SELL TREE FORM STYLES ================= */
+/* =========================================================
+   TIMBERMART SELL TREE
+========================================================= */
+
+.sell-tree-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 18, 0.62);
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 22px;
+}
+
+.sell-tree-modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 44px);
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+}
+
+/* HEADER */
+
+.sell-tree-header {
+  min-height: 74px;
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e8eee9;
+}
+
+.sell-tree-brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.sell-tree-brand-icon {
+  width: 43px;
+  height: 43px;
+  border-radius: 13px;
+  background: #e9f5ec;
+  color: #217a3c;
+  display: grid;
+  place-items: center;
+}
+
+.sell-tree-brand strong {
+  display: block;
+  font-size: 18px;
+  color: #173a25;
+}
+
+.sell-tree-brand span {
+  display: block;
+  font-size: 12px;
+  color: #789080;
+  margin-top: 2px;
+}
+
+.sell-tree-close {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #f5f7f5;
+  color: #53655a;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sell-tree-close:hover {
+  background: #edf1ed;
+}
+
+/* PROGRESS */
+
+.sell-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding: 18px 28px;
+  background: #fbfcfb;
+  border-bottom: 1px solid #edf1ee;
+}
+
+.sell-progress-item {
+  color: #9aa69f;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sell-progress-item span {
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #edf0ee;
+  color: #7b877f;
+  font-size: 12px;
+}
+
+.sell-progress-item.active {
+  color: #217a3c;
+}
+
+.sell-progress-item.active span {
+  background: #217a3c;
+  color: white;
+}
+
+/* BODY */
+
+.sell-tree-body {
+  overflow-y: auto;
+  padding: 30px;
+  flex: 1;
+}
+
+.sell-step {
+  max-width: 900px;
+  margin: auto;
+}
+
+.sell-step-heading {
+  margin-bottom: 25px;
+}
+
+.sell-step-heading > span {
+  font-size: 11px;
+  font-weight: 800;
+  color: #2c8a48;
+  letter-spacing: 0.1em;
+}
+
+.sell-step-heading h2 {
+  margin: 7px 0 7px;
+  color: #183a25;
+  font-size: 28px;
+}
+
+.sell-step-heading p {
+  margin: 0;
+  color: #718078;
+  line-height: 1.6;
+}
+
+/* CATEGORY */
+
+.sell-category-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.sell-category-card {
+  position: relative;
+  border: 1.5px solid #e1e9e3;
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.sell-category-card:hover {
+  border-color: #9fc5a9;
+  transform: translateY(-2px);
+}
+
+.sell-category-card.selected {
+  border-color: #278345;
+  background: #f2faf4;
+  box-shadow: 0 8px 24px rgba(39, 131, 69, 0.1);
+}
+
+.sell-category-icon {
+  font-size: 36px;
+  margin-bottom: 15px;
+}
+
+.sell-category-card strong {
+  color: #183a25;
+  font-size: 16px;
+}
+
+.sell-category-card p {
+  margin: 7px 0 0;
+  color: #77857d;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.sell-selected-icon {
+  position: absolute;
+  top: 17px;
+  right: 17px;
+  color: #278345;
+}
+
+/* DEPENDENT */
+
+.sell-dependent-box {
+  margin-top: 22px;
+  padding: 20px;
+  border-radius: 17px;
+  background: #f7faf7;
+  border: 1px solid #e2ebe4;
+}
+
+.sell-dependent-box label,
+.sell-field label {
+  display: block;
+  margin-bottom: 8px;
+  color: #30463a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.sell-dependent-box label span,
+.sell-field label span {
+  color: #d54a4a;
+}
+
+.sell-dependent-box select,
+.sell-field input,
+.sell-field select,
+.sell-field textarea {
+  width: 100%;
+  border: 1px solid #d9e2dc;
+  background: #fff;
+  border-radius: 11px;
+  min-height: 46px;
+  padding: 11px 13px;
+  font: inherit;
+  color: #25372d;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.sell-dependent-box select:focus,
+.sell-field input:focus,
+.sell-field select:focus,
+.sell-field textarea:focus {
+  border-color: #4c9c61;
+  box-shadow: 0 0 0 3px rgba(76, 156, 97, 0.1);
+}
+
+.sell-info-note {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: #eef8f0;
+  color: #356744;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* FORM */
+
+.sell-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.sell-full {
+  grid-column: 1 / -1;
+}
+
+.sell-field small {
+  display: block;
+  margin-top: 6px;
+  color: #89958e;
+  font-size: 11px;
+}
+
+.sell-input-icon {
+  position: relative;
+}
+
+.sell-input-icon svg {
+  position: absolute;
+  left: 13px;
+  top: 14px;
+  color: #6d8575;
+}
+
+.sell-input-icon input {
+  padding-left: 40px;
+}
+
+/* SUMMARY */
+
+.sell-selected-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f5faf6;
+  border: 1px solid #dfece2;
+  border-radius: 15px;
+  padding: 14px 17px;
+  margin-bottom: 20px;
+}
+
+.sell-selected-summary > span {
+  font-size: 28px;
+}
+
+.sell-selected-summary small {
+  display: block;
+  color: #849087;
+  font-size: 11px;
+}
+
+.sell-selected-summary strong {
+  display: block;
+  margin-top: 3px;
+  color: #234531;
+}
+
+/* PHOTOS */
+
+.sell-photo-upload {
+  min-height: 230px;
+  border: 2px dashed #b9d2be;
+  background: #f8fbf8;
+  border-radius: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  cursor: pointer;
+  text-align: center;
+  padding: 25px;
+}
+
+.sell-photo-upload input {
+  display: none;
+}
+
+.sell-photo-upload-icon {
+  width: 60px;
+  height: 60px;
+  background: #e8f4ea;
+  color: #278345;
+  border-radius: 17px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 13px;
+}
+
+.sell-photo-upload strong {
+  color: #244432;
+}
+
+.sell-photo-upload span {
+  margin-top: 6px;
+  color: #7c8981;
+  font-size: 12px;
+}
+
+.sell-photo-upload small {
+  margin-top: 5px;
+  color: #9ba69f;
+}
+
+.sell-photo-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 13px;
+}
+
+.sell-photo-preview {
+  position: relative;
+  aspect-ratio: 1.2;
+  overflow: hidden;
+  border-radius: 13px;
+  background: #eef1ee;
+}
+
+.sell-photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sell-photo-preview button {
+  position: absolute;
+  right: 7px;
+  top: 7px;
+  width: 31px;
+  height: 31px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.65);
+  color: white;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.sell-photo-preview span {
+  position: absolute;
+  left: 7px;
+  bottom: 7px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(24, 58, 37, 0.85);
+  color: white;
+  font-size: 10px;
+}
+
+.sell-photo-tip {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 15px;
+  border-radius: 13px;
+  background: #f5f8f5;
+  color: #607066;
+}
+
+.sell-photo-tip svg {
+  flex-shrink: 0;
+  color: #2c8a48;
+}
+
+.sell-photo-tip strong {
+  color: #2d4737;
+  font-size: 13px;
+}
+
+.sell-photo-tip p {
+  margin: 4px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* REVIEW */
+
+.sell-review-card {
+  border: 1px solid #e0e8e2;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.sell-review-title {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  background: #f6faf7;
+  border-bottom: 1px solid #e2ebe4;
+}
+
+.sell-review-title > span {
+  font-size: 35px;
+}
+
+.sell-review-title small {
+  color: #7d8c83;
+  font-size: 11px;
+}
+
+.sell-review-title h3 {
+  margin: 3px 0;
+  color: #1c3d28;
+  font-size: 19px;
+}
+
+.sell-review-title strong {
+  color: #2d8246;
+  font-size: 13px;
+}
+
+.sell-review-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  padding: 18px;
+  gap: 1px;
+  background: #e7ede8;
+}
+
+.sell-review-item {
+  background: white;
+  padding: 14px;
+}
+
+.sell-review-item span {
+  display: block;
+  color: #87938c;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.sell-review-item strong {
+  color: #294234;
+  font-size: 13px;
+}
+
+.sell-review-description {
+  padding: 18px;
+}
+
+.sell-review-description strong {
+  color: #2b4335;
+  font-size: 13px;
+}
+
+.sell-review-description p {
+  color: #697970;
+  font-size: 13px;
+  line-height: 1.6;
+  margin-bottom: 0;
+}
+
+.sell-publish-note {
+  margin-top: 17px;
+  display: flex;
+  gap: 10px;
+  padding: 14px;
+  background: #f0f8f2;
+  color: #3d6648;
+  border-radius: 12px;
+}
+
+.sell-publish-note svg {
+  flex-shrink: 0;
+  color: #2d8748;
+}
+
+.sell-publish-note p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* ERROR */
+
+.sell-error {
+  margin-top: 18px;
+  padding: 13px 15px;
+  background: #fff1f1;
+  color: #b52f2f;
+  border: 1px solid #f2d3d3;
+  border-radius: 11px;
+  font-size: 13px;
+}
+
+/* SUCCESS */
+
+.sell-success {
+  min-height: 430px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.sell-success-icon {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: #e8f7eb;
+  color: #278345;
+  display: grid;
+  place-items: center;
+  margin-bottom: 20px;
+}
+
+.sell-success h2 {
+  color: #193d27;
+  font-size: 28px;
+  margin: 0 0 9px;
+}
+
+.sell-success p {
+  color: #728078;
+  margin: 0;
+}
+
+.sell-success-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 12px 18px;
+  background: #f3f8f4;
+  border-radius: 12px;
+  color: #2b6d3d;
+  font-weight: 700;
+}
+
+.sell-success small {
+  margin-top: 12px;
+  color: #8a958e;
+}
+
+/* FOOTER */
+
+.sell-tree-footer {
+  min-height: 72px;
+  padding: 13px 25px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #e7ece8;
+  background: #fff;
+}
+
+.sell-back-button,
+.sell-next-button,
+.sell-publish-button {
+  min-height: 45px;
+  border-radius: 11px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.sell-back-button {
+  background: #f3f5f3;
+  color: #56665c;
+}
+
+.sell-next-button,
+.sell-publish-button {
+  background: #267d40;
+  color: white;
+}
+
+.sell-next-button:hover,
+.sell-publish-button:hover {
+  background: #1f6c36;
+}
+
+.sell-button-spinner {
+  width: 17px;
+  height: 17px;
+  border: 2px solid rgba(255,255,255,.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: sellSpin .7s linear infinite;
+}
+
+@keyframes sellSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* MOBILE */
+
+@media (max-width: 760px) {
+
+  .sell-tree-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .sell-tree-modal {
+    width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border-radius: 0;
+  }
+
+  .sell-tree-header {
+    padding: 12px 15px;
+  }
+
+  .sell-progress {
+    padding: 13px 15px;
+    gap: 5px;
+  }
+
+  .sell-progress-item {
+    font-size: 0;
+    justify-content: center;
+  }
+
+  .sell-progress-item span {
+    font-size: 11px;
+  }
+
+  .sell-tree-body {
+    padding: 22px 16px;
+  }
+
+  .sell-step-heading h2 {
+    font-size: 23px;
+  }
+
+  .sell-category-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-category-card {
+    padding: 17px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .sell-category-icon {
+    font-size: 30px;
+    margin: 0;
+  }
+
+  .sell-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-full {
+    grid-column: auto;
+  }
+
+  .sell-photo-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .sell-review-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sell-tree-footer {
+    padding: 11px 15px;
+  }
+
+  .sell-back-button,
+  .sell-next-button,
+  .sell-publish-button {
+    min-height: 44px;
+  }
+}
+
+/* =========================================================
+   MULTI-LANGUAGE HEADER
+========================================================= */
+.sell-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sell-language {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #dce6de;
+  border-radius: 11px;
+  background: #f7faf7;
+  color: #2f4939;
+}
+
+.sell-language svg {
+  color: #2c8a48;
+  flex-shrink: 0;
+}
+
+.sell-language select {
+  min-height: 36px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #294234;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================================================
+   SUBTYPE SELECTS
+========================================================= */
+.sell-subtype-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #d7e4da;
+}
+
+.sell-subtype-block label {
+  margin-bottom: 8px;
+}
+
+.sell-subtype-block select {
+  width: 100%;
+}
+
+.sell-subtype-block small {
+  display: block;
+  margin-top: 7px;
+  color: #789080;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Better long option readability */
+.sell-dependent-box select,
+.sell-field select,
+.sell-language select {
+  max-width: 100%;
+}
+
+.sell-dependent-box select option {
+  padding: 8px;
+}
+
+/* =========================================================
+   EXTRA CATEGORY SUPPORT
+========================================================= */
+.sell-category-card.selected .sell-category-icon {
+  transform: scale(1.04);
+}
+
+.sell-category-card {
+  min-height: 145px;
+}
+
+/* =========================================================
+   ACCESSIBILITY / STATES
+========================================================= */
+.sell-category-card:focus-visible,
+.sell-next-button:focus-visible,
+.sell-publish-button:focus-visible,
+.sell-back-button:focus-visible,
+.sell-tree-close:focus-visible,
+.sell-photo-upload:focus-within {
+  outline: 3px solid rgba(39, 131, 69, 0.22);
+  outline-offset: 2px;
+}
+
+.sell-next-button:disabled,
+.sell-publish-button:disabled,
+.sell-back-button:disabled,
+.sell-tree-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sell-field input::placeholder,
+.sell-field textarea::placeholder {
+  color: #a0aaa4;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+@media (max-width: 760px) {
+  .sell-header-actions {
+    gap: 6px;
+  }
+
+  .sell-language {
+    padding: 0 8px;
+  }
+
+  .sell-language select {
+    width: 68px;
+    font-size: 11px;
+  }
+
+  .sell-tree-close {
+    width: 38px;
+    height: 38px;
+  }
+
+  .sell-category-card {
+    min-height: 0;
+  }
+
+  .sell-subtype-block {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sell-language {
+    max-width: 105px;
+  }
+
+  .sell-language select {
+    width: 58px;
+  }
+
+  .sell-tree-brand strong {
+    font-size: 16px;
+  }
+}
+
+
+/* Readable typography + 15-day expiry note */
+.sell-tree-modal,
+.sell-tree-modal input,
+.sell-tree-modal select,
+.sell-tree-modal textarea,
+.sell-tree-modal button{
+  font-family:"Noto Sans Telugu","Nirmala UI","Gautami",system-ui,sans-serif;
+}
+
+.sell-tree-modal{
+  font-size:16px;
+}
+
+.sell-step-heading h2{
+  font-size:27px;
+}
+
+.sell-step-heading p,
+.sell-field label,
+.sell-field input,
+.sell-field select,
+.sell-field textarea{
+  font-size:16px;
+}
+
+.sell-expiry-note{
+  margin-top:14px;
+  padding:14px 16px;
+  border:1px solid #dce8de;
+  background:#f4faf5;
+  border-radius:12px;
+  display:flex;
+  gap:11px;
+  align-items:flex-start;
+  color:#275f38;
+}
+
+.sell-expiry-note>span{
+  font-size:22px;
+}
+
+.sell-expiry-note strong{
+  display:block;
+  font-size:15px;
+  margin-bottom:3px;
+}
+
+.sell-expiry-note p{
+  margin:0;
+  font-size:13px;
+  color:#627064;
+}
+
+@media(max-width:760px){
+  .sell-tree-modal{
+    font-size:15px;
+  }
+  .sell-step-heading h2{
+    font-size:23px;
+  }
+  .sell-field label,
+  .sell-field input,
+  .sell-field select,
+  .sell-field textarea{
+    font-size:15px;
+  }
+}
+
+
+/* =========================================================
+   APPROVAL WORKFLOW — SAWMILL SELL TREE
+   pending -> admin review -> approved/rejected notification
+   ========================================================= */
+.sell-publish-note{display:flex;gap:10px;align-items:flex-start;padding:13px 15px;margin-top:14px;border:1px solid #cfe7d7;border-radius:14px;background:#f2fbf5;color:#245d37}
+.sell-publish-note svg{flex:0 0 auto;margin-top:1px}
+.sell-publish-note p{margin:0;font-size:11px;line-height:1.55;font-weight:700}
+.sell-expiry-note{display:flex;gap:10px;align-items:flex-start;padding:12px 15px;margin-top:10px;border:1px dashed #d9e3db;border-radius:13px;background:#fbfcfb}
+.sell-expiry-note strong{display:block;font-size:10px;color:#304033}
+.sell-expiry-note p{margin:3px 0 0;color:#758079;font-size:9px;line-height:1.45}
+.sell-error{margin:12px 20px;padding:11px 13px;border:1px solid #efc6c6;border-radius:11px;background:#fff5f5;color:#a43232;font-size:10px;font-weight:800}
+.sell-tree-overlay{display:flex;align-items:center;justify-content:center;padding:18px}
+.sell-tree-modal{width:min(920px,100%);max-height:94vh;overflow:hidden;background:#fff;border:1px solid rgba(216,231,220,.95);border-radius:24px;box-shadow:0 32px 100px rgba(5,29,15,.28);display:flex;flex-direction:column}
+.sell-tree-header{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:15px;padding:16px 20px;border-bottom:1px solid #edf2ee;background:#fff}
+.sell-tree-brand{display:flex;align-items:center;gap:10px}
+.sell-tree-brand-icon{width:42px;height:42px;border-radius:13px;background:#edf8f1;color:#207144;display:grid;place-items:center}
+.sell-tree-brand strong{display:block;font-size:15px;color:#193c28}
+.sell-tree-brand span{display:block;margin-top:2px;font-size:10px;color:#728079}
+.sell-header-actions{display:flex;align-items:center;gap:8px}
+.sell-language{display:flex;align-items:center;gap:6px;height:38px;padding:0 9px;border:1px solid #dce8de;border-radius:10px;background:#fbfdfb;color:#557060}
+.sell-language select{border:0;outline:0;background:transparent;font-size:10px;font-weight:800;color:#304439}
+.sell-tree-close{width:38px;height:38px;border-radius:10px;border:1px solid #dce8de;background:#fff;color:#52645a;display:grid;place-items:center}
+.sell-progress{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:12px 20px;border-bottom:1px solid #edf2ee;background:#fbfdfb}
+.sell-progress-item{display:flex;align-items:center;gap:7px;color:#93a099;font-size:9px;font-weight:850}
+.sell-progress-item span{width:24px;height:24px;border-radius:50%;border:1px solid #dce8de;background:#fff;display:grid;place-items:center}
+.sell-progress-item.active{color:#215f39}
+.sell-progress-item.active span{background:#267948;color:#fff;border-color:#267948}
+.sell-tree-body{overflow:auto;padding:0}
+.sell-step{padding:22px}
+.sell-step-heading span{display:inline-flex;padding:5px 8px;border-radius:999px;background:#edf8f1;color:#257044;font-size:8px;font-weight:950;text-transform:uppercase;letter-spacing:.08em}
+.sell-step-heading h2{margin:8px 0 5px;font-size:22px;color:#1c3928}
+.sell-step-heading p{margin:0 0 17px;font-size:10px;color:#758079;line-height:1.55}
+.sell-category-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sell-category-card{position:relative;display:grid;grid-template-columns:48px 1fr auto;gap:11px;align-items:center;text-align:left;padding:14px;border:1px solid #dce8de;border-radius:16px;background:#fff;cursor:pointer}
+.sell-category-card:hover{border-color:#a9cfb7;background:#fbfefc}
+.sell-category-card.selected{border-color:#69aa7f;background:#f2faf4;box-shadow:0 0 0 2px rgba(35,125,73,.06)}
+.sell-category-icon{width:46px;height:46px;border-radius:13px;background:#edf8f1;display:grid;place-items:center;font-size:22px}
+.sell-category-card strong{display:block;font-size:12px;color:#26372c}
+.sell-category-card p{margin:4px 0 0;color:#7a877f;font-size:9px;line-height:1.45}
+.sell-selected-icon{color:#2a7a49}
+.sell-dependent-box{margin-top:14px;padding:14px;border:1px solid #e0e9e2;border-radius:15px;background:#fbfdfb}
+.sell-dependent-box>label,.sell-subtype-block label{display:block;margin-bottom:7px;font-size:10px;font-weight:900;color:#34483b}
+.sell-dependent-box label span,.sell-subtype-block label span,.sell-field label span{color:#c63e3e}
+.sell-dependent-box>select,.sell-subtype-block select,.sell-field input,.sell-field select,.sell-field textarea{width:100%;border:1px solid #dce6de;border-radius:10px;background:#fff;outline:0;color:#26372c;padding:0 11px}
+.sell-dependent-box>select,.sell-subtype-block select,.sell-field input,.sell-field select{height:42px}
+.sell-field textarea{padding:10px 11px;resize:vertical;line-height:1.55}
+.sell-dependent-box>select:focus,.sell-subtype-block select:focus,.sell-field input:focus,.sell-field select:focus,.sell-field textarea:focus{border-color:#8fc4a0;box-shadow:0 0 0 3px rgba(44,128,74,.07)}
+.sell-subtype-block{margin-top:12px;padding-top:12px;border-top:1px dashed #dfe8e1}
+.sell-subtype-block small{display:block;margin-top:5px;color:#7a877f;font-size:8px;line-height:1.45}
+.sell-selected-summary{display:flex;align-items:center;gap:10px;padding:11px 12px;margin-bottom:15px;border:1px solid #dce8de;border-radius:12px;background:#f8fbf8}
+.sell-selected-summary>span{font-size:22px}
+.sell-selected-summary small{display:block;color:#7b897f;font-size:8px}
+.sell-selected-summary strong{display:block;margin-top:2px;color:#2d4d39;font-size:10px}
+.sell-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.sell-field{min-width:0}
+.sell-field label{display:block;margin-bottom:6px;color:#35483b;font-size:10px;font-weight:900}
+.sell-full{grid-column:1/-1}
+.sell-input-icon{display:flex;align-items:center;gap:7px;border:1px solid #dce6de;border-radius:10px;background:#fff;padding:0 10px}
+.sell-input-icon svg{color:#6f8b7a;flex:0 0 auto}
+.sell-input-icon input{border:0!important;box-shadow:none!important;padding-left:0!important}
+.sell-photo-upload{min-height:190px;border:2px dashed #bed6c4;background:#f8fcf9;border-radius:18px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;text-align:center;padding:22px}
+.sell-photo-upload input{display:none}
+.sell-photo-upload-icon{width:58px;height:58px;background:#eaf6ed;color:#2a7a49;border-radius:16px;display:grid;place-items:center;margin-bottom:11px}
+.sell-photo-upload strong{font-size:13px;color:#244632}
+.sell-photo-upload span{margin-top:5px;color:#78867e;font-size:10px}
+.sell-photo-upload small{margin-top:4px;color:#4d6f59;font-size:9px;font-weight:800}
+.sell-photo-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin-top:14px}
+.sell-photo-preview{position:relative;aspect-ratio:1;border-radius:12px;overflow:hidden;background:#edf4ee;border:1px solid #dce8de}
+.sell-photo-preview img{width:100%;height:100%;object-fit:cover}
+.sell-photo-preview button{position:absolute;top:5px;right:5px;width:25px;height:25px;border:0;border-radius:50%;background:rgba(8,29,17,.72);color:#fff;display:grid;place-items:center}
+.sell-photo-preview>span{position:absolute;left:5px;bottom:5px;padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.9);color:#215d38;font-size:7px;font-weight:900}
+.sell-photo-tip{display:flex;align-items:flex-start;gap:8px;padding:11px 12px;margin-top:13px;border:1px solid #e0e8e2;border-radius:12px;background:#fbfdfb;color:#527060}
+.sell-photo-tip svg{flex:0 0 auto}
+.sell-photo-tip strong{display:block;color:#334d3b;font-size:9px}
+.sell-photo-tip p{margin:3px 0 0;color:#7c8981;font-size:9px;line-height:1.45}
+.sell-review-card{border:1px solid #dce8de;border-radius:16px;overflow:hidden;background:#fff}
+.sell-review-title{display:flex;align-items:center;gap:11px;padding:15px;background:#f8fbf8;border-bottom:1px solid #e8eee9}
+.sell-review-title>span{font-size:26px}
+.sell-review-title small{display:block;color:#78857d;font-size:8px}
+.sell-review-title h3{margin:3px 0;font-size:15px;color:#26372c}
+.sell-review-title strong{font-size:9px;color:#3f6b4f}
+.sell-review-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;padding:14px}
+.sell-review-item{padding:10px;border:1px solid #edf1ee;border-radius:10px;background:#fbfcfb}
+.sell-review-item span{display:block;color:#7c8881;font-size:8px}
+.sell-review-item strong{display:block;margin-top:3px;color:#314438;font-size:9px;word-break:break-word}
+.sell-review-description{margin:0 14px 14px;padding:11px;border:1px solid #edf1ee;border-radius:10px;background:#fbfcfb}
+.sell-review-description strong{display:block;font-size:9px;color:#33483b}
+.sell-review-description p{margin:4px 0 0;color:#68766e;font-size:9px;line-height:1.5;white-space:pre-wrap}
+.sell-tree-footer{flex:0 0 auto;display:flex;justify-content:space-between;gap:10px;padding:13px 20px;border-top:1px solid #edf2ee;background:#fff}
+.sell-tree-footer button{height:40px;border-radius:10px;padding:0 14px;display:inline-flex;align-items:center;gap:7px;font-size:10px;font-weight:900}
+.sell-back-button{border:1px solid #dce8de;background:#fff;color:#52655a}
+.sell-next-button{border:1px solid #2b7848;background:#2b7848;color:#fff;margin-left:auto}
+.sell-publish-button{border:1px solid #176d3d;background:#176d3d;color:#fff;margin-left:auto;min-width:160px;justify-content:center}
+.sell-publish-button:disabled,.sell-next-button:disabled,.sell-back-button:disabled{opacity:.55;cursor:not-allowed}
+.sell-button-spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;animation:sellspin .8s linear infinite}
+@keyframes sellspin{to{transform:rotate(360deg)}}
+.sell-success{padding:25px 22px 40px;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px}
+.sell-success-icon{width:90px;height:90px;border-radius:50%;background:#eaf7ed;color:#2b7949;display:grid;place-items:center}
+.sell-success h2{margin:18px 0 6px;font-size:25px;color:#1f402b}
+.sell-success p{margin:0;max-width:540px;color:#6d7c73;font-size:11px;line-height:1.55}
+.sell-success-summary{display:flex;align-items:center;gap:7px;margin-top:18px;padding:10px 14px;border:1px solid #dce8de;border-radius:999px;background:#f8fbf8;color:#2e5f40;font-size:10px;font-weight:900}
+.sell-success>small{margin-top:10px;color:#8a958f;font-size:9px}
+.sawmill-notification-item.approval-notification{border:1px solid #d7eadc}
+.sawmill-notification-item.approval-notification.unread{box-shadow:inset 3px 0 0 #2c7a49}
+.sawmill-notification-status{display:inline-flex;margin-top:4px;padding:4px 7px;border-radius:999px;font-size:7px;font-weight:950;letter-spacing:.04em;background:#edf8f1;color:#247044}
+.sawmill-notification-status.rejected{background:#fff0f0;color:#a33434}
+@media(max-width:760px){
+  .sell-tree-overlay{padding:0;align-items:stretch}
+  .sell-tree-modal{width:100%;max-height:100vh;height:100vh;border-radius:0}
+  .sell-progress{padding:10px 12px;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+  .sell-progress-item{justify-content:center;flex-direction:column;gap:3px;font-size:7px;text-align:center}
+  .sell-step{padding:15px}
+  .sell-category-grid,.sell-form-grid{grid-template-columns:1fr}
+  .sell-full{grid-column:auto}
+  .sell-review-grid{grid-template-columns:repeat(2,1fr)}
+  .sell-photo-grid{grid-template-columns:repeat(3,1fr)}
+  .sell-tree-footer{padding:10px 12px}
+  .sell-tree-footer button{flex:1;justify-content:center}
+}
+@media(max-width:430px){
+  .sell-review-grid{grid-template-columns:1fr}
+  .sell-photo-grid{grid-template-columns:repeat(2,1fr)}
+  .sell-language{display:none}
+  .sell-tree-header{padding:12px}
+  .sell-tree-brand-icon{width:38px;height:38px}
+}

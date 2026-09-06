@@ -28,11 +28,1426 @@ import {
   User,
   Users,
   X,
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  Languages,
+  TreePine,
+  Upload,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./SawmillDashboard.css";
 import TreeLoader from "../components/TreeLoader";
+
+/* ================= EMBEDDED SELL TREE FORM ================= */
+
+/* =========================================================
+   TIMBERMART SELL TREE / WOOD FORM
+   Languages: English / తెలుగు / हिन्दी
+   Sawmill-safe: listing role comes from the logged-in profile.
+
+   IMPORTANT:
+   - Database stores canonical English values.
+   - UI labels change with the selected language.
+   - Teak / wood / firewood sub-types are stored separately
+     so every dashboard can filter the same records.
+========================================================= */
+
+const LANGUAGES = [
+  { id: "en", label: "English", native: "English" },
+  { id: "te", label: "Telugu", native: "తెలుగు" },
+  { id: "hi", label: "Hindi", native: "हिन्दी" },
+];
+
+const CATEGORY_OPTIONS = [
+  {
+    id: "indian_trees",
+    icon: "🌳",
+    label: { en: "Indian Trees", te: "భారతీయ చెట్లు", hi: "भारतीय पेड़" },
+    description: {
+      en: "Standing trees and individual trees",
+      te: "నిలువుగా ఉన్న చెట్లు మరియు వ్యక్తిగత చెట్లు",
+      hi: "खड़े पेड़ और व्यक्तिगत पेड़",
+    },
+  },
+  {
+    id: "plantations",
+    icon: "🌱",
+    label: { en: "Plantations", te: "ప్లాంటేషన్స్", hi: "प्लांटेशन" },
+    description: {
+      en: "Farm and plantation-grown timber",
+      te: "వ్యవసాయ భూమి మరియు ప్లాంటేషన్‌లో పెంచిన కలప",
+      hi: "खेत और प्लांटेशन में उगाई गई लकड़ी",
+    },
+  },
+  {
+    id: "wood_products",
+    icon: "🪵",
+    label: { en: "Wood Products", te: "వుడ్ ప్రొడక్ట్స్", hi: "लकड़ी के उत्पाद" },
+    description: {
+      en: "Logs, timber, reclaimed and processed wood",
+      te: "లాగ్స్, టింబర్, పాత/రీక్లెయిమ్డ్ మరియు ప్రాసెస్ చేసిన కలప",
+      hi: "लॉग, टिम्बर, पुरानी/रीक्लेम्ड और प्रोसेस्ड लकड़ी",
+    },
+  },
+  {
+    id: "firewood",
+    icon: "🔥",
+    label: { en: "Firewood", te: "కట్టెలు / ఫైర్‌వుడ్", hi: "जलाऊ लकड़ी" },
+    description: {
+      en: "Firewood sold by species or mixed load",
+      te: "చెట్టు రకం లేదా మిక్స్‌డ్ లోడ్‌గా అమ్మే కట్టెలు",
+      hi: "प्रजाति या मिश्रित लोड के अनुसार जलाऊ लकड़ी",
+    },
+  },
+];
+
+const TREE_TYPES = {
+  indian_trees: [
+    "Teak",
+    "Neem",
+    "Rosewood",
+    "Mango",
+    "Tamarind",
+    "Eucalyptus",
+    "Melia Dubia",
+    "Casuarina",
+    "Subabul",
+    "Babul",
+    "Jackfruit",
+    "Mahogany",
+    "Sandalwood",
+    "Indian Laurel",
+    "Pongamia",
+    "Acacia",
+    "Rain Tree",
+    "Other Indian Tree",
+  ],
+  plantations: [
+    "Casuarina Plantation",
+    "Eucalyptus Plantation",
+    "Melia Dubia Plantation",
+    "Subabul Plantation",
+    "Teak Plantation",
+    "Bamboo Plantation",
+    "Poplar Plantation",
+    "Other Plantation",
+  ],
+  wood_products: [
+    "Timber Logs",
+    "Sawn Timber",
+    "Wooden Planks",
+    "Wooden Beams",
+    "Wooden Poles",
+    "Wooden Boards",
+    "Plywood / Boards",
+    "Sawdust",
+    "Wood Chips",
+    "Timber Offcuts",
+    "Other Wood Product",
+  ],
+};
+
+const TEAK_TYPES = [
+  "Balarsa Teak",
+  "Indian Patta Teak",
+  "Indian Local Teak",
+  "Bastar Teak",
+  "MP Teak",
+  "Gujarat Local Teak",
+  "Maharashtra Local Teak",
+  "Dandeli Teak",
+  "Nilambur Teak",
+  "Kerala Teak",
+  "South Indian Teak",
+  "Central Indian Teak",
+  "Farm-Grown Teak",
+  "Plantation Teak",
+  "Other Teak",
+];
+
+const WOOD_TYPE_OPTIONS = [
+  "Old Wood",
+  "Old Teak",
+  "Old Wood Furniture",
+  "Reclaimed Wood",
+  "Reclaimed Teak",
+  "Salvaged Wood",
+  "Salvaged Teak",
+  "Used Wooden Doors",
+  "Used Wooden Windows",
+  "Used Wooden Beams",
+  "Used Wooden Planks",
+  "Timber Offcuts",
+  "Sawmill Waste",
+  "Mixed Old Wood",
+  "Other Old Wood",
+];
+
+const FIREWOOD_TYPES = [
+  "Jeedi / Cashew",
+  "Mamidi / Mango",
+  "Thati / Palm",
+  "Kobari / Coconut",
+  "Teak",
+  "Neem",
+  "Eucalyptus",
+  "Babul / Acacia",
+  "Subabul",
+  "Casuarina",
+  "Tamarind",
+  "Prosopis",
+  "Bamboo",
+  "Mixed Hardwood",
+  "Mixed Firewood",
+  "Other Firewood",
+];
+
+const UNITS = [
+  "Trees",
+  "Logs",
+  "Tonnes",
+  "Cubic Feet",
+  "Cubic Metres",
+  "Pieces",
+  "Load",
+  "Bundles",
+];
+
+const CONDITIONS = ["Fresh", "Good", "Seasoned", "Dry", "Mixed"];
+
+const HARVEST_STATUS = [
+  "Ready for sale",
+  "Ready for harvest",
+  "Harvesting soon",
+  "Future harvest",
+];
+
+const TEXT = {
+  en: {
+    sellTimber: "Sell Timber",
+    language: "Language",
+    step: "STEP",
+    category: "Category",
+    details: "Details",
+    photos: "Photos",
+    review: "Review",
+    whatSelling: "What are you selling?",
+    categoryHelp: "Select a category first. The relevant type options will appear automatically.",
+    selectType: "Select type",
+    selectTreeType: "Select tree type",
+    selectProduct: "Select wood product",
+    selectFirewood: "Select firewood type",
+    teakType: "Teak type",
+    woodType: "Wood type",
+    woodTypeHelp: "Choose the old, reclaimed or used wood type if applicable.",
+    teakHelp: "Choose the specific teak variety/source.",
+    aboutTimber: "Tell buyers about your timber",
+    detailsHelp: "Add clear details so nearby buyers can understand your listing.",
+    title: "Listing title",
+    titlePlaceholderTree: "Example: Mature teak trees for sale",
+    titlePlaceholderPlantation: "Example: Casuarina plantation for sale",
+    titlePlaceholderWood: "Example: Old teak wooden beams for sale",
+    titlePlaceholderFirewood: "Example: Dry mango firewood for sale",
+    location: "Location",
+    locationPlaceholder: "Village / Town / District",
+    quantity: "Quantity",
+    quantityPlaceholder: "Example: 25",
+    quantityUnit: "Quantity unit",
+    selectUnit: "Select unit",
+    plantationArea: "Plantation area (Acres)",
+    enterArea: "Enter total plantation area",
+    treeAge: "Tree age",
+    treeAgePlaceholder: "Example: 12 years",
+    diameter: "Average diameter",
+    diameterPlaceholder: "Example: 18 inches",
+    volume: "Estimated volume",
+    volumePlaceholder: "Example: 500 CFT",
+    condition: "Condition",
+    selectCondition: "Select condition",
+    status: "Sale / Harvest status",
+    selectStatus: "Select status",
+    price: "Expected price",
+    pricePlaceholder: "Example: ₹2,50,000 or ₹1,200 / CFT",
+    description: "Description",
+    descriptionPlaceholder: "Add useful information about quality, access road, location, harvesting, timber condition, etc.",
+    addPhotos: "Add photos",
+    photoHelp: "Real photos help buyers understand your timber before contacting you.",
+    photoFormat: "JPG, PNG or WEBP · Maximum 5 MB each",
+    upTo6: "Up to 10 photos",
+    photoTips: "Photo tips",
+    photoTipsText: "Upload clear photos of the tree, timber, plantation area or wood product. Avoid blurry or unrelated images.",
+    mainPhoto: "Main photo",
+    reviewTitle: "Review your listing",
+    reviewHelp: "Check the information before publishing it to TimberMart.",
+    expectedPrice: "Expected Price",
+    listingPhotos: "Photos",
+    descriptionLabel: "Description",
+    publishNote: "Submit your listing for Admin review. It will become visible to buyers only after Admin approval.",
+    cancel: "Cancel",
+    back: "Back",
+    continue: "Continue",
+    publish: "Publish Listing",
+    publishing: "Publishing...",
+    successTitle: "Listing Submitted for Approval ✅",
+    successText: "Your timber listing was submitted successfully and is now waiting for Admin approval.",
+    successSmall: "After Admin approval, buyers can view your listing and contact you directly.",
+    callChat: "Call / WhatsApp / Chat",
+    required: "Required",
+    chooseCategory: "Please select a category.",
+    chooseType: "Please select a tree or product type.",
+    chooseTeak: "Please select a teak type.",
+    chooseWood: "Please select a wood type.",
+    chooseFirewood: "Please select a firewood type.",
+    enterTitle: "Please enter a listing title.",
+    enterLocation: "Please enter the location.",
+    enterQuantity: "Please enter the quantity.",
+    chooseUnit: "Please select the quantity unit.",
+    enterArea: "Please enter plantation area in acres.",
+    enterPrice: "Please enter your expected price.",
+    uploadError: "Unable to publish your listing. Please try again.",
+  },
+  te: {
+    sellTimber: "కలప అమ్మండి",
+    language: "భాష",
+    step: "దశ",
+    category: "కేటగిరీ",
+    details: "వివరాలు",
+    photos: "ఫోటోలు",
+    review: "రివ్యూ",
+    whatSelling: "మీరు ఏమి అమ్ముతున్నారు?",
+    categoryHelp: "ముందుగా కేటగిరీ ఎంచుకోండి. దానికి సంబంధించిన టైప్ ఆప్షన్లు కనిపిస్తాయి.",
+    selectType: "టైప్ ఎంచుకోండి",
+    selectTreeType: "చెట్టు రకం ఎంచుకోండి",
+    selectProduct: "వుడ్ ప్రొడక్ట్ ఎంచుకోండి",
+    selectFirewood: "కట్టెల రకం ఎంచుకోండి",
+    teakType: "టీక్ రకం",
+    woodType: "వుడ్ రకం",
+    woodTypeHelp: "పాత, రీక్లెయిమ్డ్ లేదా ఉపయోగించిన కలప రకాన్ని ఎంచుకోండి.",
+    teakHelp: "నిర్దిష్ట టీక్ రకం / ప్రాంతాన్ని ఎంచుకోండి.",
+    aboutTimber: "మీ కలప గురించి వివరాలు ఇవ్వండి",
+    detailsHelp: "కొనుగోలుదారులు సులభంగా అర్థం చేసుకునేలా వివరాలు ఇవ్వండి.",
+    title: "లిస్టింగ్ టైటిల్",
+    titlePlaceholderTree: "ఉదా: మెచ్యూర్ టీక్ చెట్లు అమ్మకానికి",
+    titlePlaceholderPlantation: "ఉదా: క్యాసువరినా ప్లాంటేషన్ అమ్మకానికి",
+    titlePlaceholderWood: "ఉదా: పాత టీక్ వుడ్ బీమ్స్ అమ్మకానికి",
+    titlePlaceholderFirewood: "ఉదా: ఎండిన మామిడి కట్టెలు అమ్మకానికి",
+    location: "ప్రదేశం",
+    locationPlaceholder: "గ్రామం / పట్టణం / జిల్లా",
+    quantity: "పరిమాణం",
+    quantityPlaceholder: "ఉదా: 25",
+    quantityUnit: "పరిమాణ యూనిట్",
+    selectUnit: "యూనిట్ ఎంచుకోండి",
+    plantationArea: "ప్లాంటేషన్ విస్తీర్ణం (ఎకరాలు)",
+    enterArea: "మొత్తం ప్లాంటేషన్ విస్తీర్ణం ఇవ్వండి",
+    treeAge: "చెట్టు వయస్సు",
+    treeAgePlaceholder: "ఉదా: 12 సంవత్సరాలు",
+    diameter: "సగటు వ్యాసం",
+    diameterPlaceholder: "ఉదా: 18 ఇంచులు",
+    volume: "అంచనా వాల్యూమ్",
+    volumePlaceholder: "ఉదా: 500 CFT",
+    condition: "స్థితి",
+    selectCondition: "స్థితి ఎంచుకోండి",
+    status: "అమ్మకం / హార్వెస్ట్ స్థితి",
+    selectStatus: "స్థితి ఎంచుకోండి",
+    price: "అంచనా ధర",
+    pricePlaceholder: "ఉదా: ₹2,50,000 లేదా ₹1,200 / CFT",
+    description: "వివరణ",
+    descriptionPlaceholder: "నాణ్యత, రోడ్డు, ప్రదేశం, హార్వెస్టింగ్, కలప స్థితి గురించి సమాచారం ఇవ్వండి.",
+    addPhotos: "ఫోటోలు జోడించండి",
+    photoHelp: "కొనుగోలుదారులకు కలపను అర్థం చేసుకోవడానికి నిజమైన ఫోటోలు సహాయపడతాయి.",
+    photoFormat: "JPG, PNG లేదా WEBP · ఒక్కోటి గరిష్టంగా 5 MB",
+    upTo6: "గరిష్టంగా 6 ఫోటోలు",
+    photoTips: "ఫోటో సూచనలు",
+    photoTipsText: "చెట్టు, కలప, ప్లాంటేషన్ లేదా వుడ్ ప్రొడక్ట్ ఫోటోలు స్పష్టంగా అప్లోడ్ చేయండి.",
+    mainPhoto: "ముఖ్య ఫోటో",
+    reviewTitle: "మీ లిస్టింగ్‌ను రివ్యూ చేయండి",
+    reviewHelp: "TimberMartలో ప్రచురించే ముందు వివరాలను చెక్ చేయండి.",
+    expectedPrice: "అంచనా ధర",
+    listingPhotos: "ఫోటోలు",
+    descriptionLabel: "వివరణ",
+    publishNote: "మీ లిస్టింగ్ ముందుగా Admin review కు వెళ్తుంది. Admin approve చేసిన తర్వాతే buyers కు కనిపిస్తుంది.",
+    cancel: "రద్దు",
+    back: "వెనుకకు",
+    continue: "కొనసాగించండి",
+    publish: "లిస్టింగ్ ప్రచురించండి",
+    publishing: "ప్రచురిస్తోంది...",
+    successTitle: "లిస్టింగ్ ప్రచురించబడింది 🎉",
+    successText: "మీ కలప లిస్టింగ్ విజయవంతంగా TimberMartలో ప్రచురించబడింది.",
+    successSmall: "కొనుగోలుదారులు ఇప్పుడు లిస్టింగ్ చూసి మిమ్మల్ని సంప్రదించవచ్చు.",
+    callChat: "కాల్ / WhatsApp / చాట్",
+    required: "అవసరం",
+    chooseCategory: "దయచేసి కేటగిరీ ఎంచుకోండి.",
+    chooseType: "దయచేసి చెట్టు లేదా ప్రొడక్ట్ టైప్ ఎంచుకోండి.",
+    chooseTeak: "దయచేసి టీక్ రకం ఎంచుకోండి.",
+    chooseWood: "దయచేసి వుడ్ రకం ఎంచుకోండి.",
+    chooseFirewood: "దయచేసి కట్టెల రకం ఎంచుకోండి.",
+    enterTitle: "దయచేసి లిస్టింగ్ టైటిల్ ఇవ్వండి.",
+    enterLocation: "దయచేసి ప్రదేశం ఇవ్వండి.",
+    enterQuantity: "దయచేసి పరిమాణం ఇవ్వండి.",
+    chooseUnit: "దయచేసి పరిమాణ యూనిట్ ఎంచుకోండి.",
+    enterArea: "దయచేసి ప్లాంటేషన్ విస్తీర్ణం ఇవ్వండి.",
+    enterPrice: "దయచేసి అంచనా ధర ఇవ్వండి.",
+    uploadError: "లిస్టింగ్ ప్రచురించలేకపోయాము. మళ్లీ ప్రయత్నించండి.",
+  },
+  hi: {
+    sellTimber: "लकड़ी बेचें",
+    language: "भाषा",
+    step: "चरण",
+    category: "श्रेणी",
+    details: "विवरण",
+    photos: "फोटो",
+    review: "समीक्षा",
+    whatSelling: "आप क्या बेच रहे हैं?",
+    categoryHelp: "पहले श्रेणी चुनें। संबंधित प्रकार अपने आप दिखाई देंगे।",
+    selectType: "प्रकार चुनें",
+    selectTreeType: "पेड़ का प्रकार चुनें",
+    selectProduct: "लकड़ी का उत्पाद चुनें",
+    selectFirewood: "जलाऊ लकड़ी का प्रकार चुनें",
+    teakType: "सागौन का प्रकार",
+    woodType: "लकड़ी का प्रकार",
+    woodTypeHelp: "पुरानी, रीक्लेम्ड या इस्तेमाल की गई लकड़ी का प्रकार चुनें।",
+    teakHelp: "विशिष्ट सागौन प्रकार / स्रोत चुनें।",
+    aboutTimber: "अपनी लकड़ी के बारे में बताएं",
+    detailsHelp: "खरीदारों को आपकी लिस्टिंग समझने के लिए स्पष्ट जानकारी दें।",
+    title: "लिस्टिंग शीर्षक",
+    titlePlaceholderTree: "उदाहरण: परिपक्व सागौन के पेड़ बिक्री के लिए",
+    titlePlaceholderPlantation: "उदाहरण: कैसुअरीना प्लांटेशन बिक्री के लिए",
+    titlePlaceholderWood: "उदाहरण: पुरानी सागौन की बीम बिक्री के लिए",
+    titlePlaceholderFirewood: "उदाहरण: सूखी आम की जलाऊ लकड़ी बिक्री के लिए",
+    location: "स्थान",
+    locationPlaceholder: "गांव / शहर / जिला",
+    quantity: "मात्रा",
+    quantityPlaceholder: "उदाहरण: 25",
+    quantityUnit: "मात्रा इकाई",
+    selectUnit: "इकाई चुनें",
+    plantationArea: "प्लांटेशन क्षेत्र (एकड़)",
+    enterArea: "कुल प्लांटेशन क्षेत्र दर्ज करें",
+    treeAge: "पेड़ की उम्र",
+    treeAgePlaceholder: "उदाहरण: 12 वर्ष",
+    diameter: "औसत व्यास",
+    diameterPlaceholder: "उदाहरण: 18 इंच",
+    volume: "अनुमानित वॉल्यूम",
+    volumePlaceholder: "उदाहरण: 500 CFT",
+    condition: "स्थिति",
+    selectCondition: "स्थिति चुनें",
+    status: "बिक्री / कटाई स्थिति",
+    selectStatus: "स्थिति चुनें",
+    price: "अपेक्षित कीमत",
+    pricePlaceholder: "उदाहरण: ₹2,50,000 या ₹1,200 / CFT",
+    description: "विवरण",
+    descriptionPlaceholder: "गुणवत्ता, सड़क, स्थान, कटाई और लकड़ी की स्थिति की जानकारी दें।",
+    addPhotos: "फोटो जोड़ें",
+    photoHelp: "वास्तविक फोटो खरीदारों को लकड़ी समझने में मदद करते हैं।",
+    photoFormat: "JPG, PNG या WEBP · प्रत्येक अधिकतम 5 MB",
+    upTo6: "अधिकतम 6 फोटो",
+    photoTips: "फोटो सुझाव",
+    photoTipsText: "पेड़, लकड़ी, प्लांटेशन या वुड प्रोडक्ट की साफ फोटो अपलोड करें।",
+    mainPhoto: "मुख्य फोटो",
+    reviewTitle: "अपनी लिस्टिंग की समीक्षा करें",
+    reviewHelp: "TimberMart पर प्रकाशित करने से पहले जानकारी जांचें।",
+    expectedPrice: "अपेक्षित कीमत",
+    listingPhotos: "फोटो",
+    descriptionLabel: "विवरण",
+    publishNote: "आपकी लिस्टिंग पहले Admin review में जाएगी। Admin approval के बाद ही buyers इसे देख पाएंगे।",
+    cancel: "रद्द करें",
+    back: "पीछे",
+    continue: "जारी रखें",
+    publish: "लिस्टिंग प्रकाशित करें",
+    publishing: "प्रकाशित हो रहा है...",
+    successTitle: "लिस्टिंग प्रकाशित हो गई 🎉",
+    successText: "आपकी लकड़ी की लिस्टिंग TimberMart पर सफलतापूर्वक प्रकाशित हो गई है।",
+    successSmall: "खरीदार अब आपकी लिस्टिंग देखकर आपसे संपर्क कर सकते हैं।",
+    callChat: "कॉल / WhatsApp / चैट",
+    required: "आवश्यक",
+    chooseCategory: "कृपया श्रेणी चुनें।",
+    chooseType: "कृपया पेड़ या उत्पाद का प्रकार चुनें।",
+    chooseTeak: "कृपया सागौन का प्रकार चुनें।",
+    chooseWood: "कृपया लकड़ी का प्रकार चुनें।",
+    chooseFirewood: "कृपया जलाऊ लकड़ी का प्रकार चुनें।",
+    enterTitle: "कृपया लिस्टिंग शीर्षक दर्ज करें।",
+    enterLocation: "कृपया स्थान दर्ज करें।",
+    enterQuantity: "कृपया मात्रा दर्ज करें।",
+    chooseUnit: "कृपया मात्रा इकाई चुनें।",
+    enterArea: "कृपया प्लांटेशन क्षेत्र दर्ज करें।",
+    enterPrice: "कृपया अपेक्षित कीमत दर्ज करें।",
+    uploadError: "लिस्टिंग प्रकाशित नहीं हो सकी। फिर से प्रयास करें।",
+  },
+};
+
+const OPTION_LABELS = {
+  "Balarsa Teak": { te: "బలార్సా టీక్", hi: "बलारसा सागौन" },
+  "Indian Patta Teak": { te: "ఇండియన్ పట్టా టీక్", hi: "इंडियन पट्टा सागौन" },
+  "Indian Local Teak": { te: "ఇండియన్ లోకల్ టీక్", hi: "इंडियन लोकल सागौन" },
+  "Bastar Teak": { te: "బస్తర్ టీక్", hi: "बस्तर सागौन" },
+  "MP Teak": { te: "MP టీక్", hi: "MP सागौन" },
+  "Gujarat Local Teak": { te: "గుజరాత్ లోకల్ టీక్", hi: "गुजरात लोकल सागौन" },
+  "Maharashtra Local Teak": { te: "మహారాష్ట్ర లోకల్ టీక్", hi: "महाराष्ट्र लोकल सागौन" },
+  "Dandeli Teak": { te: "దండేలి టీక్", hi: "दांडेली सागौन" },
+  "Nilambur Teak": { te: "నీలాంబర్ టీక్", hi: "नीलांबर सागौन" },
+  "Kerala Teak": { te: "కేరళ టీక్", hi: "केरल सागौन" },
+  "South Indian Teak": { te: "సౌత్ ఇండియన్ టీక్", hi: "दक्षिण भारतीय सागौन" },
+  "Central Indian Teak": { te: "సెంట్రల్ ఇండియన్ టీక్", hi: "मध्य भारतीय सागौन" },
+  "Farm-Grown Teak": { te: "ఫార్మ్-గ్రోన్ టీక్", hi: "फार्म में उगाया गया सागौन" },
+  "Plantation Teak": { te: "ప్లాంటేషన్ టీక్", hi: "प्लांटेशन सागौन" },
+  "Other Teak": { te: "ఇతర టీక్", hi: "अन्य सागौन" },
+
+  "Old Wood": { te: "పాత వుడ్", hi: "पुरानी लकड़ी" },
+  "Old Teak": { te: "పాత టీక్", hi: "पुरानी सागौन" },
+  "Old Wood Furniture": { te: "పాత వుడ్ ఫర్నిచర్", hi: "पुराना लकड़ी का फर्नीचर" },
+  "Reclaimed Wood": { te: "రీక్లెయిమ్డ్ వుడ్", hi: "रीक्लेम्ड लकड़ी" },
+  "Reclaimed Teak": { te: "రీక్లెయిమ్డ్ టీక్", hi: "रीक्लेम्ड सागौन" },
+  "Salvaged Wood": { te: "సాల్వేజ్డ్ వుడ్", hi: "साल्वेज्ड लकड़ी" },
+  "Salvaged Teak": { te: "సాల్వేజ్డ్ టీక్", hi: "साल्वेज्ड सागौन" },
+  "Used Wooden Doors": { te: "వాడిన చెక్క తలుపులు", hi: "पुराने लकड़ी के दरवाजे" },
+  "Used Wooden Windows": { te: "వాడిన చెక్క కిటికీలు", hi: "पुरानी लकड़ी की खिड़कियां" },
+  "Used Wooden Beams": { te: "వాడిన చెక్క బీమ్స్", hi: "पुरानी लकड़ी की बीम" },
+  "Used Wooden Planks": { te: "వాడిన చెక్క పలకలు", hi: "पुरानी लकड़ी की पट्टियां" },
+  "Timber Offcuts": { te: "టింబర్ మిగులు ముక్కలు", hi: "टिम्बर के बचे टुकड़े" },
+  "Sawmill Waste": { te: "సా మిల్ వ్యర్థ కలప", hi: "सॉमिल की बची लकड़ी" },
+  "Mixed Old Wood": { te: "మిక్స్‌డ్ పాత వుడ్", hi: "मिश्रित पुरानी लकड़ी" },
+  "Other Old Wood": { te: "ఇతర పాత వుడ్", hi: "अन्य पुरानी लकड़ी" },
+
+  "Jeedi / Cashew": { te: "జీడి / జీడిమామిడి", hi: "काजू" },
+  "Mamidi / Mango": { te: "మామిడి", hi: "आम" },
+  "Thati / Palm": { te: "తాటి", hi: "ताड़" },
+  "Kobari / Coconut": { te: "కొబ్బరి", hi: "नारियल" },
+  "Teak": { te: "టీక్", hi: "सागौन" },
+  "Neem": { te: "వేప", hi: "नीम" },
+  "Eucalyptus": { te: "యూకలిప్టస్", hi: "नीलगिरी" },
+  "Babul / Acacia": { te: "బాబుల్ / అకేషియా", hi: "बबूल / बबूलिया" },
+  "Subabul": { te: "సుబాబుల్", hi: "सुबबूल" },
+  "Casuarina": { te: "క్యాసువరినా", hi: "कैसुअरीना" },
+  "Tamarind": { te: "చింత", hi: "इमली" },
+  "Prosopis": { te: "ప్రోసోపిస్", hi: "प्रोसोपिस" },
+  "Bamboo": { te: "వెదురు", hi: "बांस" },
+  "Mixed Hardwood": { te: "మిక్స్‌డ్ హార్డ్‌వుడ్", hi: "मिश्रित हार्डवुड" },
+  "Mixed Firewood": { te: "మిక్స్‌డ్ ఫైర్‌వుడ్", hi: "मिश्रित जलाऊ लकड़ी" },
+  "Other Firewood": { te: "ఇతర ఫైర్‌వుడ్", hi: "अन्य जलाऊ लकड़ी" },
+};
+
+const GENERIC_LABELS = {
+  "Teak": { te: "టీక్", hi: "सागौन" },
+  "Neem": { te: "వేప", hi: "नीम" },
+  "Rosewood": { te: "రోజ్‌వుడ్", hi: "रोज़वुड" },
+  "Mango": { te: "మామిడి", hi: "आम" },
+  "Tamarind": { te: "చింత", hi: "इमली" },
+  "Eucalyptus": { te: "యూకలిప్టస్", hi: "नीलगिरी" },
+  "Melia Dubia": { te: "మెలియా డుబియా", hi: "मेलिया डुबिया" },
+  "Casuarina": { te: "క్యాసువరినా", hi: "कैसुअरीना" },
+  "Subabul": { te: "సుబాబుల్", hi: "सुबबूल" },
+  "Babul": { te: "బాబుల్", hi: "बबूल" },
+  "Jackfruit": { te: "పనస", hi: "कटहल" },
+  "Mahogany": { te: "మహాగని", hi: "महोगनी" },
+  "Sandalwood": { te: "చందనం", hi: "चंदन" },
+  "Indian Laurel": { te: "ఇండియన్ లారెల్", hi: "इंडियन लॉरेल" },
+  "Pongamia": { te: "కానుగ", hi: "करंज" },
+  "Acacia": { te: "అకేషియా", hi: "बबूलिया" },
+  "Rain Tree": { te: "రెయిన్ ట్రీ", hi: "रेन ट्री" },
+  "Other Indian Tree": { te: "ఇతర భారతీయ చెట్టు", hi: "अन्य भारतीय पेड़" },
+  "Casuarina Plantation": { te: "క్యాసువరినా ప్లాంటేషన్", hi: "कैसुअरीना प्लांटेशन" },
+  "Eucalyptus Plantation": { te: "యూకలిప్టస్ ప్లాంటేషన్", hi: "नीलगिरी प्लांटेशन" },
+  "Melia Dubia Plantation": { te: "మెలియా డుబియా ప్లాంటేషన్", hi: "मेलिया डुबिया प्लांटेशन" },
+  "Subabul Plantation": { te: "సుబాబుల్ ప్లాంటేషన్", hi: "सुबबूल प्लांटेशन" },
+  "Teak Plantation": { te: "టీక్ ప్లాంటేషన్", hi: "सागौन प्लांटेशन" },
+  "Bamboo Plantation": { te: "వెదురు ప్లాంటేషన్", hi: "बांस प्लांटेशन" },
+  "Poplar Plantation": { te: "పాప్లర్ ప్లాంటేషన్", hi: "पॉपलर प्लांटेशन" },
+  "Other Plantation": { te: "ఇతర ప్లాంటేషన్", hi: "अन्य प्लांटेशन" },
+  "Timber Logs": { te: "టింబర్ లాగ్స్", hi: "टिम्बर लॉग" },
+  "Sawn Timber": { te: "సాన్ టింబర్", hi: "सॉ टिम्बर" },
+  "Wooden Planks": { te: "చెక్క పలకలు", hi: "लकड़ी की पट्टियां" },
+  "Wooden Beams": { te: "చెక్క బీమ్స్", hi: "लकड़ी की बीम" },
+  "Wooden Poles": { te: "చెక్క పోల్స్", hi: "लकड़ी के पोल" },
+  "Wooden Boards": { te: "చెక్క బోర్డులు", hi: "लकड़ी के बोर्ड" },
+  "Plywood / Boards": { te: "ప్లైవుడ్ / బోర్డులు", hi: "प्लाईवुड / बोर्ड" },
+  "Sawdust": { te: "సా డస్ట్", hi: "बुरादा" },
+  "Wood Chips": { te: "వుడ్ చిప్స్", hi: "लकड़ी के चिप्स" },
+  "Timber Offcuts": { te: "టింబర్ మిగులు ముక్కలు", hi: "टिम्बर के बचे टुकड़े" },
+  "Other Wood Product": { te: "ఇతర వుడ్ ప్రొడక్ట్", hi: "अन्य लकड़ी उत्पाद" },
+};
+
+function getOptionLabel(value, language) {
+  if (!value) return "";
+  if (language === "en") return value;
+  return (
+    OPTION_LABELS[value]?.[language] ||
+    GENERIC_LABELS[value]?.[language] ||
+    value
+  );
+}
+
+function getText(language, key) {
+  return TEXT[language]?.[key] || TEXT.en[key] || key;
+}
+
+function SellTreeForm({ user, profile, onClose, onPublished }) {
+  const [step, setStep] = useState(1);
+  const [language, setLanguage] = useState("en");
+
+  const [form, setForm] = useState({
+    category: "",
+    tree_type: "",
+    teak_type: "",
+    wood_type_detail: "",
+    firewood_type: "",
+    product_type: "",
+    title: "",
+    location: profile?.location || "",
+    quantity: "",
+    quantity_unit: "",
+    acreage: "",
+    tree_age: "",
+    diameter: "",
+    estimated_volume: "",
+    condition: "",
+    harvest_status: "",
+    price: "",
+    description: "",
+    contact_preference: "Call / WhatsApp / Chat",
+  });
+
+  const [photos, setPhotos] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+
+  const isPlantation = form.category === "plantations";
+  const isWoodProduct = form.category === "wood_products";
+  const isTree = form.category === "indian_trees";
+  const isFirewood = form.category === "firewood";
+  const isTeak = form.tree_type === "Teak" || form.tree_type === "Teak Plantation";
+
+  const currentTypes = useMemo(() => {
+    if (!form.category) return [];
+    if (form.category === "firewood") return FIREWOOD_TYPES;
+    return TREE_TYPES[form.category] || [];
+  }, [form.category]);
+
+  function updateField(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function handleCategoryChange(value) {
+    setForm((prev) => ({
+      ...prev,
+      category: value,
+      tree_type: "",
+      teak_type: "",
+      wood_type_detail: "",
+      firewood_type: "",
+      product_type: "",
+      acreage: "",
+      quantity: "",
+      quantity_unit: "",
+      tree_age: "",
+      diameter: "",
+      estimated_volume: "",
+      condition: "",
+      harvest_status: "",
+    }));
+    setErrorMessage("");
+  }
+
+  function handlePrimaryTypeChange(value) {
+    setForm((prev) => ({
+      ...prev,
+      tree_type: value,
+      teak_type: "",
+      wood_type_detail: "",
+      firewood_type: "",
+      product_type: isWoodProduct ? value : "",
+    }));
+    setErrorMessage("");
+  }
+
+  function handlePhotos(event) {
+    const selected = Array.from(event.target.files || []);
+    const valid = selected.filter(
+      (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
+    );
+    setPhotos((prev) => [...prev, ...valid].slice(0, 10));
+    event.target.value = "";
+  }
+
+  function removePhoto(index) {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function validateStepOne() {
+    if (!form.category) {
+      setErrorMessage(getText(language, "chooseCategory"));
+      return false;
+    }
+    if (!form.tree_type) {
+      setErrorMessage(
+        isFirewood
+          ? getText(language, "chooseFirewood")
+          : getText(language, "chooseType")
+      );
+      return false;
+    }
+    if (isTeak && !form.teak_type) {
+      setErrorMessage(getText(language, "chooseTeak"));
+      return false;
+    }
+    if (isWoodProduct && !form.wood_type_detail) {
+      setErrorMessage(getText(language, "chooseWood"));
+      return false;
+    }
+    return true;
+  }
+
+  function validateStepTwo() {
+    if (!form.title.trim()) {
+      setErrorMessage(getText(language, "enterTitle"));
+      return false;
+    }
+    if (!form.location.trim()) {
+      setErrorMessage(getText(language, "enterLocation"));
+      return false;
+    }
+    if (!form.quantity.trim()) {
+      setErrorMessage(getText(language, "enterQuantity"));
+      return false;
+    }
+    if (!form.quantity_unit) {
+      setErrorMessage(getText(language, "chooseUnit"));
+      return false;
+    }
+    if (isPlantation && !form.acreage) {
+      setErrorMessage(getText(language, "enterArea"));
+      return false;
+    }
+    return true;
+  }
+
+  function validateStepThree() {
+    if (!form.price.trim()) {
+      setErrorMessage(getText(language, "enterPrice"));
+      return false;
+    }
+    return true;
+  }
+
+  function nextStep() {
+    setErrorMessage("");
+    if (step === 1 && !validateStepOne()) return;
+    if (step === 2 && !validateStepTwo()) return;
+    if (step < 4) setStep((prev) => prev + 1);
+  }
+
+  function previousStep() {
+    setErrorMessage("");
+    if (step > 1) setStep((prev) => prev - 1);
+  }
+
+  async function publishListing() {
+    if (!validateStepThree()) return;
+
+    if (!user?.id) {
+      setErrorMessage("User session not found. Please log in again.");
+      return;
+    }
+
+    try {
+      setSaving(true);
+      setErrorMessage("");
+
+      const selectedSubtype =
+        form.teak_type || form.wood_type_detail || form.firewood_type || null;
+
+      const subtypeGroup = form.teak_type
+        ? "teak"
+        : form.wood_type_detail
+          ? "wood"
+          : form.firewood_type
+            ? "firewood"
+            : null;
+
+      const canonicalWoodType =
+        form.wood_type_detail ||
+        form.firewood_type ||
+        form.tree_type ||
+        null;
+
+      const { data: listing, error: listingError } = await supabase
+        .from("listings")
+        .insert({
+          user_id: user.id,
+          role: profile?.role || user?.user_metadata?.role || "sawmill",
+          status: "pending",
+          category: form.category,
+          tree_type: form.tree_type,
+          title: form.title.trim(),
+          wood_type: canonicalWoodType,
+          product_type: form.product_type || null,
+
+          // NEW: structured subtype fields for every dashboard
+          subtype_group: subtypeGroup,
+          subtype: selectedSubtype,
+          teak_type: form.teak_type || null,
+          wood_type_detail: form.wood_type_detail || null,
+          firewood_type: form.firewood_type || null,
+          listing_language: language,
+
+          location: form.location.trim(),
+          quantity: form.quantity.trim(),
+          quantity_unit: form.quantity_unit,
+          acreage: isPlantation ? Number(form.acreage) : null,
+          tree_age: form.tree_age.trim() || null,
+          diameter: form.diameter.trim() || null,
+          estimated_volume: form.estimated_volume.trim() || null,
+          condition: form.condition || null,
+          harvest_status: form.harvest_status || null,
+          price: form.price.trim(),
+          description: form.description.trim() || null,
+          contact_preference: form.contact_preference,
+          expires_at: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
+        })
+        .select()
+        .single();
+
+      if (listingError) throw listingError;
+
+      for (let index = 0; index < photos.length; index++) {
+        const file = photos[index];
+        const extension = file.name.split(".").pop() || "jpg";
+        const storagePath =
+          `${user.id}/${listing.id}/${Date.now()}-${index}.${extension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("listing-photos")
+          .upload(storagePath, file, {
+            cacheControl: "3600",
+            upsert: false,
+            contentType: file.type,
+          });
+
+        if (uploadError) {
+          console.error("Photo upload error:", uploadError);
+          continue;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("listing-photos")
+          .getPublicUrl(storagePath);
+
+        const publicUrl = publicUrlData?.publicUrl;
+        if (!publicUrl) continue;
+
+        const { error: imageError } = await supabase
+          .from("listing_images")
+          .insert({
+            listing_id: listing.id,
+            user_id: user.id,
+            image_url: publicUrl,
+            storage_path: storagePath,
+            sort_order: index,
+          });
+
+        if (imageError) console.error("Listing image database error:", imageError);
+      }
+
+      setStep(5);
+      if (onPublished) {
+        setTimeout(() => onPublished(listing), 900);
+      }
+    } catch (error) {
+      console.error("Publish listing error:", error);
+      setErrorMessage(error?.message || getText(language, "uploadError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const category = CATEGORY_OPTIONS.find((item) => item.id === form.category);
+  const categoryLabel = category ? category.label[language] || category.label.en : "";
+
+  const primaryLabel =
+    isFirewood ? getText(language, "selectFirewood")
+      : isWoodProduct ? getText(language, "selectProduct")
+      : getText(language, "selectTreeType");
+
+  const titlePlaceholder =
+    isFirewood ? getText(language, "titlePlaceholderFirewood")
+      : isPlantation ? getText(language, "titlePlaceholderPlantation")
+      : isWoodProduct ? getText(language, "titlePlaceholderWood")
+      : getText(language, "titlePlaceholderTree");
+
+  return (
+    <div className="sell-tree-overlay">
+      <div className="sell-tree-modal">
+        <header className="sell-tree-header">
+          <div className="sell-tree-brand">
+            <div className="sell-tree-brand-icon">
+              <TreePine size={23} />
+            </div>
+            <div>
+              <strong>TimberMart</strong>
+              <span>{getText(language, "sellTimber")}</span>
+            </div>
+          </div>
+
+          <div className="sell-header-actions">
+            <div className="sell-language">
+              <Languages size={17} />
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                aria-label={getText(language, "language")}
+              >
+                {LANGUAGES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.native}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              className="sell-tree-close"
+              onClick={onClose}
+              disabled={saving}
+              aria-label="Close"
+            >
+              <X size={21} />
+            </button>
+          </div>
+        </header>
+
+        {step < 5 && (
+          <div className="sell-progress">
+            {[1, 2, 3, 4].map((item) => (
+              <div
+                key={item}
+                className={`sell-progress-item ${step >= item ? "active" : ""}`}
+              >
+                <span>{item}</span>
+                {item === 1 && getText(language, "category")}
+                {item === 2 && getText(language, "details")}
+                {item === 3 && getText(language, "photos")}
+                {item === 4 && getText(language, "review")}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="sell-tree-body">
+          {step === 1 && (
+            <section className="sell-step">
+              <div className="sell-step-heading">
+                <span>{getText(language, "step")} 1</span>
+                <h2>{getText(language, "whatSelling")}</h2>
+                <p>{getText(language, "categoryHelp")}</p>
+              </div>
+
+              <div className="sell-category-grid">
+                {CATEGORY_OPTIONS.map((item) => (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`sell-category-card ${form.category === item.id ? "selected" : ""}`}
+                    onClick={() => handleCategoryChange(item.id)}
+                  >
+                    <div className="sell-category-icon">{item.icon}</div>
+                    <div>
+                      <strong>{item.label[language] || item.label.en}</strong>
+                      <p>{item.description[language] || item.description.en}</p>
+                    </div>
+                    {form.category === item.id && (
+                      <CheckCircle2 size={21} className="sell-selected-icon" />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {form.category && (
+                <div className="sell-dependent-box">
+                  <label>
+                    {primaryLabel} <span>*</span>
+                  </label>
+                  <select
+                    value={form.tree_type}
+                    onChange={(e) => handlePrimaryTypeChange(e.target.value)}
+                  >
+                    <option value="">{getText(language, "selectType")}</option>
+                    {currentTypes.map((type) => (
+                      <option key={type} value={type}>
+                        {getOptionLabel(type, language)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {isTeak && (
+                    <div className="sell-subtype-block">
+                      <label>
+                        {getText(language, "teakType")} <span>*</span>
+                      </label>
+                      <select
+                        value={form.teak_type}
+                        onChange={(e) => updateField("teak_type", e.target.value)}
+                      >
+                        <option value="">{getText(language, "selectType")}</option>
+                        {TEAK_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {getOptionLabel(type, language)}
+                          </option>
+                        ))}
+                      </select>
+                      <small>{getText(language, "teakHelp")}</small>
+                    </div>
+                  )}
+
+                  {isWoodProduct && (
+                    <div className="sell-subtype-block">
+                      <label>
+                        {getText(language, "woodType")} <span>*</span>
+                      </label>
+                      <select
+                        value={form.wood_type_detail}
+                        onChange={(e) =>
+                          updateField("wood_type_detail", e.target.value)
+                        }
+                      >
+                        <option value="">{getText(language, "selectType")}</option>
+                        {WOOD_TYPE_OPTIONS.map((type) => (
+                          <option key={type} value={type}>
+                            {getOptionLabel(type, language)}
+                          </option>
+                        ))}
+                      </select>
+                      <small>{getText(language, "woodTypeHelp")}</small>
+                    </div>
+                  )}
+
+                  {isFirewood && (
+                    <div className="sell-subtype-block">
+                      <label>
+                        {getText(language, "selectFirewood")} <span>*</span>
+                      </label>
+                      <select
+                        value={form.firewood_type}
+                        onChange={(e) =>
+                          updateField("firewood_type", e.target.value)
+                        }
+                      >
+                        <option value="">{getText(language, "selectType")}</option>
+                        {FIREWOOD_TYPES.map((type) => (
+                          <option key={type} value={type}>
+                            {getOptionLabel(type, language)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          )}
+
+          {step === 2 && (
+            <section className="sell-step">
+              <div className="sell-step-heading">
+                <span>{getText(language, "step")} 2</span>
+                <h2>{getText(language, "aboutTimber")}</h2>
+                <p>{getText(language, "detailsHelp")}</p>
+              </div>
+
+              <div className="sell-selected-summary">
+                <span>{category?.icon}</span>
+                <div>
+                  <small>{categoryLabel}</small>
+                  <strong>
+                    {getOptionLabel(form.tree_type, language)}
+                    {form.teak_type && ` · ${getOptionLabel(form.teak_type, language)}`}
+                    {form.wood_type_detail &&
+                      ` · ${getOptionLabel(form.wood_type_detail, language)}`}
+                    {form.firewood_type &&
+                      ` · ${getOptionLabel(form.firewood_type, language)}`}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="sell-form-grid">
+                <div className="sell-field sell-full">
+                  <label>
+                    {getText(language, "title")} <span>*</span>
+                  </label>
+                  <input
+                    value={form.title}
+                    onChange={(e) => updateField("title", e.target.value)}
+                    placeholder={titlePlaceholder}
+                  />
+                </div>
+
+                <div className="sell-field">
+                  <label>
+                    {getText(language, "location")} <span>*</span>
+                  </label>
+                  <div className="sell-input-icon">
+                    <MapPin size={17} />
+                    <input
+                      value={form.location}
+                      onChange={(e) => updateField("location", e.target.value)}
+                      placeholder={getText(language, "locationPlaceholder")}
+                    />
+                  </div>
+                </div>
+
+                <div className="sell-field">
+                  <label>
+                    {getText(language, "quantity")} <span>*</span>
+                  </label>
+                  <input
+                    value={form.quantity}
+                    onChange={(e) => updateField("quantity", e.target.value)}
+                    placeholder={getText(language, "quantityPlaceholder")}
+                  />
+                </div>
+
+                <div className="sell-field">
+                  <label>
+                    {getText(language, "quantityUnit")} <span>*</span>
+                  </label>
+                  <select
+                    value={form.quantity_unit}
+                    onChange={(e) => updateField("quantity_unit", e.target.value)}
+                  >
+                    <option value="">{getText(language, "selectUnit")}</option>
+                    {UNITS.map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {isPlantation && (
+                  <>
+                    <div className="sell-field">
+                      <label>
+                        {getText(language, "plantationArea")} <span>*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.acreage}
+                        onChange={(e) => updateField("acreage", e.target.value)}
+                        placeholder="Example: 2.5"
+                      />
+                      <small>{getText(language, "enterArea")}</small>
+                    </div>
+
+                    <div className="sell-field">
+                      <label>{getText(language, "treeAge")}</label>
+                      <input
+                        value={form.tree_age}
+                        onChange={(e) => updateField("tree_age", e.target.value)}
+                        placeholder={getText(language, "treeAgePlaceholder")}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {isTree && (
+                  <>
+                    <div className="sell-field">
+                      <label>{getText(language, "treeAge")}</label>
+                      <input
+                        value={form.tree_age}
+                        onChange={(e) => updateField("tree_age", e.target.value)}
+                        placeholder={getText(language, "treeAgePlaceholder")}
+                      />
+                    </div>
+
+                    <div className="sell-field">
+                      <label>{getText(language, "diameter")}</label>
+                      <input
+                        value={form.diameter}
+                        onChange={(e) => updateField("diameter", e.target.value)}
+                        placeholder={getText(language, "diameterPlaceholder")}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {(isWoodProduct || isFirewood) && (
+                  <div className="sell-field">
+                    <label>{getText(language, "condition")}</label>
+                    <select
+                      value={form.condition}
+                      onChange={(e) => updateField("condition", e.target.value)}
+                    >
+                      <option value="">{getText(language, "selectCondition")}</option>
+                      {CONDITIONS.map((item) => (
+                        <option key={item} value={item}>
+                          {item}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="sell-field">
+                  <label>{getText(language, "volume")}</label>
+                  <input
+                    value={form.estimated_volume}
+                    onChange={(e) => updateField("estimated_volume", e.target.value)}
+                    placeholder={getText(language, "volumePlaceholder")}
+                  />
+                </div>
+
+                <div className="sell-field">
+                  <label>{getText(language, "status")}</label>
+                  <select
+                    value={form.harvest_status}
+                    onChange={(e) => updateField("harvest_status", e.target.value)}
+                  >
+                    <option value="">{getText(language, "selectStatus")}</option>
+                    {HARVEST_STATUS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="sell-field sell-full">
+                  <label>
+                    {getText(language, "price")} <span>*</span>
+                  </label>
+                  <input
+                    value={form.price}
+                    onChange={(e) => updateField("price", e.target.value)}
+                    placeholder={getText(language, "pricePlaceholder")}
+                  />
+                </div>
+
+                <div className="sell-field sell-full">
+                  <label>{getText(language, "description")}</label>
+                  <textarea
+                    rows="5"
+                    value={form.description}
+                    onChange={(e) => updateField("description", e.target.value)}
+                    placeholder={getText(language, "descriptionPlaceholder")}
+                  />
+                </div>
+              </div>
+            </section>
+          )}
+
+          {step === 3 && (
+            <section className="sell-step">
+              <div className="sell-step-heading">
+                <span>{getText(language, "step")} 3</span>
+                <h2>{getText(language, "addPhotos")}</h2>
+                <p>{getText(language, "photoHelp")}</p>
+              </div>
+
+              <label className="sell-photo-upload">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  multiple
+                  onChange={handlePhotos}
+                />
+                <div className="sell-photo-upload-icon">
+                  <ImagePlus size={30} />
+                </div>
+                <strong>{getText(language, "addPhotos")}</strong>
+                <span>{getText(language, "photoFormat")}</span>
+                <small>{getText(language, "upTo6")}</small>
+              </label>
+
+              {photos.length > 0 && (
+                <div className="sell-photo-grid">
+                  {photos.map((photo, index) => (
+                    <div
+                      className="sell-photo-preview"
+                      key={`${photo.name}-${index}`}
+                    >
+                      <img src={URL.createObjectURL(photo)} alt="" />
+                      <button type="button" onClick={() => removePhoto(index)}>
+                        <X size={16} />
+                      </button>
+                      {index === 0 && (
+                        <span>{getText(language, "mainPhoto")}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="sell-photo-tip">
+                <Camera size={18} />
+                <div>
+                  <strong>{getText(language, "photoTips")}</strong>
+                  <p>{getText(language, "photoTipsText")}</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {step === 4 && (
+            <section className="sell-step">
+              <div className="sell-step-heading">
+                <span>{getText(language, "step")} 4</span>
+                <h2>{getText(language, "reviewTitle")}</h2>
+                <p>{getText(language, "reviewHelp")}</p>
+              </div>
+
+              <div className="sell-review-card">
+                <div className="sell-review-title">
+                  <span>{category?.icon}</span>
+                  <div>
+                    <small>{categoryLabel}</small>
+                    <h3>{form.title}</h3>
+                    <strong>
+                      {getOptionLabel(form.tree_type, language)}
+                      {form.teak_type && ` · ${getOptionLabel(form.teak_type, language)}`}
+                      {form.wood_type_detail &&
+                        ` · ${getOptionLabel(form.wood_type_detail, language)}`}
+                      {form.firewood_type &&
+                        ` · ${getOptionLabel(form.firewood_type, language)}`}
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="sell-review-grid">
+                  <ReviewItem label={getText(language, "location")} value={form.location} />
+                  <ReviewItem
+                    label={getText(language, "quantity")}
+                    value={`${form.quantity} ${form.quantity_unit}`}
+                  />
+                  {form.acreage && (
+                    <ReviewItem
+                      label={getText(language, "plantationArea")}
+                      value={`${form.acreage} Acres`}
+                    />
+                  )}
+                  {form.tree_age && (
+                    <ReviewItem label={getText(language, "treeAge")} value={form.tree_age} />
+                  )}
+                  {form.diameter && (
+                    <ReviewItem label={getText(language, "diameter")} value={form.diameter} />
+                  )}
+                  {form.estimated_volume && (
+                    <ReviewItem label={getText(language, "volume")} value={form.estimated_volume} />
+                  )}
+                  {form.condition && (
+                    <ReviewItem label={getText(language, "condition")} value={form.condition} />
+                  )}
+                  {form.harvest_status && (
+                    <ReviewItem label={getText(language, "status")} value={form.harvest_status} />
+                  )}
+                  <ReviewItem label={getText(language, "expectedPrice")} value={form.price} />
+                  <ReviewItem
+                    label={getText(language, "listingPhotos")}
+                    value={`${photos.length} ${getText(language, "photos").toLowerCase()}`}
+                  />
+                </div>
+
+                {form.description && (
+                  <div className="sell-review-description">
+                    <strong>{getText(language, "descriptionLabel")}</strong>
+                    <p>{form.description}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="sell-publish-note">
+                <CheckCircle2 size={20} />
+                <p>{getText(language, "publishNote")}</p>
+              </div>
+              <div className="sell-expiry-note">
+                <span>⏳</span>
+                <div>
+                  <strong>15-day listing expiry</strong>
+                  <p>Your listing will expire automatically 15 days after it is posted.</p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {step === 5 && (
+            <section className="sell-success">
+              <div className="sell-success-icon">
+                <CheckCircle2 size={52} />
+              </div>
+              <h2>{getText(language, "successTitle")}</h2>
+              <p>{getText(language, "successText")}</p>
+              <div className="sell-success-summary">
+                <TreePine size={20} />
+                <span>{form.title}</span>
+              </div>
+              <small>{getText(language, "successSmall")}</small>
+            </section>
+          )}
+
+          {errorMessage && <div className="sell-error">{errorMessage}</div>}
+        </div>
+
+        {step < 5 && (
+          <footer className="sell-tree-footer">
+            <button
+              type="button"
+              className="sell-back-button"
+              onClick={step === 1 ? onClose : previousStep}
+              disabled={saving}
+            >
+              <ArrowLeft size={18} />
+              {step === 1 ? getText(language, "cancel") : getText(language, "back")}
+            </button>
+
+            {step < 4 ? (
+              <button
+                type="button"
+                className="sell-next-button"
+                onClick={nextStep}
+                disabled={saving}
+              >
+                {getText(language, "continue")}
+                <ArrowRight size={18} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="sell-publish-button"
+                onClick={publishListing}
+                disabled={saving}
+              >
+                {saving ? (
+                  <>
+                    <span className="sell-button-spinner" />
+                    {getText(language, "publishing")}
+                  </>
+                ) : (
+                  <>
+                    <Upload size={18} />
+                    {getText(language, "publish")}
+                  </>
+                )}
+              </button>
+            )}
+          </footer>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ReviewItem({ label, value }) {
+  if (!value) return null;
+  return (
+    <div className="sell-review-item">
+      <span>{label}</span>
+      <strong>{value}</strong>
+    </div>
+  );
+}
+
+/* ================= SAWMILL DASHBOARD ================= */
 
 const JOB_CATEGORIES = [
   "Machine Operator",
@@ -60,8 +1475,81 @@ const EXPERIENCE_OPTIONS = [
   "8+ Years",
 ];
 
+const SAWMILL_LANGUAGES = {
+  en: "English",
+  te: "తెలుగు",
+  hi: "हिन्दी",
+  ta: "தமிழ்",
+  kn: "ಕನ್ನಡ",
+};
+
+const SAWMILL_TRANSLATIONS = {
+  en: {
+    Dashboard:"Dashboard","Post a Job":"Post a Job","Job Wall":"Job Wall",
+    "Find Workers":"Find Workers","Job Applications":"Job Applications",
+    "Timber Listings":"Timber Listings","Patta Teak Suppliers":"Patta Teak Suppliers",
+    "Imported Teak Suppliers":"Imported Teak Suppliers",Notifications:"Notifications",
+    "Update My Location":"Update My Location","My Profile":"My Profile",Settings:"Settings",
+    Logout:"Logout","Active Jobs":"Active Jobs","Worker Profiles":"Worker Profiles",
+    Applications:"Applications","Business Location":"Business Location","Sawmill Tools":"Sawmill Tools",
+    "Manage jobs and connect with workers.":"Manage jobs and connect with workers.",
+    "Nearby Workers":"Nearby Workers","View Profile":"View Profile","View":"View",
+    "Post Job":"Post Job","Search jobs, company, location...":"Search jobs, company, location...",
+    "Search workers, skills, location...":"Search workers, skills, location...",
+    "No jobs posted yet":"No jobs posted yet","No jobs found":"No jobs found",
+    "No worker profiles found":"No worker profiles found","Mark all read":"Mark all read",
+    "No notifications yet":"No notifications yet","Update GPS":"Update GPS",
+    "Verified TimberMart Business":"Verified TimberMart Business",
+    "Edit Profile":"Edit Profile","Call":"Call","WhatsApp":"WhatsApp","Chat":"Chat",
+    "Delete Job":"Delete Job","Cancel":"Cancel","Next":"Next","Back":"Back",
+    "Preview":"Preview","Posting...":"Posting...","Post Your First Job":"Post Your First Job",
+    "Applications":"Applications","Review workers":"Review workers",
+    "View nearby profiles":"View nearby profiles","View posted jobs":"View posted jobs",
+    "Find skilled workers":"Find skilled workers","Jobs posted by your business.":"Jobs posted by your business.",
+  },
+  te: {
+    Dashboard:"డాష్‌బోర్డ్","Post a Job":"ఉద్యోగం పోస్ట్ చేయండి","Job Wall":"ఉద్యోగాల జాబితా",
+    "Find Workers":"వర్కర్లను వెతకండి","Job Applications":"ఉద్యోగ దరఖాస్తులు",
+    "Timber Listings":"కలప జాబితాలు","Patta Teak Suppliers":"పట్టా టీక్ సరఫరాదారులు",
+    "Imported Teak Suppliers":"ఇంపోర్టెడ్ టీక్ సరఫరాదారులు",Notifications:"నోటిఫికేషన్లు",
+    "Update My Location":"నా లొకేషన్ అప్‌డేట్ చేయండి","My Profile":"నా ప్రొఫైల్",Settings:"సెట్టింగ్స్",
+    Logout:"లాగ్ అవుట్","Active Jobs":"యాక్టివ్ ఉద్యోగాలు","Worker Profiles":"వర్కర్ ప్రొఫైల్స్",
+    Applications:"దరఖాస్తులు","Business Location":"వ్యాపార లొకేషన్","Sawmill Tools":"సా మిల్ టూల్స్",
+    "Manage jobs and connect with workers.":"ఉద్యోగాలను నిర్వహించి వర్కర్లతో కనెక్ట్ అవ్వండి.",
+    "Nearby Workers":"దగ్గరలో ఉన్న వర్కర్లు","View Profile":"ప్రొఫైల్ చూడండి","View":"చూడండి",
+    "Post Job":"ఉద్యోగం పోస్ట్ చేయండి","Search jobs, company, location...":"ఉద్యోగం, కంపెనీ, లొకేషన్ వెతకండి...",
+    "Search workers, skills, location...":"వర్కర్లు, నైపుణ్యాలు, లొకేషన్ వెతకండి...",
+    "No jobs posted yet":"ఇంకా ఉద్యోగాలు పోస్ట్ చేయలేదు","No jobs found":"ఉద్యోగాలు కనిపించలేదు",
+    "No worker profiles found":"వర్కర్ ప్రొఫైల్స్ కనిపించలేదు","Mark all read":"అన్నీ చదివినట్లుగా గుర్తించండి",
+    "No notifications yet":"ఇంకా నోటిఫికేషన్లు లేవు","Update GPS":"GPS అప్‌డేట్ చేయండి",
+    "Verified TimberMart Business":"ధృవీకరించబడిన TimberMart వ్యాపారం",
+    "Edit Profile":"ప్రొఫైల్ ఎడిట్ చేయండి","Call":"కాల్","WhatsApp":"వాట్సాప్","Chat":"చాట్",
+    "Delete Job":"ఉద్యోగాన్ని తొలగించండి","Cancel":"రద్దు చేయండి","Next":"తదుపరి","Back":"వెనుకకు",
+    "Preview":"ప్రివ్యూ","Posting...":"పోస్ట్ చేస్తోంది...","Post Your First Job":"మొదటి ఉద్యోగాన్ని పోస్ట్ చేయండి",
+    "Review workers":"వర్కర్లను పరిశీలించండి","View nearby profiles":"దగ్గరలోని ప్రొఫైల్స్ చూడండి",
+    "View posted jobs":"పోస్ట్ చేసిన ఉద్యోగాలు చూడండి","Find skilled workers":"నైపుణ్యం ఉన్న వర్కర్లను వెతకండి",
+    "Jobs posted by your business.":"మీ వ్యాపారం పోస్ట్ చేసిన ఉద్యోగాలు.",
+  },
+  hi: {"Dashboard":"डैशबोर्ड","Post a Job":"नौकरी पोस्ट करें","Find Workers":"वर्कर खोजें","Job Wall":"जॉब वॉल","Notifications":"सूचनाएँ","My Profile":"मेरी प्रोफ़ाइल","Settings":"सेटिंग्स","Logout":"लॉगआउट","Timber Listings":"लकड़ी की लिस्टिंग","Job Applications":"नौकरी आवेदन","Update My Location":"मेरा स्थान अपडेट करें","View Profile":"प्रोफ़ाइल देखें","Call":"कॉल","WhatsApp":"व्हाट्सऐप","Chat":"चैट","Cancel":"रद्द करें","Next":"अगला","Back":"पीछे","Preview":"प्रीव्यू","Mark all read":"सभी पढ़ा हुआ करें"},
+  ta: {"Dashboard":"டாஷ்போர்டு","Post a Job":"வேலை இடுகையிடவும்","Find Workers":"பணியாளர்களைக் கண்டறியவும்","Job Wall":"வேலை பட்டியல்","Notifications":"அறிவிப்புகள்","My Profile":"என் சுயவிவரம்","Settings":"அமைப்புகள்","Logout":"வெளியேறு","Timber Listings":"மரப் பட்டியல்கள்","Job Applications":"வேலை விண்ணப்பங்கள்","Update My Location":"என் இருப்பிடத்தைப் புதுப்பிக்கவும்","View Profile":"சுயவிவரத்தைப் பார்க்கவும்","Call":"அழைப்பு","WhatsApp":"வாட்ஸ்அப்","Chat":"அரட்டை","Cancel":"ரத்து","Next":"அடுத்து","Back":"பின்செல்","Preview":"முன்னோட்டம்"},
+  kn: {"Dashboard":"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್","Post a Job":"ಕೆಲಸ ಪೋಸ್ಟ್ ಮಾಡಿ","Find Workers":"ಕೆಲಸಗಾರರನ್ನು ಹುಡುಕಿ","Job Wall":"ಕೆಲಸದ ಪಟ್ಟಿ","Notifications":"ಅಧಿಸೂಚನೆಗಳು","My Profile":"ನನ್ನ ಪ್ರೊಫೈಲ್","Settings":"ಸೆಟ್ಟಿಂಗ್ಸ್","Logout":"ಲಾಗ್‌ಔಟ್","Timber Listings":"ಮರದ ಪಟ್ಟಿಗಳು","Job Applications":"ಕೆಲಸದ ಅರ್ಜಿಗಳು","Update My Location":"ನನ್ನ ಸ್ಥಳವನ್ನು ನವೀಕರಿಸಿ","View Profile":"ಪ್ರೊಫೈಲ್ ನೋಡಿ","Call":"ಕರೆ","WhatsApp":"ವಾಟ್ಸಾಪ್","Chat":"ಚಾಟ್","Cancel":"ರದ್ದು","Next":"ಮುಂದೆ","Back":"ಹಿಂದೆ","Preview":"ಮುನ್ನೋಟ"},
+};
+
+
 export default function SawmillDashboard() {
   const navigate = useNavigate();
+
+  const [dashboardLanguage, setDashboardLanguage] = useState(
+    () => localStorage.getItem("timbermart_sawmill_language") || "en"
+  );
+
+  const tx = (text) =>
+    SAWMILL_TRANSLATIONS[dashboardLanguage]?.[text] || text;
+
+  function changeDashboardLanguage(value) {
+    setDashboardLanguage(value);
+    localStorage.setItem("timbermart_sawmill_language", value);
+  }
 
   /* =====================================================
      AUTH / PROFILE
@@ -89,6 +1577,7 @@ export default function SawmillDashboard() {
   const [galleryIndex, setGalleryIndex] = useState(0);
   const [supplierMode, setSupplierMode] = useState("");
   const [showTimberModal, setShowTimberModal] = useState(false);
+  const [showSellTreeForm, setShowSellTreeForm] = useState(false);
   const [timberSaving, setTimberSaving] = useState(false);
   const [timberPhotos, setTimberPhotos] = useState([]);
   const [timberForm, setTimberForm] = useState({
@@ -208,7 +1697,7 @@ export default function SawmillDashboard() {
             currentSession.user.email?.split(
               "@"
             )[0] ||
-            "Sawmill",
+            tx("Sawmill"),
           role: "sawmill",
           phone:
             currentSession.user.phone || "",
@@ -507,43 +1996,12 @@ export default function SawmillDashboard() {
   }
 
   async function loadTimberListings() {
-    let { data, error } = await supabase
+    // Load EVERY timber listing. Do not restrict by the current sawmill's user_id
+    // or by seller role; the marketplace is shared across TimberMart.
+    let { data: listings, error } = await supabase
       .from("listings")
-      .select(`
-        *,
-        listing_images (
-          id,
-          image_url,
-          storage_path,
-          sort_order
-        )
-      `)
-      .in("role", [
-        "farmer",
-        "merchant",
-        "sawmill",
-        "sawmill_business",
-        "carpenter",
-        "timber_merchant",
-      ])
+      .select("*")
       .order("created_at", { ascending: false });
-
-    if (error) {
-      const fallback = await supabase
-        .from("listings")
-        .select("*")
-        .in("role", [
-          "farmer",
-          "merchant",
-          "sawmill",
-          "sawmill_business",
-          "carpenter",
-          "timber_merchant",
-        ])
-        .order("created_at", { ascending: false });
-      data = fallback.data || [];
-      error = fallback.error;
-    }
 
     if (error) {
       console.error("Timber listings:", error);
@@ -551,7 +2009,57 @@ export default function SawmillDashboard() {
       return;
     }
 
-    setTimberListings(data || []);
+    const rows = listings || [];
+    const listingIds = rows.map((x) => x.id).filter(Boolean);
+
+    // Load all photos independently so one missing Supabase relationship
+    // cannot make the whole gallery empty.
+    let imageRows = [];
+    if (listingIds.length) {
+      const { data: images, error: imageError } = await supabase
+        .from("listing_images")
+        .select("id,listing_id,image_url,storage_path,sort_order")
+        .in("listing_id", listingIds)
+        .order("sort_order", { ascending: true });
+
+      if (imageError) {
+        console.error("Listing images:", imageError);
+      } else {
+        imageRows = images || [];
+      }
+    }
+
+    const imageMap = {};
+    imageRows.forEach((image) => {
+      if (!imageMap[image.listing_id]) imageMap[image.listing_id] = [];
+      if (image.image_url) imageMap[image.listing_id].push(image);
+    });
+
+    const sellerIds = [...new Set(rows.map((x) => x.user_id).filter(Boolean))];
+    let sellerMap = {};
+
+    if (sellerIds.length) {
+      const { data: sellers, error: sellerError } = await supabase
+        .from("profiles")
+        .select("id,name,phone,role,location,photo_url")
+        .in("id", sellerIds);
+
+      if (!sellerError) {
+        (sellers || []).forEach((seller) => {
+          sellerMap[seller.id] = seller;
+        });
+      } else {
+        console.error("Seller profiles:", sellerError);
+      }
+    }
+
+    setTimberListings(
+      rows.map((item) => ({
+        ...item,
+        listing_images: imageMap[item.id] || [],
+        seller: sellerMap[item.user_id] || null,
+      }))
+    );
   }
 
   async function loadRequirements() {
@@ -712,48 +2220,75 @@ export default function SawmillDashboard() {
 
   function chooseSupplierMode(mode) {
     setSupplierMode(mode);
+    setActiveTab("timber");
     setMobileMenu(false);
-    window.setTimeout(() => {
-      document
-        .getElementById("sawmill-timber-marketplace")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
+    window.setTimeout(() => document.getElementById("sawmill-timber-marketplace")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
-  const visibleTimberListings = useMemo(() => {
-    return timberListings.filter((item) => {
-      const status = String(item.status || "").toLowerCase();
-      const isMine = item.user_id === session?.user?.id;
-      return isMine || !status || status === "approved" || status === "active";
+  function openTimberMarketplace(mode = "") {
+    setSupplierMode(mode);
+    setActiveTab("timber");
+    setMobileMenu(false);
+    window.setTimeout(() => document.getElementById("sawmill-timber-marketplace")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+
+  function getListingExpiry(item) {
+    if (item?.expires_at) return new Date(item.expires_at);
+    if (item?.created_at) {
+      const d = new Date(item.created_at);
+      d.setDate(d.getDate() + 15);
+      return d;
+    }
+    return null;
+  }
+
+  function isListingExpired(item) {
+    const d = getListingExpiry(item);
+    return !!d && d.getTime() <= Date.now();
+  }
+
+  function formatListingDate(value) {
+    if (!value) return "—";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? "—" : d.toLocaleDateString("en-IN", {
+      day: "2-digit", month: "short", year: "numeric"
     });
-  }, [timberListings, session?.user?.id]);
+  }
+
+  function getDaysLeft(item) {
+    const d = getListingExpiry(item);
+    if (!d) return null;
+    return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+  }
+
+  function isPattaTeak(item) {
+    const text = [item?.title,item?.wood_type,item?.product_type,item?.description,item?.category]
+      .filter(Boolean).join(" ");
+    return /(patta\s*teak|patta|indian teak|native teak|farm teak)/i.test(text);
+  }
+
+  function isImportedTeak(item) {
+    const text = [item?.title,item?.wood_type,item?.product_type,item?.description,item?.category]
+      .filter(Boolean).join(" ");
+    return /(imported teak|burma teak|burmese teak|myanmar teak|african teak|malaysian teak|indonesian teak|indonesia|imported|foreign teak)/i.test(text);
+  }
+
+  const visibleTimberListings = useMemo(() => timberListings.filter((item) => {
+    const status = String(item.status || "").toLowerCase();
+    const isMine = item.user_id === session?.user?.id;
+    if (isListingExpired(item)) return isMine;
+    if (!status) return true;
+    // Seller can always see their own listing/status.
+    // Other users only see admin-approved/live listings.
+    return isMine || status === "approved";
+  }), [timberListings, session?.user?.id]);
 
   const filteredSupplierListings = useMemo(() => {
-    if (!supplierMode) return visibleTimberListings;
-
-    const text = visibleTimberListings
-      .map((item) =>
-        [
-          item.title,
-          item.wood_type,
-          item.product_type,
-          item.description,
-          item.category,
-        ]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase()
-      )
-      .map((value) => value);
-
-    const matcher =
-      supplierMode === "patta"
-        ? /(patta\s*teak|patta|indian teak|native teak|farm teak)/i
-        : /(imported teak|burma teak|myanmar teak|african teak|malaysian teak|indonesia|imported|foreign teak)/i;
-
-    return visibleTimberListings.filter((item, index) =>
-      matcher.test(text[index] || "")
-    );
+    if (supplierMode === "patta") return visibleTimberListings.filter(isPattaTeak);
+    if (supplierMode === "imported") return visibleTimberListings.filter(isImportedTeak);
+    return visibleTimberListings;
   }, [supplierMode, visibleTimberListings]);
 
   const unreadNotifications = notifications.filter(
@@ -792,6 +2327,7 @@ export default function SawmillDashboard() {
         longitude: profile?.longitude ?? null,
         price: timberForm.price.trim(),
         description: timberForm.description.trim() || null,
+        expires_at: new Date(Date.now() + 15 * 86400000).toISOString(),
       };
 
       const { data: listing, error } = await supabase
@@ -849,10 +2385,6 @@ export default function SawmillDashboard() {
         throw new Error("No photo could be uploaded. Please try again.");
       }
 
-      await supabase.rpc("notify_admin_new_listing", {
-        p_listing_id: listing.id,
-      });
-
       await loadTimberListings();
 
       setShowTimberModal(false);
@@ -868,7 +2400,7 @@ export default function SawmillDashboard() {
       });
 
       alert(
-        "✅ Timber listing submitted. It is pending Admin approval."
+        "✅ Timber listing submitted. It is pending Admin approval. You will receive a notification after Admin review."
       );
     } catch (error) {
       console.error("Timber listing:", error);
@@ -1475,14 +3007,33 @@ export default function SawmillDashboard() {
           table: "notifications",
           filter: `user_id=eq.${session.user.id}`,
         },
-        () => loadNotifications(session.user.id)
+        (payload) => {
+          console.log("Sawmill notification realtime:", payload);
+          loadNotifications(session.user.id);
+        }
       )
       .on(
         "postgres_changes",
         {
-          event: "*",
+          event: "UPDATE",
           schema: "public",
           table: "listings",
+          filter: `user_id=eq.${session.user.id}`,
+        },
+        (payload) => {
+          loadTimberListings();
+          if (String(payload?.new?.status || "").toLowerCase() === "approved") {
+            loadNotifications(session.user.id);
+          }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "listings",
+          filter: `user_id=eq.${session.user.id}`,
         },
         () => loadTimberListings()
       )
@@ -1498,11 +3049,22 @@ export default function SawmillDashboard() {
   ===================================================== */
 
   async function logout() {
-    await supabase.auth.signOut();
-
-    navigate("/login", {
-      replace: true,
-    });
+    try {
+      setMobileMenu(false);
+      setNotificationOpen(false);
+      setShowChat(false);
+      setChatUser(null);
+      await supabase.auth.signOut();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      navigate("/login", { replace: true });
+      window.setTimeout(() => {
+        if (window.location.pathname !== "/login") {
+          window.location.assign("/login");
+        }
+      }, 150);
+    }
   }
 
   /* =====================================================
@@ -1520,7 +3082,7 @@ export default function SawmillDashboard() {
   ===================================================== */
 
   return (
-    <div className="sawmill-app">
+    <div className={`sawmill-app sawmill-lang-${dashboardLanguage}`} lang={dashboardLanguage}>
 
       {/* =================================================
           HEADER
@@ -1554,7 +3116,21 @@ export default function SawmillDashboard() {
 
 
         <div className="sawmill-header-right">
+<div className="sawmill-language-wrap">
+            <Globe2 size={18} />
+            <select
+              className="sawmill-language-select"
+              value={dashboardLanguage}
+              onChange={(e) => changeDashboardLanguage(e.target.value)}
+              aria-label="Language"
+            >
+              {Object.entries(SAWMILL_LANGUAGES).map(([code, label]) => (
+                <option key={code} value={code}>{label}</option>
+              ))}
+            </select>
+          </div>
 
+          
           <button
             className="sawmill-bell"
             onClick={() => setNotificationOpen(true)}
@@ -1595,7 +3171,7 @@ export default function SawmillDashboard() {
 
             <span>
               {profile?.name ||
-                "Sawmill"}
+                tx("Sawmill")}
             </span>
 
           </button>
@@ -1663,12 +3239,12 @@ export default function SawmillDashboard() {
 
               <strong>
                 {profile?.name ||
-                  "Sawmill"}
+                  tx("Sawmill")}
               </strong>
 
               <span>
                 {profile?.location ||
-                  "Location not added"}
+                  tx("Location not added")}
               </span>
 
             </div>
@@ -1701,9 +3277,7 @@ export default function SawmillDashboard() {
                 });
               }}
             >
-              <Home size={18} />
-              Dashboard
-            </button>
+              <Home size={18} />{tx("Dashboard")}</button>
 
 
             <button
@@ -1730,9 +3304,7 @@ export default function SawmillDashboard() {
             >
               <Briefcase
                 size={18}
-              />
-              Post a Job
-            </button>
+              />{tx("Post a Job")}</button>
 
 
             <button
@@ -1751,9 +3323,7 @@ export default function SawmillDashboard() {
                 );
               }}
             >
-              <Search size={18} />
-              Job Wall
-            </button>
+              <Search size={18} />{tx("Job Wall")}</button>
 
 
             <button
@@ -1772,9 +3342,7 @@ export default function SawmillDashboard() {
                 );
               }}
             >
-              <Users size={18} />
-              Find Workers
-            </button>
+              <Users size={18} />{tx("Find Workers")}</button>
 
 
             <button
@@ -1788,24 +3356,27 @@ export default function SawmillDashboard() {
                 );
               }}
             >
-              <Check size={18} />
-              Job Applications
-            </button>
+              <Check size={18} />{tx("Job Applications")}</button>
 
+
+            <button
+              className={activeTab === "timber" && !supplierMode ? "active" : ""}
+              onClick={() => openTimberMarketplace("")}
+            >
+              <Building2 size={18} />{tx("Timber Listings")}<b>{visibleTimberListings.length}</b>
+            </button>
 
             <button
               onClick={() => {
-                document
-                  .getElementById("sawmill-timber-marketplace")
-                  ?.scrollIntoView({ behavior: "smooth" });
+                setShowSellTreeForm(true);
                 setMobileMenu(false);
               }}
             >
-              <Building2 size={18} />
-              Timber Listings
+              <ImagePlus size={18} />Sell Timber
             </button>
 
             <button
+              className={activeTab === "timber" && supplierMode === "patta" ? "active" : ""}
               onClick={() => chooseSupplierMode("patta")}
             >
               🌿
@@ -1820,11 +3391,10 @@ export default function SawmillDashboard() {
             </button>
 
             <button
+              className={activeTab === "timber" && supplierMode === "imported" ? "active" : ""}
               onClick={() => chooseSupplierMode("imported")}
             >
-              <Globe2 size={18} />
-              Imported Teak Suppliers
-              <b>
+              <Globe2 size={18} />{tx("Imported Teak Suppliers")}<b>
                 {visibleTimberListings.filter((item) =>
                   /(imported teak|burma teak|myanmar teak|african teak|malaysian teak|imported|foreign teak)/i.test(
                     `${item.title || ""} ${item.wood_type || ""} ${item.description || ""}`
@@ -1863,9 +3433,7 @@ export default function SawmillDashboard() {
                 );
               }}
             >
-              <User size={18} />
-              My Profile
-            </button>
+              <User size={18} />{tx("My Profile")}</button>
 
 
             <button
@@ -1877,9 +3445,7 @@ export default function SawmillDashboard() {
             >
               <Settings
                 size={18}
-              />
-              Settings
-            </button>
+              />{tx("Settings")}</button>
 
           </nav>
 
@@ -1896,9 +3462,7 @@ export default function SawmillDashboard() {
             className="sawmill-logout"
             onClick={logout}
           >
-            <LogOut size={18} />
-            Logout
-          </button>
+            <LogOut size={18} />{tx("Logout")}</button>
 
         </div>
 
@@ -1984,9 +3548,7 @@ export default function SawmillDashboard() {
                 >
                   <Briefcase
                     size={17}
-                  />
-                  Post a Job
-                </button>
+                  />{tx("Post a Job")}</button>
 
 
                 <button
@@ -2011,9 +3573,7 @@ export default function SawmillDashboard() {
                       })
                   }
                 >
-                  <Users size={17} />
-                  Find Workers
-                </button>
+                  <Users size={17} />{tx("Find Workers")}</button>
 
               </div>
 
@@ -2065,12 +3625,10 @@ export default function SawmillDashboard() {
 
                 <strong>
                   {profile?.name ||
-                    "Sawmill / Business"}
+                    tx("Sawmill / Business")}
                 </strong>
 
-                <span>
-                  Verified TimberMart Business
-                </span>
+                <span>{tx("Verified TimberMart Business")}</span>
 
               </div>
 
@@ -2100,9 +3658,7 @@ export default function SawmillDashboard() {
                 {myJobs.length}
               </strong>
 
-              <small>
-                Active Jobs
-              </small>
+              <small>{tx("Active Jobs")}</small>
 
             </div>
 
@@ -2117,9 +3673,7 @@ export default function SawmillDashboard() {
                 {workers.length}
               </strong>
 
-              <small>
-                Worker Profiles
-              </small>
+              <small>{tx("Worker Profiles")}</small>
 
             </div>
 
@@ -2134,9 +3688,7 @@ export default function SawmillDashboard() {
                 {applications.length}
               </strong>
 
-              <small>
-                Applications
-              </small>
+              <small>{tx("Applications")}</small>
 
             </div>
 
@@ -2152,9 +3704,7 @@ export default function SawmillDashboard() {
                   "—"}
               </strong>
 
-              <small>
-                Business Location
-              </small>
+              <small>{tx("Business Location")}</small>
 
             </div>
 
@@ -2171,9 +3721,7 @@ export default function SawmillDashboard() {
 
               <div>
 
-                <h2>
-                  Sawmill Tools
-                </h2>
+                <h2>{tx("Sawmill Tools")}</h2>
 
                 <p>
                   Manage jobs and connect
@@ -2210,13 +3758,9 @@ export default function SawmillDashboard() {
                   📋
                 </span>
 
-                <strong>
-                  Post Job
-                </strong>
+                <strong>{tx("Post Job")}</strong>
 
-                <small>
-                  Find skilled workers
-                </small>
+                <small>{tx("Find skilled workers")}</small>
 
               </button>
 
@@ -2238,13 +3782,9 @@ export default function SawmillDashboard() {
                   👷
                 </span>
 
-                <strong>
-                  Find Workers
-                </strong>
+                <strong>{tx("Find Workers")}</strong>
 
-                <small>
-                  View nearby profiles
-                </small>
+                <small>{tx("View nearby profiles")}</small>
 
               </button>
 
@@ -2266,13 +3806,9 @@ export default function SawmillDashboard() {
                   🔎
                 </span>
 
-                <strong>
-                  Job Wall
-                </strong>
+                <strong>{tx("Job Wall")}</strong>
 
-                <small>
-                  View posted jobs
-                </small>
+                <small>{tx("View posted jobs")}</small>
 
               </button>
 
@@ -2289,13 +3825,9 @@ export default function SawmillDashboard() {
                   📄
                 </span>
 
-                <strong>
-                  Applications
-                </strong>
+                <strong>{tx("Applications")}</strong>
 
-                <small>
-                  Review workers
-                </small>
+                <small>{tx("Review workers")}</small>
 
               </button>
 
@@ -2318,9 +3850,7 @@ export default function SawmillDashboard() {
                   My Jobs
                 </h2>
 
-                <p>
-                  Jobs posted by your business.
-                </p>
+                <p>{tx("Jobs posted by your business.")}</p>
 
               </div>
 
@@ -2336,9 +3866,7 @@ export default function SawmillDashboard() {
               >
                 <Briefcase
                   size={14}
-                />
-                Post Job
-              </button>
+                />{tx("Post Job")}</button>
 
             </div>
 
@@ -2351,9 +3879,7 @@ export default function SawmillDashboard() {
                   📋
                 </div>
 
-                <h3>
-                  No jobs posted yet
-                </h3>
+                <h3>{tx("No jobs posted yet")}</h3>
 
                 <p>
                   Create your first job
@@ -2368,9 +3894,7 @@ export default function SawmillDashboard() {
                       true
                     );
                   }}
-                >
-                  Post Your First Job
-                </button>
+                >{tx("Post Your First Job")}</button>
 
               </div>
 
@@ -2403,7 +3927,7 @@ export default function SawmillDashboard() {
 
                       <small>
                         {job.salary ||
-                          "Salary not specified"}
+                          tx("Salary not specified")}
                       </small>
 
                     </div>
@@ -2414,9 +3938,7 @@ export default function SawmillDashboard() {
                         openJob(job)
                       }
                     >
-                      <Eye size={15} />
-                      View
-                    </button>
+                      <Eye size={15} />{tx("View")}</button>
 
                   </article>
 
@@ -2442,9 +3964,7 @@ export default function SawmillDashboard() {
 
               <div>
 
-                <h2>
-                  Job Wall
-                </h2>
+                <h2>{tx("Job Wall")}</h2>
 
                 <p>
                   All jobs posted by TimberMart
@@ -2487,9 +4007,7 @@ export default function SawmillDashboard() {
                   🔎
                 </div>
 
-                <h3>
-                  No jobs found
-                </h3>
+                <h3>{tx("No jobs found")}</h3>
 
                 <p>
                   Posted jobs will appear
@@ -2535,14 +4053,14 @@ export default function SawmillDashboard() {
 
                         <strong>
                           {job.profiles?.name ||
-                            "Timber Business"}
+                            tx("Timber Business")}
                         </strong>
 
                         <span>
                           {job.location ||
                             job.profiles
                               ?.location ||
-                            "Location not added"}
+                            tx("Location not added")}
                         </span>
 
                       </div>
@@ -2563,7 +4081,7 @@ export default function SawmillDashboard() {
 
                     <p>
                       {job.description ||
-                        "No description provided."}
+                        tx("No description provided.")}
                     </p>
 
 
@@ -2574,7 +4092,7 @@ export default function SawmillDashboard() {
                           size={14}
                         />
                         {job.job_type ||
-                          "Work Type"}
+                          tx("Work Type")}
                       </span>
 
                       <span>
@@ -2582,13 +4100,13 @@ export default function SawmillDashboard() {
                           size={14}
                         />
                         {job.experience ||
-                          "Experience"}
+                          tx("Experience")}
                       </span>
 
                       <span>
                         💰
                         {job.salary ||
-                          "Salary"}
+                          tx("Salary")}
                       </span>
 
                     </div>
@@ -2607,9 +4125,7 @@ export default function SawmillDashboard() {
                           openJob(job)
                         }
                       >
-                        <Eye size={15} />
-                        View
-                      </button>
+                        <Eye size={15} />{tx("View")}</button>
 
                     </div>
 
@@ -2637,9 +4153,7 @@ export default function SawmillDashboard() {
 
               <div>
 
-                <h2>
-                  Nearby Workers
-                </h2>
+                <h2>{tx("Nearby Workers")}</h2>
 
                 <p>
                   Find workers based on
@@ -2682,9 +4196,7 @@ export default function SawmillDashboard() {
                   👷
                 </div>
 
-                <h3>
-                  No worker profiles found
-                </h3>
+                <h3>{tx("No worker profiles found")}</h3>
 
                 <p>
                   Workers who create profiles
@@ -2749,7 +4261,7 @@ export default function SawmillDashboard() {
                               .join(
                                 " • "
                               ) ||
-                              "Skilled Worker"}
+                              tx("Skilled Worker")}
                           </span>
 
                         </div>
@@ -2777,7 +4289,7 @@ export default function SawmillDashboard() {
                           worker
                             .profile
                             ?.location ||
-                          "Location not added"}
+                          tx("Location not added")}
 
                       </div>
 
@@ -2844,9 +4356,7 @@ export default function SawmillDashboard() {
                       >
                         <User
                           size={15}
-                        />
-                        View Profile
-                      </button>
+                        />{tx("View Profile")}</button>
 
                     </article>
 
@@ -2859,6 +4369,82 @@ export default function SawmillDashboard() {
 
           </section>
 
+
+          {/* =================================================
+              TIMBER MARKETPLACE
+          ================================================= */}
+          <section className="sawmill-section sawmill-timber-marketplace" id="sawmill-timber-marketplace">
+            <div className="sawmill-section-heading sawmill-marketplace-heading">
+              <div>
+                <span className="sawmill-section-kicker">🪵 TIMBER MARKET</span>
+                <h2>{tx("Timber Listings")}</h2>
+                <p>All approved timber posts from farmers, merchants, sawmills and other TimberMart sellers.</p>
+              </div>
+              <div className="sawmill-marketplace-actions">
+                <button type="button" className={!supplierMode ? "active" : ""} onClick={() => setSupplierMode("")}>All Timber <b>{visibleTimberListings.length}</b></button>
+                <button type="button" className={supplierMode === "patta" ? "active" : ""} onClick={() => setSupplierMode("patta")}>🌿 Patta Teak <b>{visibleTimberListings.filter(isPattaTeak).length}</b></button>
+                <button type="button" className={supplierMode === "imported" ? "active" : ""} onClick={() => setSupplierMode("imported")}>🌍 Imported Teak <b>{visibleTimberListings.filter(isImportedTeak).length}</b></button>
+                <button type="button" className="primary" onClick={() => setShowSellTreeForm(true)}>
+                  <ImagePlus size={16} /> Sell Timber
+                </button>
+              </div>
+            </div>
+
+            <div className="sawmill-marketplace-summary">
+              <span>Showing <strong>{filteredSupplierListings.length}</strong> listing{filteredSupplierListings.length === 1 ? "" : "s"}</span>
+              <span>⏳ Every listing expires 15 days after posting</span>
+            </div>
+
+            {filteredSupplierListings.length === 0 ? (
+              <div className="sawmill-empty sawmill-timber-empty">
+                <div>🪵</div>
+                <h3>{supplierMode === "patta" ? "No Patta Teak listings found" : supplierMode === "imported" ? "No Imported Teak listings found" : "No timber listings found"}</h3>
+                <p>Approved timber posts from all sellers will appear here.</p>
+                <button type="button" onClick={() => setShowSellTreeForm(true)}>Sell Timber</button>
+              </div>
+            ) : (
+              <div className="sawmill-market-grid sawmill-timber-market-grid">
+                {filteredSupplierListings.map((listing) => {
+                  const images = getListingImages(listing);
+                  const expired = isListingExpired(listing);
+                  const daysLeft = getDaysLeft(listing);
+                  const expiry = getListingExpiry(listing);
+                  const sellerName = listing.seller?.name || listing.seller?.full_name ||
+                    (listing.user_id === session?.user?.id ? profile?.name : null) || "TimberMart Seller";
+                  const status = String(listing.status || "approved");
+
+                  return (
+                    <article className={`sawmill-timber-card ${expired ? "expired" : ""}`} key={listing.id}>
+                      <div className="sawmill-timber-card-image">
+                        {images[0] ? <img src={images[0]} alt={listing.title || "Timber"} loading="lazy" /> : <div className="sawmill-timber-image-placeholder">🪵</div>}
+                        <span className={`sawmill-listing-status ${expired ? "expired" : status}`}>{expired ? "EXPIRED" : status.toUpperCase()}</span>
+                        {images.length > 1 && <span className="sawmill-photo-count">📷 {images.length} Photos</span>}
+                      </div>
+                      <div className="sawmill-timber-card-body">
+                        <div className="sawmill-timber-type-row"><span>{listing.wood_type || "Timber"}</span><span>{listing.product_type || "Timber"}</span></div>
+                        <h3>{listing.title || "Timber Listing"}</h3>
+                        <p className="sawmill-timber-seller">🏢 <strong>{sellerName}</strong>{listing.seller?.role ? ` • ${listing.seller.role}` : ""}</p>
+                        <p className="sawmill-timber-location"><MapPin size={14} />{listing.location || listing.seller?.location || "Location not added"}</p>
+                        <div className="sawmill-timber-details">
+                          <div><small>Quantity</small><strong>{listing.quantity || "On request"}</strong></div>
+                          <div><small>Price</small><strong>{listing.price ? `₹ ${listing.price}` : "On contact"}</strong></div>
+                        </div>
+                        <div className={`sawmill-expiry-box ${expired ? "expired" : ""}`}>
+                          <Clock3 size={15} />
+                          <div><small>{expired ? "Expired on" : "Expires on"}</small><strong>{formatListingDate(expiry)}</strong></div>
+                          {!expired && daysLeft != null && <b>{daysLeft} day{daysLeft === 1 ? "" : "s"} left</b>}
+                        </div>
+                        <div className="sawmill-timber-card-footer">
+                          <small>Posted {formatListingDate(listing.created_at)}</small>
+                          <button type="button" onClick={() => openListingGallery(listing)}><Eye size={16} /> {tx("View")}</button>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+          </section>
 
           {/* =================================================
               FOOTER
@@ -3208,9 +4794,7 @@ export default function SawmillDashboard() {
                           2
                         );
                       }}
-                    >
-                      Next
-                      <ChevronRight
+                    >{tx("Next")}<ChevronRight
                         size={17}
                       />
                     </button>
@@ -3385,9 +4969,7 @@ export default function SawmillDashboard() {
                     >
                       <ChevronLeft
                         size={16}
-                      />
-                      Back
-                    </button>
+                      />{tx("Back")}</button>
 
 
                     <button
@@ -3425,9 +5007,7 @@ export default function SawmillDashboard() {
                           3
                         );
                       }}
-                    >
-                      Preview
-                      <ChevronRight
+                    >{tx("Preview")}<ChevronRight
                         size={17}
                       />
                     </button>
@@ -3524,8 +5104,8 @@ export default function SawmillDashboard() {
 
                       <strong>
                         {jobForm.accommodation
-                          ? "Available"
-                          : "Not Available"}
+                          ? tx("Available")
+                          : tx("Not Available")}
                       </strong>
                     </div>
 
@@ -3537,8 +5117,8 @@ export default function SawmillDashboard() {
 
                       <strong>
                         {jobForm.food
-                          ? "Available"
-                          : "Not Available"}
+                          ? tx("Available")
+                          : tx("Not Available")}
                       </strong>
                     </div>
 
@@ -3569,9 +5149,7 @@ export default function SawmillDashboard() {
                     >
                       <ChevronLeft
                         size={16}
-                      />
-                      Back
-                    </button>
+                      />{tx("Back")}</button>
 
 
                     <button
@@ -3641,7 +5219,7 @@ export default function SawmillDashboard() {
                   <p>
                     {selectedJob.profiles
                       ?.name ||
-                      "Timber Business"}
+                      tx("Timber Business")}
                   </p>
 
                 </div>
@@ -3692,7 +5270,7 @@ export default function SawmillDashboard() {
                       {selectedJob
                         .profiles
                         ?.name ||
-                        "Timber Business"}
+                        tx("Timber Business")}
                     </strong>
 
                     <span>
@@ -3700,7 +5278,7 @@ export default function SawmillDashboard() {
                         selectedJob
                           .profiles
                           ?.location ||
-                        "Location not added"}
+                        tx("Location not added")}
                     </span>
 
                   </div>
@@ -3777,8 +5355,8 @@ export default function SawmillDashboard() {
 
                     <strong>
                       {selectedJob.accommodation
-                        ? "Available"
-                        : "Not Available"}
+                        ? tx("Available")
+                        : tx("Not Available")}
                     </strong>
                   </div>
 
@@ -3790,8 +5368,8 @@ export default function SawmillDashboard() {
 
                     <strong>
                       {selectedJob.food
-                        ? "Available"
-                        : "Not Available"}
+                        ? tx("Available")
+                        : tx("Not Available")}
                     </strong>
                   </div>
 
@@ -3818,7 +5396,7 @@ export default function SawmillDashboard() {
 
                   <p>
                     {selectedJob.description ||
-                      "No description provided."}
+                      tx("No description provided.")}
                   </p>
 
                 </div>
@@ -3835,9 +5413,7 @@ export default function SawmillDashboard() {
                       )
                     }
                   >
-                    <Phone size={17} />
-                    Call
-                  </button>
+                    <Phone size={17} />{tx("Call")}</button>
 
 
                   <button
@@ -3851,9 +5427,7 @@ export default function SawmillDashboard() {
                   >
                     <MessageCircle
                       size={17}
-                    />
-                    WhatsApp
-                  </button>
+                    />{tx("WhatsApp")}</button>
 
 
                   <button
@@ -3866,9 +5440,7 @@ export default function SawmillDashboard() {
                   >
                     <MessageCircle
                       size={17}
-                    />
-                    Chat
-                  </button>
+                    />{tx("Chat")}</button>
 
                 </div>
 
@@ -3886,9 +5458,7 @@ export default function SawmillDashboard() {
                   >
                     <Trash2
                       size={16}
-                    />
-                    Delete Job
-                  </button>
+                    />{tx("Delete Job")}</button>
 
                 )}
 
@@ -3976,7 +5546,7 @@ export default function SawmillDashboard() {
                 <span className="sawmill-profile-role">
                   {selectedWorker
                     .skills?.[0] ||
-                    "Skilled Worker"}
+                    tx("Skilled Worker")}
                 </span>
 
 
@@ -3987,7 +5557,7 @@ export default function SawmillDashboard() {
                     selectedWorker
                       .profile
                       ?.location ||
-                    "Location not added"}
+                    tx("Location not added")}
                 </p>
 
 
@@ -4005,7 +5575,7 @@ export default function SawmillDashboard() {
 
                   {selectedWorker
                     .availability ||
-                    "Availability not specified"}
+                    tx("Availability not specified")}
 
                 </div>
 
@@ -4111,9 +5681,7 @@ export default function SawmillDashboard() {
                       )
                     }
                   >
-                    <Phone size={17} />
-                    Call
-                  </button>
+                    <Phone size={17} />{tx("Call")}</button>
 
 
                   <button
@@ -4127,9 +5695,7 @@ export default function SawmillDashboard() {
                   >
                     <MessageCircle
                       size={17}
-                    />
-                    WhatsApp
-                  </button>
+                    />{tx("WhatsApp")}</button>
 
 
                   <button
@@ -4142,9 +5708,7 @@ export default function SawmillDashboard() {
                   >
                     <MessageCircle
                       size={17}
-                    />
-                    Chat
-                  </button>
+                    />{tx("Chat")}</button>
 
                 </div>
 
@@ -4219,7 +5783,7 @@ export default function SawmillDashboard() {
 
                 <h2>
                   {profile.name ||
-                    "Sawmill"}
+                    tx("Sawmill")}
                 </h2>
 
 
@@ -4233,7 +5797,7 @@ export default function SawmillDashboard() {
                   <MapPin size={15} />
 
                   {profile.location ||
-                    "Location not added"}
+                    tx("Location not added")}
 
                 </p>
 
@@ -4265,9 +5829,7 @@ export default function SawmillDashboard() {
                 >
                   <Edit3
                     size={16}
-                  />
-                  Edit Profile
-                </button>
+                  />{tx("Edit Profile")}</button>
 
               </div>
 
@@ -4308,9 +5870,7 @@ export default function SawmillDashboard() {
                   WORKERS
                 </span>
 
-                <h2>
-                  Job Applications
-                </h2>
+                <h2>{tx("Job Applications")}</h2>
 
                 <p>
                   Review workers who applied
@@ -4403,7 +5963,7 @@ export default function SawmillDashboard() {
                             Application
                             Status:{" "}
                             {application.status ||
-                              "Applied"}
+                              tx("Applied")}
                           </span>
 
                         </div>
@@ -4426,7 +5986,7 @@ export default function SawmillDashboard() {
                                 expected_salary:
                                   "",
                                 availability:
-                                  "Available",
+                                  tx("Available"),
                               }
                             )
                           }
@@ -4449,9 +6009,7 @@ export default function SawmillDashboard() {
                         >
                           <Phone
                             size={15}
-                          />
-                          Call
-                        </button>
+                          />{tx("Call")}</button>
 
 
                         <button
@@ -4463,15 +6021,13 @@ export default function SawmillDashboard() {
                         >
                           <MessageCircle
                             size={15}
-                          />
-                          Chat
-                        </button>
+                          />{tx("Chat")}</button>
 
 
                         <select
                           value={
                             application.status ||
-                            "Applied"
+                            tx("Applied")
                           }
                           onChange={(e) =>
                             updateApplication(
@@ -4517,230 +6073,25 @@ export default function SawmillDashboard() {
 
 
       {/* =====================================================
-          TIMBER LISTING MODAL
+          SELL TREE FORM
       ===================================================== */}
-      {showTimberModal && (
-        <div
-          className="sawmill-modal-overlay"
-          onMouseDown={() => !timberSaving && setShowTimberModal(false)}
-        >
-          <div
-            className="sawmill-modal sawmill-timber-create-modal"
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-            <div className="sawmill-modal-header">
-              <div>
-                <span>SELL TIMBER</span>
-                <h2>Post a Timber Listing</h2>
-                <p>
-                  Upload real timber photos. Your listing goes to Admin for approval.
-                </p>
-              </div>
-
-              <button onClick={() => setShowTimberModal(false)}>
-                <X size={20} />
-              </button>
-            </div>
-
-            <form className="sawmill-timber-form" onSubmit={submitTimberListing}>
-              <div className="sawmill-form-grid">
-                <div>
-                  <label>Listing Title *</label>
-                  <input
-                    className="sawmill-input"
-                    value={timberForm.title}
-                    onChange={(e) =>
-                      setTimberForm((old) => ({
-                        ...old,
-                        title: e.target.value,
-                      }))
-                    }
-                    placeholder="Example: Premium Teak Timber Planks"
-                  />
-                </div>
-
-                <div>
-                  <label>Wood Type *</label>
-                  <select
-                    className="sawmill-input"
-                    value={timberForm.wood_type}
-                    onChange={(e) =>
-                      setTimberForm((old) => ({
-                        ...old,
-                        wood_type: e.target.value,
-                      }))
-                    }
-                  >
-                    <option>Teak</option>
-                    <option>Patta Teak</option>
-                    <option>Indian Teak</option>
-                    <option>Burma Teak</option>
-                    <option>Imported Teak</option>
-                    <option>Neem</option>
-                    <option>Pine</option>
-                    <option>Rosewood</option>
-                    <option>Eucalyptus</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label>Product Type</label>
-                  <select
-                    className="sawmill-input"
-                    value={timberForm.product_type}
-                    onChange={(e) =>
-                      setTimberForm((old) => ({
-                        ...old,
-                        product_type: e.target.value,
-                      }))
-                    }
-                  >
-                    <option>Timber</option>
-                    <option>Timber Planks</option>
-                    <option>Logs</option>
-                    <option>Beams</option>
-                    <option>Battens</option>
-                    <option>Sawn Wood</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label>Quantity</label>
-                  <input
-                    className="sawmill-input"
-                    value={timberForm.quantity}
-                    onChange={(e) =>
-                      setTimberForm((old) => ({
-                        ...old,
-                        quantity: e.target.value,
-                      }))
-                    }
-                    placeholder="Example: 50 CFT"
-                  />
-                </div>
-
-                <div>
-                  <label>Price</label>
-                  <input
-                    className="sawmill-input"
-                    value={timberForm.price}
-                    onChange={(e) =>
-                      setTimberForm((old) => ({
-                        ...old,
-                        price: e.target.value,
-                      }))
-                    }
-                    placeholder="Example: 45000"
-                  />
-                </div>
-
-                <div>
-                  <label>Location</label>
-                  <div className="sawmill-input-icon">
-                    <MapPin size={17} />
-                    <input
-                      value={timberForm.location}
-                      onChange={(e) =>
-                        setTimberForm((old) => ({
-                          ...old,
-                          location: e.target.value,
-                        }))
-                      }
-                      placeholder="Business location"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <label>Description</label>
-                <textarea
-                  className="sawmill-input"
-                  rows="4"
-                  value={timberForm.description}
-                  onChange={(e) =>
-                    setTimberForm((old) => ({
-                      ...old,
-                      description: e.target.value,
-                    }))
-                  }
-                  placeholder="Describe timber grade, size, age, finish and availability..."
-                />
-              </div>
-
-              <div className="sawmill-upload-box">
-                <div className="sawmill-upload-title">
-                  <div>
-                    <UploadCloud size={22} />
-                    <strong>Upload Timber Photos</strong>
-                    <small>
-                      JPG, PNG or WebP • up to 5 MB each • up to 10 photos
-                    </small>
-                  </div>
-
-                  <label className="sawmill-upload-btn">
-                    <ImagePlus size={16} />
-                    Choose Photos
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleTimberPhotoSelect}
-                    />
-                  </label>
-                </div>
-
-                {timberPhotos.length > 0 && (
-                  <div className="sawmill-upload-preview">
-                    {timberPhotos.map((file, index) => (
-                      <div className="sawmill-upload-thumb" key={`${file.name}-${index}`}>
-                        <img
-                          src={URL.createObjectURL(file)}
-                          alt=""
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeTimberPhoto(index)}
-                        >
-                          <X size={14} />
-                        </button>
-                        {index === 0 && <span>Cover</span>}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="sawmill-approval-note">
-                <CheckCircle2 size={18} />
-                <div>
-                  <strong>Admin approval required</strong>
-                  <span>
-                    After posting, the listing will remain Pending until an
-                    administrator approves it.
-                  </span>
-                </div>
-              </div>
-
-              <div className="sawmill-modal-buttons">
-                <button
-                  type="button"
-                  onClick={() => setShowTimberModal(false)}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="submit"
-                  className="primary"
-                  disabled={timberSaving}
-                >
-                  {timberSaving ? "Uploading..." : "Submit for Approval"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+      {showSellTreeForm && (
+        <SellTreeForm
+          user={session?.user}
+          profile={profile}
+          onClose={() => setShowSellTreeForm(false)}
+          onPublished={async () => {
+            setShowSellTreeForm(false);
+            await loadTimberListings();
+            setSupplierMode("");
+            setActiveTab("timber");
+            window.setTimeout(() => {
+              document
+                .getElementById("sawmill-timber-marketplace")
+                ?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 100);
+          }}
+        />
       )}
 
       {/* =====================================================
@@ -4758,7 +6109,7 @@ export default function SawmillDashboard() {
             <div className="sawmill-notification-head">
               <div>
                 <span>LIVE ALERTS</span>
-                <h2>Notifications</h2>
+                <h2>{tx("Notifications")}</h2>
                 <p>
                   Admin approvals, nearby listings and TimberMart updates.
                 </p>
@@ -4771,9 +6122,7 @@ export default function SawmillDashboard() {
 
             <div className="sawmill-notification-actions">
               <span>{notifications.length} total</span>
-              <button onClick={markAllNotificationsRead}>
-                Mark all read
-              </button>
+              <button onClick={markAllNotificationsRead}>{tx("Mark all read")}</button>
             </div>
 
             <div className="sawmill-notification-list">
@@ -4784,7 +6133,7 @@ export default function SawmillDashboard() {
               ) : notifications.length === 0 ? (
                 <div className="sawmill-notification-empty">
                   <BellRing size={28} />
-                  <strong>No notifications yet</strong>
+                  <strong>{tx("No notifications yet")}</strong>
                   <span>
                     New admin, approval and nearby notifications will appear here.
                   </span>
@@ -4863,7 +6212,7 @@ export default function SawmillDashboard() {
                   {selectedListing.title || "Timber Listing"}
                 </h2>
                 <p>
-                  {selectedListing.location || "Location not added"}
+                  {selectedListing.location || tx("Location not added")}
                 </p>
               </div>
 
@@ -4937,6 +6286,50 @@ export default function SawmillDashboard() {
               </div>
             )}
 
+            <div className="sawmill-contact-buttons">
+              <button
+                type="button"
+                onClick={() =>
+                  callUser(
+                    selectedListing.seller?.phone ||
+                    (selectedListing.user_id === session?.user?.id
+                      ? profile?.phone
+                      : null)
+                  )
+                }
+              >
+                <Phone size={17} />{tx("Call")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  whatsappUser(
+                    selectedListing.seller?.phone ||
+                    (selectedListing.user_id === session?.user?.id
+                      ? profile?.phone
+                      : null)
+                  )
+                }
+              >
+                <MessageCircle size={17} />{tx("WhatsApp")}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const seller =
+                    selectedListing.seller ||
+                    (selectedListing.user_id === session?.user?.id
+                      ? profile
+                      : null);
+                  openChat(seller);
+                }}
+              >
+                <MessageCircle size={17} />{tx("Chat")}
+              </button>
+            </div>
+
             <div className="sawmill-gallery-info">
               <div>
                 <small>Wood Type</small>
@@ -4960,9 +6353,15 @@ export default function SawmillDashboard() {
               </div>
               <div>
                 <small>Status</small>
-                <strong>
-                  {String(selectedListing.status || "Approved")}
-                </strong>
+                <strong>{isListingExpired(selectedListing) ? "Expired" : String(selectedListing.status || "Approved")}</strong>
+              </div>
+              <div>
+                <small>Posted</small>
+                <strong>{formatListingDate(selectedListing.created_at)}</strong>
+              </div>
+              <div>
+                <small>Expires</small>
+                <strong>{formatListingDate(getListingExpiry(selectedListing))}</strong>
               </div>
             </div>
 
@@ -4994,7 +6393,7 @@ export default function SawmillDashboard() {
                   {selectedRequirement.title || "Customer Requirement"}
                 </h2>
                 <p>
-                  {selectedRequirement.location || "Location not added"}
+                  {selectedRequirement.location || tx("Location not added")}
                 </p>
               </div>
 

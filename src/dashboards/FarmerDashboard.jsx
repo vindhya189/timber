@@ -158,6 +158,478 @@ const HARVEST_STATUS = [
 ];
 
 
+
+/* =========================================================
+   TIMBERMART MULTI-LANGUAGE LAYER
+   ---------------------------------------------------------
+   This is intentionally UI-only:
+   - Does NOT change Supabase tables, queries, auth, chat,
+     notifications, listing approval flow or existing handlers.
+   - Keeps database values in English so existing logic remains
+     compatible.
+   - Translates the rendered UI, placeholders and titles.
+   - Language is saved locally and restored on next visit.
+========================================================= */
+
+const TM_LANGUAGES = [
+  { id: "en", label: "English", native: "English" },
+  { id: "te", label: "Telugu", native: "తెలుగు" },
+  { id: "hi", label: "Hindi", native: "हिन्दी" },
+  { id: "ta", label: "Tamil", native: "தமிழ்" },
+  { id: "kn", label: "Kannada", native: "ಕನ್ನಡ" },
+];
+
+const TM_TRANSLATIONS = {
+  te: {
+    "Farmer Dashboard": "రైతు డాష్‌బోర్డ్",
+    "Manage your timber activities": "మీ కలప కార్యకలాపాలను నిర్వహించండి",
+    "Farmer Portal": "రైతు పోర్టల్",
+    "Dashboard": "డాష్‌బోర్డ్",
+    "Sell Tree": "చెట్టు అమ్మండి",
+    "Requirement Wall": "అవసరాల గోడ",
+    "Messages": "సందేశాలు",
+    "Notifications": "నోటిఫికేషన్లు",
+    "Profile": "ప్రొఫైల్",
+    "My Profile": "నా ప్రొఫైల్",
+    "Settings": "సెట్టింగ్స్",
+    "Logout": "లాగ్ అవుట్",
+    "Nearby matches, approvals & chat updates": "సమీప సరిపోలికలు, ఆమోదాలు & చాట్ అప్‌డేట్లు",
+    "No notifications yet": "ఇంకా నోటిఫికేషన్లు లేవు",
+    "Matching posts within 40 KM will appear here in real time.": "40 KM పరిధిలో సరిపోలే పోస్టులు ఇక్కడ రియల్ టైమ్‌లో కనిపిస్తాయి.",
+    "Requirement Wall": "అవసరాల గోడ",
+    "Quick Actions": "త్వరిత చర్యలు",
+    "Start managing your timber activities": "మీ కలప కార్యకలాపాలను నిర్వహించడం ప్రారంభించండి",
+    "Create a timber listing": "కలప లిస్టింగ్‌ను సృష్టించండి",
+    "Add or view requirements": "అవసరాలను జోడించండి లేదా చూడండి",
+    "Update your farmer profile": "మీ రైతు ప్రొఫైల్‌ను అప్‌డేట్ చేయండి",
+    "Manage account preferences": "ఖాతా ప్రాధాన్యతలను నిర్వహించండి",
+    "Search timber listings or requirements...": "కలప లిస్టింగ్స్ లేదా అవసరాలను వెతకండి...",
+    "View All": "అన్నీ చూడండి",
+    "Latest timber requirements from users": "వినియోగదారుల తాజా కలప అవసరాలు",
+    "No requirements yet": "ఇంకా అవసరాలు లేవు",
+    "Create your first requirement and connect with timber sellers.": "మీ మొదటి అవసరాన్ని సృష్టించి కలప విక్రేతలతో కనెక్ట్ అవ్వండి.",
+    "Add Requirement": "అవసరాన్ని జోడించండి",
+    "Timber Listings": "కలప లిస్టింగ్స్",
+    "Latest trees and timber available": "అందుబాటులో ఉన్న తాజా చెట్లు మరియు కలప",
+    "No timber listings yet": "ఇంకా కలప లిస్టింగ్స్ లేవు",
+    "You can create a listing from Sell Tree.": "చెట్టు అమ్మండి ద్వారా లిస్టింగ్ సృష్టించవచ్చు.",
+    "TimberMart connects people directly.": "TimberMart వ్యక్తులను నేరుగా కలుపుతుంది.",
+    "TimberMart does not handle payments, delivery or transactions. Buyers and sellers communicate directly and make their own arrangements.": "TimberMart చెల్లింపులు, డెలివరీ లేదా లావాదేవీలను నిర్వహించదు. కొనుగోలుదారులు మరియు విక్రేతలు నేరుగా మాట్లాడుకుని తమ ఏర్పాట్లు చేసుకుంటారు.",
+    "40 KM radius": "40 KM పరిధి",
+    "Role matching": "పాత్ర సరిపోలిక",
+    "Keyword matching": "కీవర్డ్ సరిపోలిక",
+    "Realtime alerts": "రియల్‌టైమ్ అలర్ట్లు",
+    "Use Current GPS": "ప్రస్తుత GPS ఉపయోగించండి",
+    "Locating...": "లొకేషన్ కనుగొంటోంది...",
+    "Enable Browser Alerts": "బ్రౌజర్ అలర్ట్లు ప్రారంభించండి",
+    "Browser alerts enabled": "బ్రౌజర్ అలర్ట్లు ప్రారంభించబడ్డాయి",
+    "My Tree Listings": "నా చెట్ల లిస్టింగ్స్",
+    "My Requirements": "నా అవసరాలు",
+    "Available Listings": "అందుబాటులో ఉన్న లిస్టింగ్స్",
+    "Requirements": "అవసరాలు",
+    "Indian Trees": "భారతీయ చెట్లు",
+    "Standing trees grown on farms or individual land.": "పొలాలు లేదా వ్యక్తిగత భూమిలో పెంచిన నిలువుగా ఉన్న చెట్లు.",
+    "Plantations": "ప్లాంటేషన్లు",
+    "Commercial plantation timber and farm-grown trees.": "వాణిజ్య ప్లాంటేషన్ కలప మరియు పొలాల్లో పెంచిన చెట్లు.",
+    "Wood Products": "కలప ఉత్పత్తులు",
+    "Logs, planks, beams and other wood products.": "లాగ్స్, పలకలు, బీమ్స్ మరియు ఇతర కలప ఉత్పత్తులు.",
+    "What are you selling?": "మీరు ఏమి అమ్ముతున్నారు?",
+    "Select a category first. The available tree or product types will appear below.": "ముందుగా ఒక కేటగిరీని ఎంచుకోండి. అందుబాటులో ఉన్న చెట్టు లేదా ఉత్పత్తి రకాలు క్రింద కనిపిస్తాయి.",
+    "Category": "కేటగిరీ",
+    "Selected Category": "ఎంచుకున్న కేటగిరీ",
+    "Select tree type": "చెట్టు రకాన్ని ఎంచుకోండి",
+    "Select wood product": "కలప ఉత్పత్తిని ఎంచుకోండి",
+    "Timber details": "కలప వివరాలు",
+    "Add accurate details so buyers can understand your listing.": "కొనుగోలుదారులు మీ లిస్టింగ్‌ను అర్థం చేసుకునేలా ఖచ్చితమైన వివరాలను జోడించండి.",
+    "Listing title": "లిస్టింగ్ శీర్షిక",
+    "Location": "ప్రాంతం",
+    "Village / Town / District": "గ్రామం / పట్టణం / జిల్లా",
+    "Quantity": "పరిమాణం",
+    "Quantity unit": "పరిమాణ యూనిట్",
+    "Plantation area": "ప్లాంటేషన్ విస్తీర్ణం",
+    "Tree age": "చెట్టు వయస్సు",
+    "Diameter": "వ్యాసం",
+    "Estimated volume": "అంచనా పరిమాణం",
+    "Condition": "స్థితి",
+    "Sale / Harvest status": "అమ్మకం / కోత స్థితి",
+    "Expected price": "అంచనా ధర",
+    "Description": "వివరణ",
+    "You can enter a total price or price per unit.": "మొత్తం ధర లేదా యూనిట్ ధరను నమోదు చేయవచ్చు.",
+    "Add timber photos": "కలప ఫోటోలను జోడించండి",
+    "Good photos help buyers understand the actual timber.": "మంచి ఫోటోలు అసలు కలపను అర్థం చేసుకోవడంలో కొనుగోలుదారులకు సహాయపడతాయి.",
+    "Upload photos": "ఫోటోలను అప్‌లోడ్ చేయండి",
+    "Maximum 5 MB per image · Up to 6 photos": "ఒక్కో ఫోటోకు గరిష్టంగా 5 MB · గరిష్టంగా 6 ఫోటోలు",
+    "Review": "సమీక్ష",
+    "Back": "వెనుకకు",
+    "Next": "తర్వాత",
+    "Publish Listing": "లిస్టింగ్ ప్రచురించండి",
+    "Submitted for Approval": "ఆమోదం కోసం సమర్పించబడింది",
+    "You will receive a notification after admin approval.": "అడ్మిన్ ఆమోదం తర్వాత మీకు నోటిఫికేషన్ వస్తుంది.",
+    "Close": "మూసివేయండి",
+    "Call": "కాల్",
+    "WhatsApp": "వాట్సాప్",
+    "Chat": "చాట్",
+    "Delete Requirement": "అవసరాన్ని తొలగించండి",
+    "User": "వినియోగదారు",
+    "Location not available": "ప్రాంతం అందుబాటులో లేదు",
+    "Phone number is not available.": "ఫోన్ నంబర్ అందుబాటులో లేదు.",
+    "WhatsApp number is not available.": "వాట్సాప్ నంబర్ అందుబాటులో లేదు.",
+    "No chats yet": "ఇంకా చాట్లు లేవు",
+    "Open any listing and tap Chat to start.": "ఏదైనా లిస్టింగ్‌ను తెరిచి చాట్ ప్రారంభించండి.",
+    "Live chat": "లైవ్ చాట్",
+    "Chats": "చాట్లు",
+    "conversations": "సంభాషణలు",
+    "new": "కొత్తవి",
+    "40 KM": "40 KM",
+    "STEP 1": "దశ 1",
+    "STEP 2": "దశ 2",
+    "STEP 3": "దశ 3",
+    "STEP 4": "దశ 4",
+    "STEP 5": "దశ 5",
+    "Growing your dashboard...": "మీ డాష్‌బోర్డ్‌ను సిద్ధం చేస్తోంది...",
+    "Close messages": "సందేశాలను మూసివేయండి",
+  },
+  hi: {
+    "Farmer Dashboard": "किसान डैशबोर्ड",
+    "Manage your timber activities": "अपनी लकड़ी की गतिविधियों को प्रबंधित करें",
+    "Farmer Portal": "किसान पोर्टल",
+    "Dashboard": "डैशबोर्ड",
+    "Sell Tree": "पेड़ बेचें",
+    "Requirement Wall": "आवश्यकता वॉल",
+    "Messages": "संदेश",
+    "Notifications": "सूचनाएँ",
+    "Profile": "प्रोफ़ाइल",
+    "My Profile": "मेरी प्रोफ़ाइल",
+    "Settings": "सेटिंग्स",
+    "Logout": "लॉग आउट",
+    "Nearby matches, approvals & chat updates": "पास के मैच, अनुमोदन और चैट अपडेट",
+    "No notifications yet": "अभी कोई सूचना नहीं",
+    "Matching posts within 40 KM will appear here in real time.": "40 KM के भीतर मिलान वाली पोस्ट यहाँ रियल टाइम में दिखाई देंगी।",
+    "Quick Actions": "त्वरित कार्रवाइयाँ",
+    "Start managing your timber activities": "अपनी लकड़ी की गतिविधियों को प्रबंधित करना शुरू करें",
+    "Create a timber listing": "लकड़ी की लिस्टिंग बनाएँ",
+    "Add or view requirements": "आवश्यकताएँ जोड़ें या देखें",
+    "Update your farmer profile": "अपनी किसान प्रोफ़ाइल अपडेट करें",
+    "Manage account preferences": "खाता प्राथमिकताएँ प्रबंधित करें",
+    "Search timber listings or requirements...": "लकड़ी की लिस्टिंग या आवश्यकताएँ खोजें...",
+    "View All": "सभी देखें",
+    "Latest timber requirements from users": "उपयोगकर्ताओं की नवीनतम लकड़ी आवश्यकताएँ",
+    "No requirements yet": "अभी कोई आवश्यकता नहीं",
+    "Create your first requirement and connect with timber sellers.": "अपनी पहली आवश्यकता बनाएँ और लकड़ी विक्रेताओं से जुड़ें।",
+    "Add Requirement": "आवश्यकता जोड़ें",
+    "Timber Listings": "लकड़ी की लिस्टिंग",
+    "Latest trees and timber available": "उपलब्ध नवीनतम पेड़ और लकड़ी",
+    "No timber listings yet": "अभी कोई लकड़ी लिस्टिंग नहीं",
+    "You can create a listing from Sell Tree.": "पेड़ बेचें से लिस्टिंग बना सकते हैं।",
+    "TimberMart connects people directly.": "TimberMart लोगों को सीधे जोड़ता है।",
+    "TimberMart does not handle payments, delivery or transactions. Buyers and sellers communicate directly and make their own arrangements.": "TimberMart भुगतान, डिलीवरी या लेन-देन संभालता नहीं है। खरीदार और विक्रेता सीधे बात करके अपनी व्यवस्था करते हैं।",
+    "40 KM radius": "40 KM क्षेत्र",
+    "Role matching": "भूमिका मिलान",
+    "Keyword matching": "कीवर्ड मिलान",
+    "Realtime alerts": "रियलटाइम अलर्ट",
+    "Use Current GPS": "वर्तमान GPS उपयोग करें",
+    "Locating...": "स्थान खोज रहे हैं...",
+    "Enable Browser Alerts": "ब्राउज़र अलर्ट सक्षम करें",
+    "Browser alerts enabled": "ब्राउज़र अलर्ट सक्षम हैं",
+    "My Tree Listings": "मेरी पेड़ लिस्टिंग",
+    "My Requirements": "मेरी आवश्यकताएँ",
+    "Available Listings": "उपलब्ध लिस्टिंग",
+    "Requirements": "आवश्यकताएँ",
+    "Indian Trees": "भारतीय पेड़",
+    "Standing trees grown on farms or individual land.": "खेतों या निजी भूमि पर उगाए गए खड़े पेड़।",
+    "Plantations": "प्लांटेशन",
+    "Commercial plantation timber and farm-grown trees.": "व्यावसायिक प्लांटेशन लकड़ी और खेत में उगाए पेड़।",
+    "Wood Products": "लकड़ी के उत्पाद",
+    "Logs, planks, beams and other wood products.": "लॉग, तख्ते, बीम और अन्य लकड़ी के उत्पाद।",
+    "What are you selling?": "आप क्या बेच रहे हैं?",
+    "Select a category first. The available tree or product types will appear below.": "पहले एक श्रेणी चुनें। उपलब्ध पेड़ या उत्पाद के प्रकार नीचे दिखाई देंगे।",
+    "Category": "श्रेणी",
+    "Selected Category": "चयनित श्रेणी",
+    "Select tree type": "पेड़ का प्रकार चुनें",
+    "Select wood product": "लकड़ी का उत्पाद चुनें",
+    "Timber details": "लकड़ी का विवरण",
+    "Add accurate details so buyers can understand your listing.": "खरीदार आपकी लिस्टिंग समझ सकें, इसके लिए सही विवरण जोड़ें।",
+    "Listing title": "लिस्टिंग शीर्षक",
+    "Location": "स्थान",
+    "Village / Town / District": "गाँव / शहर / जिला",
+    "Quantity": "मात्रा",
+    "Quantity unit": "मात्रा इकाई",
+    "Plantation area": "प्लांटेशन क्षेत्र",
+    "Tree age": "पेड़ की आयु",
+    "Diameter": "व्यास",
+    "Estimated volume": "अनुमानित मात्रा",
+    "Condition": "स्थिति",
+    "Sale / Harvest status": "बिक्री / कटाई स्थिति",
+    "Expected price": "अपेक्षित कीमत",
+    "Description": "विवरण",
+    "You can enter a total price or price per unit.": "आप कुल कीमत या प्रति इकाई कीमत दर्ज कर सकते हैं।",
+    "Add timber photos": "लकड़ी की तस्वीरें जोड़ें",
+    "Good photos help buyers understand the actual timber.": "अच्छी तस्वीरें खरीदारों को असली लकड़ी समझने में मदद करती हैं।",
+    "Upload photos": "तस्वीरें अपलोड करें",
+    "Maximum 5 MB per image · Up to 6 photos": "प्रति तस्वीर अधिकतम 5 MB · अधिकतम 6 तस्वीरें",
+    "Review": "समीक्षा",
+    "Back": "पीछे",
+    "Next": "आगे",
+    "Publish Listing": "लिस्टिंग प्रकाशित करें",
+    "Submitted for Approval": "अनुमोदन के लिए भेजा गया",
+    "You will receive a notification after admin approval.": "एडमिन के अनुमोदन के बाद आपको सूचना मिलेगी।",
+    "Close": "बंद करें",
+    "Call": "कॉल",
+    "WhatsApp": "व्हाट्सऐप",
+    "Chat": "चैट",
+    "Delete Requirement": "आवश्यकता हटाएँ",
+    "User": "उपयोगकर्ता",
+    "Location not available": "स्थान उपलब्ध नहीं",
+    "Phone number is not available.": "फ़ोन नंबर उपलब्ध नहीं है।",
+    "WhatsApp number is not available.": "व्हाट्सऐप नंबर उपलब्ध नहीं है।",
+    "No chats yet": "अभी कोई चैट नहीं",
+    "Open any listing and tap Chat to start.": "कोई भी लिस्टिंग खोलें और चैट शुरू करने के लिए Chat दबाएँ।",
+    "Live chat": "लाइव चैट",
+    "Chats": "चैट",
+    "conversations": "बातचीत",
+    "new": "नया",
+    "STEP 1": "चरण 1",
+    "STEP 2": "चरण 2",
+    "STEP 3": "चरण 3",
+    "STEP 4": "चरण 4",
+    "STEP 5": "चरण 5",
+    "Growing your dashboard...": "आपका डैशबोर्ड तैयार हो रहा है...",
+  },
+  ta: {
+    "Farmer Dashboard": "விவசாயி டாஷ்போர்டு",
+    "Manage your timber activities": "உங்கள் மரப்பணி செயல்பாடுகளை நிர்வகிக்கவும்",
+    "Farmer Portal": "விவசாயி போர்டல்",
+    "Dashboard": "டாஷ்போர்டு",
+    "Sell Tree": "மரத்தை விற்கவும்",
+    "Requirement Wall": "தேவைச் சுவர்",
+    "Messages": "செய்திகள்",
+    "Notifications": "அறிவிப்புகள்",
+    "Profile": "சுயவிவரம்",
+    "My Profile": "என் சுயவிவரம்",
+    "Settings": "அமைப்புகள்",
+    "Logout": "வெளியேறு",
+    "Quick Actions": "விரைவு செயல்கள்",
+    "Search timber listings or requirements...": "மர லிஸ்டிங்ஸ் அல்லது தேவைகளைத் தேடுங்கள்...",
+    "View All": "அனைத்தையும் காண்க",
+    "Requirement Wall": "தேவைச் சுவர்",
+    "No requirements yet": "இன்னும் தேவைகள் இல்லை",
+    "Add Requirement": "தேவையைச் சேர்க்கவும்",
+    "Timber Listings": "மர லிஸ்டிங்ஸ்",
+    "No timber listings yet": "இன்னும் மர லிஸ்டிங்ஸ் இல்லை",
+    "Use Current GPS": "தற்போதைய GPS-ஐ பயன்படுத்தவும்",
+    "Enable Browser Alerts": "உலாவி அறிவிப்புகளை இயக்கவும்",
+    "My Tree Listings": "என் மர லிஸ்டிங்ஸ்",
+    "My Requirements": "என் தேவைகள்",
+    "Available Listings": "கிடைக்கும் லிஸ்டிங்ஸ்",
+    "Requirements": "தேவைகள்",
+    "Indian Trees": "இந்திய மரங்கள்",
+    "Plantations": "தோட்டங்கள்",
+    "Wood Products": "மரப் பொருட்கள்",
+    "What are you selling?": "நீங்கள் என்ன விற்கிறீர்கள்?",
+    "Category": "வகை",
+    "Selected Category": "தேர்ந்தெடுத்த வகை",
+    "Select tree type": "மர வகையைத் தேர்ந்தெடுக்கவும்",
+    "Select wood product": "மரப் பொருளைத் தேர்ந்தெடுக்கவும்",
+    "Timber details": "மர விவரங்கள்",
+    "Listing title": "லிஸ்டிங் தலைப்பு",
+    "Location": "இடம்",
+    "Quantity": "அளவு",
+    "Plantation area": "தோட்டப் பரப்பளவு",
+    "Tree age": "மரத்தின் வயது",
+    "Diameter": "விட்டம்",
+    "Estimated volume": "மதிப்பிடப்பட்ட அளவு",
+    "Condition": "நிலை",
+    "Expected price": "எதிர்பார்க்கப்படும் விலை",
+    "Description": "விளக்கம்",
+    "Add timber photos": "மரப் புகைப்படங்களைச் சேர்க்கவும்",
+    "Upload photos": "புகைப்படங்களைப் பதிவேற்றவும்",
+    "Review": "மதிப்பாய்வு",
+    "Back": "பின்னால்",
+    "Next": "அடுத்து",
+    "Publish Listing": "லிஸ்டிங்கை வெளியிடவும்",
+    "Close": "மூடவும்",
+    "Call": "அழைக்கவும்",
+    "WhatsApp": "வாட்ஸ்அப்",
+    "Chat": "அரட்டை",
+    "Delete Requirement": "தேவையை நீக்கவும்",
+    "User": "பயனர்",
+    "No chats yet": "இன்னும் அரட்டைகள் இல்லை",
+    "Live chat": "நேரடி அரட்டை",
+    "Chats": "அரட்டைகள்",
+    "STEP 1": "படி 1",
+    "STEP 2": "படி 2",
+    "STEP 3": "படி 3",
+    "STEP 4": "படி 4",
+    "STEP 5": "படி 5",
+  },
+  kn: {
+    "Farmer Dashboard": "ರೈತ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "Manage your timber activities": "ನಿಮ್ಮ ಮರದ ಚಟುವಟಿಕೆಗಳನ್ನು ನಿರ್ವಹಿಸಿ",
+    "Farmer Portal": "ರೈತ ಪೋರ್ಟಲ್",
+    "Dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "Sell Tree": "ಮರವನ್ನು ಮಾರಾಟ ಮಾಡಿ",
+    "Requirement Wall": "ಅವಶ್ಯಕತೆಗಳ ಗೋಡೆ",
+    "Messages": "ಸಂದೇಶಗಳು",
+    "Notifications": "ಅಧಿಸೂಚನೆಗಳು",
+    "Profile": "ಪ್ರೊಫೈಲ್",
+    "My Profile": "ನನ್ನ ಪ್ರೊಫೈಲ್",
+    "Settings": "ಸೆಟ್ಟಿಂಗ್ಸ್",
+    "Logout": "ಲಾಗ್ ಔಟ್",
+    "Quick Actions": "ತ್ವರಿತ ಕ್ರಮಗಳು",
+    "Search timber listings or requirements...": "ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು ಅಥವಾ ಅವಶ್ಯಕತೆಗಳನ್ನು ಹುಡುಕಿ...",
+    "View All": "ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
+    "No requirements yet": "ಇನ್ನೂ ಯಾವುದೇ ಅವಶ್ಯಕತೆಗಳಿಲ್ಲ",
+    "Add Requirement": "ಅವಶ್ಯಕತೆಯನ್ನು ಸೇರಿಸಿ",
+    "Timber Listings": "ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು",
+    "No timber listings yet": "ಇನ್ನೂ ಯಾವುದೇ ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳಿಲ್ಲ",
+    "Use Current GPS": "ಪ್ರಸ್ತುತ GPS ಬಳಸಿ",
+    "Enable Browser Alerts": "ಬ್ರೌಸರ್ ಅಲರ್ಟ್‌ಗಳನ್ನು ಸಕ್ರಿಯಗೊಳಿಸಿ",
+    "My Tree Listings": "ನನ್ನ ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು",
+    "My Requirements": "ನನ್ನ ಅವಶ್ಯಕತೆಗಳು",
+    "Available Listings": "ಲಭ್ಯವಿರುವ ಲಿಸ್ಟಿಂಗ್‌ಗಳು",
+    "Requirements": "ಅವಶ್ಯಕತೆಗಳು",
+    "Indian Trees": "ಭಾರತೀಯ ಮರಗಳು",
+    "Plantations": "ತೋಟಗಳು",
+    "Wood Products": "ಮರದ ಉತ್ಪನ್ನಗಳು",
+    "What are you selling?": "ನೀವು ಏನು ಮಾರಾಟ ಮಾಡುತ್ತಿದ್ದೀರಿ?",
+    "Category": "ವರ್ಗ",
+    "Selected Category": "ಆಯ್ಕೆ ಮಾಡಿದ ವರ್ಗ",
+    "Select tree type": "ಮರದ ಪ್ರಕಾರವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "Select wood product": "ಮರದ ಉತ್ಪನ್ನವನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+    "Timber details": "ಮರದ ವಿವರಗಳು",
+    "Listing title": "ಲಿಸ್ಟಿಂಗ್ ಶೀರ್ಷಿಕೆ",
+    "Location": "ಸ್ಥಳ",
+    "Quantity": "ಪ್ರಮಾಣ",
+    "Plantation area": "ತೋಟದ ವಿಸ್ತೀರ್ಣ",
+    "Tree age": "ಮರದ ವಯಸ್ಸು",
+    "Diameter": "ವ್ಯಾಸ",
+    "Estimated volume": "ಅಂದಾಜು ಪ್ರಮಾಣ",
+    "Condition": "ಸ್ಥಿತಿ",
+    "Expected price": "ನಿರೀಕ್ಷಿತ ಬೆಲೆ",
+    "Description": "ವಿವರಣೆ",
+    "Add timber photos": "ಮರದ ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ",
+    "Upload photos": "ಫೋಟೋಗಳನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಿ",
+    "Review": "ಪರಿಶೀಲನೆ",
+    "Back": "ಹಿಂದೆ",
+    "Next": "ಮುಂದೆ",
+    "Publish Listing": "ಲಿಸ್ಟಿಂಗ್ ಪ್ರಕಟಿಸಿ",
+    "Close": "ಮುಚ್ಚಿ",
+    "Call": "ಕರೆ",
+    "WhatsApp": "ವಾಟ್ಸಾಪ್",
+    "Chat": "ಚಾಟ್",
+    "Delete Requirement": "ಅವಶ್ಯಕತೆಯನ್ನು ಅಳಿಸಿ",
+    "User": "ಬಳಕೆದಾರ",
+    "No chats yet": "ಇನ್ನೂ ಯಾವುದೇ ಚಾಟ್‌ಗಳಿಲ್ಲ",
+    "Live chat": "ಲೈವ್ ಚಾಟ್",
+    "Chats": "ಚಾಟ್‌ಗಳು",
+    "STEP 1": "ಹಂತ 1",
+    "STEP 2": "ಹಂತ 2",
+    "STEP 3": "ಹಂತ 3",
+    "STEP 4": "ಹಂತ 4",
+    "STEP 5": "ಹಂತ 5",
+  },
+};
+
+function tmNormalizeText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
+}
+
+function tmTranslateRenderedUI(root, language) {
+  if (!root || typeof document === "undefined") return;
+
+  const dictionary = TM_TRANSLATIONS[language] || {};
+  const nodes = root.querySelectorAll("*");
+  const originals = tmTranslateRenderedUI.originals || new WeakMap();
+  tmTranslateRenderedUI.originals = originals;
+
+  const translateTextNode = (node) => {
+    const raw = tmNormalizeText(node.nodeValue);
+    if (!raw) return;
+
+    if (!originals.has(node)) {
+      originals.set(node, raw);
+    }
+
+    const source = originals.get(node);
+    const translated = language === "en"
+      ? source
+      : (dictionary[source] || source);
+
+    if (node.nodeValue !== translated) {
+      node.nodeValue = node.nodeValue.replace(raw, translated);
+    }
+  };
+
+  const translateElement = (element) => {
+    if (
+      element.closest("[data-tm-language-switcher]") ||
+      element.hasAttribute("data-tm-no-translate") ||
+      element.tagName === "SCRIPT" ||
+      element.tagName === "STYLE"
+    ) {
+      return;
+    }
+
+    ["placeholder", "title", "aria-label"].forEach((attribute) => {
+      if (!element.hasAttribute(attribute)) return;
+
+      const key = `${attribute}`;
+      let store = originals.get(element);
+      if (!store) {
+        store = {};
+        originals.set(element, store);
+      }
+
+      if (!store[key]) {
+        store[key] = element.getAttribute(attribute);
+      }
+
+      const source = store[key];
+      element.setAttribute(
+        attribute,
+        language === "en"
+          ? source
+          : (dictionary[source] || source)
+      );
+    });
+
+    Array.from(element.childNodes).forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        translateTextNode(child);
+      }
+    });
+  };
+
+  translateElement(root);
+  nodes.forEach(translateElement);
+}
+
+function tmInstallLanguageObserver(language) {
+  if (typeof document === "undefined") return () => {};
+
+  const root = document.body;
+  let applying = false;
+
+  const apply = () => {
+    if (applying) return;
+    applying = true;
+    observer.disconnect();
+    tmTranslateRenderedUI(root, language);
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+    });
+    applying = false;
+  };
+
+  const observer = new MutationObserver(() => apply());
+  apply();
+
+  return () => observer.disconnect();
+}
+
+
 /* =========================================================
    MAIN FARMER DASHBOARD
 ========================================================= */
@@ -340,6 +812,19 @@ export default function FarmerDashboard() {
 
   const [loading, setLoading] = useState(true);
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // UI language only. Existing database/auth/business logic remains unchanged.
+  const [language, setLanguage] = useState(() => {
+    if (typeof window === "undefined") return "en";
+    return localStorage.getItem("timbermart_language") || "en";
+  });
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem("timbermart_language", language);
+    document.documentElement.lang = language;
+    return tmInstallLanguageObserver(language);
+  }, [language]);
   const [activeSection, setActiveSection] = useState("home");
   const [searchText, setSearchText] = useState("");
 
@@ -2398,6 +2883,25 @@ export default function FarmerDashboard() {
 
 
           <div className="farmer-top-actions">
+
+            <div
+              className="farmer-language-switcher"
+              data-tm-language-switcher
+              title="Language"
+            >
+              <span className="farmer-language-icon">文</span>
+              <select
+                value={language}
+                onChange={(event) => setLanguage(event.target.value)}
+                aria-label="Language"
+              >
+                {TM_LANGUAGES.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.native}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <div className="farmer-notification-wrap">
               <button

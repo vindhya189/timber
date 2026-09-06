@@ -754,3 +754,229 @@
     min-height: 44px;
   }
 }
+
+/* =========================================================
+   MULTI-LANGUAGE HEADER
+========================================================= */
+.sell-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sell-language {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border: 1px solid #dce6de;
+  border-radius: 11px;
+  background: #f7faf7;
+  color: #2f4939;
+}
+
+.sell-language svg {
+  color: #2c8a48;
+  flex-shrink: 0;
+}
+
+.sell-language select {
+  min-height: 36px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #294234;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* =========================================================
+   SUBTYPE SELECTS
+========================================================= */
+.sell-subtype-block {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #d7e4da;
+}
+
+.sell-subtype-block label {
+  margin-bottom: 8px;
+}
+
+.sell-subtype-block select {
+  width: 100%;
+}
+
+.sell-subtype-block small {
+  display: block;
+  margin-top: 7px;
+  color: #789080;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* Better long option readability */
+.sell-dependent-box select,
+.sell-field select,
+.sell-language select {
+  max-width: 100%;
+}
+
+.sell-dependent-box select option {
+  padding: 8px;
+}
+
+/* =========================================================
+   EXTRA CATEGORY SUPPORT
+========================================================= */
+.sell-category-card.selected .sell-category-icon {
+  transform: scale(1.04);
+}
+
+.sell-category-card {
+  min-height: 145px;
+}
+
+/* =========================================================
+   ACCESSIBILITY / STATES
+========================================================= */
+.sell-category-card:focus-visible,
+.sell-next-button:focus-visible,
+.sell-publish-button:focus-visible,
+.sell-back-button:focus-visible,
+.sell-tree-close:focus-visible,
+.sell-photo-upload:focus-within {
+  outline: 3px solid rgba(39, 131, 69, 0.22);
+  outline-offset: 2px;
+}
+
+.sell-next-button:disabled,
+.sell-publish-button:disabled,
+.sell-back-button:disabled,
+.sell-tree-close:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sell-field input::placeholder,
+.sell-field textarea::placeholder {
+  color: #a0aaa4;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+@media (max-width: 760px) {
+  .sell-header-actions {
+    gap: 6px;
+  }
+
+  .sell-language {
+    padding: 0 8px;
+  }
+
+  .sell-language select {
+    width: 68px;
+    font-size: 11px;
+  }
+
+  .sell-tree-close {
+    width: 38px;
+    height: 38px;
+  }
+
+  .sell-category-card {
+    min-height: 0;
+  }
+
+  .sell-subtype-block {
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+}
+
+@media (max-width: 420px) {
+  .sell-language {
+    max-width: 105px;
+  }
+
+  .sell-language select {
+    width: 58px;
+  }
+
+  .sell-tree-brand strong {
+    font-size: 16px;
+  }
+}
+
+
+/* Readable typography + 15-day expiry note */
+.sell-tree-modal,
+.sell-tree-modal input,
+.sell-tree-modal select,
+.sell-tree-modal textarea,
+.sell-tree-modal button{
+  font-family:"Noto Sans Telugu","Nirmala UI","Gautami",system-ui,sans-serif;
+}
+
+.sell-tree-modal{
+  font-size:16px;
+}
+
+.sell-step-heading h2{
+  font-size:27px;
+}
+
+.sell-step-heading p,
+.sell-field label,
+.sell-field input,
+.sell-field select,
+.sell-field textarea{
+  font-size:16px;
+}
+
+.sell-expiry-note{
+  margin-top:14px;
+  padding:14px 16px;
+  border:1px solid #dce8de;
+  background:#f4faf5;
+  border-radius:12px;
+  display:flex;
+  gap:11px;
+  align-items:flex-start;
+  color:#275f38;
+}
+
+.sell-expiry-note>span{
+  font-size:22px;
+}
+
+.sell-expiry-note strong{
+  display:block;
+  font-size:15px;
+  margin-bottom:3px;
+}
+
+.sell-expiry-note p{
+  margin:0;
+  font-size:13px;
+  color:#627064;
+}
+
+@media(max-width:760px){
+  .sell-tree-modal{
+    font-size:15px;
+  }
+  .sell-step-heading h2{
+    font-size:23px;
+  }
+  .sell-field label,
+  .sell-field input,
+  .sell-field select,
+  .sell-field textarea{
+    font-size:15px;
+  }
+}

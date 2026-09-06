@@ -34,16 +34,112 @@ import "./CarpenterDashboard.css";
 import TreeLoader from "../components/TreeLoader";
 
 const SKILLS = [
-  "Door Fitting",
-  "Window Fitting",
-  "Furniture Making",
-  "Wood Polishing",
-  "Modular Kitchen",
-  "Wood Carving",
-  "Staircase Work",
-  "Interior Work",
+  "Door Fitting","Window Fitting","Furniture Making","Furniture Design",
+  "Hand Design Work","Hand Carving","Wood Carving","Traditional Wood Craft",
+  "Custom Furniture","Furniture Repair","Wood Polishing","Modular Kitchen",
+  "Staircase Work","Interior Woodwork","Doors & Windows","Pooja Mandir Making",
+  "Bed Making","Sofa & Chair Making","Dining Table Making","Office Furniture",
+  "Wood Turning","CNC Wood Work","UPVC / Wood Combination Work","General Woodwork",
   "Others",
 ];
+
+const DASHBOARD_LANGUAGES = {
+  en: "English", te: "తెలుగు", hi: "हिन्दी", ta: "தமிழ்", kn: "ಕನ್ನಡ",
+};
+
+const TRANSLATIONS = {
+  en: {
+    Dashboard:"Dashboard","Create / Edit Service Profile":"Create / Edit Service Profile",
+    "My Service Profile":"My Service Profile","Customer Requirements":"Customer Requirements",
+    Notifications:"Notifications","Update Location":"Update Location","Updating Location...":"Updating Location...",
+    "My Profile":"My Profile",Settings:"Settings",Logout:"Logout","TimberMart":"TimberMart",
+    "Carpenter":"Carpenter","Location not added":"Location not added","Hello,":"Hello,",
+    "CARPENTER SERVICE":"CARPENTER SERVICE","No Commission":"No Commission","Direct Contact":"Direct Contact",
+    "100% Secure":"100% Secure","We Connect. You Deal Directly.":"We Connect. You Deal Directly.",
+    "Timber Listings":"Timber Listings","Refresh":"Refresh","View":"View","Loading notifications...":"Loading notifications...",
+    "No notifications":"No notifications","Mark all read":"Mark all read","Post Timber Listing":"Post Timber Listing",
+    "Nearest Timber Deals":"Nearest Timber Deals","Expires":"Expires","Expired":"Expired",
+    "Available":"Available","Available Now":"Available Now","Furniture Making":"Furniture Making",
+    "Hand Design Work":"Hand Design Work","Furniture Design":"Furniture Design","Custom Furniture":"Custom Furniture",
+    "Hand Carving":"Hand Carving","Traditional Wood Craft":"Traditional Wood Craft",
+  },
+  te: {
+    Dashboard:"డ్యాష్‌బోర్డ్","Create / Edit Service Profile":"సర్వీస్ ప్రొఫైల్ సృష్టించండి / మార్చండి",
+    "My Service Profile":"నా సర్వీస్ ప్రొఫైల్","Customer Requirements":"కస్టమర్ అవసరాలు",
+    Notifications:"నోటిఫికేషన్లు","Update Location":"లొకేషన్ అప్‌డేట్","Updating Location...":"లొకేషన్ అప్‌డేట్ అవుతోంది...",
+    "My Profile":"నా ప్రొఫైల్",Settings:"సెట్టింగ్స్",Logout:"లాగౌట్",TimberMart:"టింబర్‌మార్ట్",
+    Carpenter:"కార్పెంటర్","Location not added":"లొకేషన్ జోడించలేదు","CARPENTER SERVICE":"కార్పెంటర్ సర్వీస్",
+    "No Commission":"కమీషన్ లేదు","Direct Contact":"నేరుగా సంప్రదించండి","100% Secure":"100% సురక్షితం",
+    "We Connect. You Deal Directly.":"మేము కనెక్ట్ చేస్తాం. మీరు నేరుగా డీల్ చేయండి.",
+    "Timber Listings":"టింబర్ లిస్టింగ్స్","Refresh":"రిఫ్రెష్","View":"చూడండి",
+    "Loading notifications...":"నోటిఫికేషన్లు లోడ్ అవుతున్నాయి...","No notifications":"నోటిఫికేషన్లు లేవు",
+    "Mark all read":"అన్నీ చదివినవిగా చేయండి","Post Timber Listing":"టింబర్ లిస్టింగ్ పోస్ట్ చేయండి",
+    "Nearest Timber Deals":"దగ్గరలోని టింబర్ డీల్స్","Expires":"గడువు","Expired":"గడువు ముగిసింది",
+    "Available":"అందుబాటులో ఉంది","Available Now":"ఇప్పుడు అందుబాటులో ఉంది","Furniture Making":"ఫర్నిచర్ తయారీ",
+    "Hand Design Work":"హ్యాండ్ డిజైన్ వర్క్","Furniture Design":"ఫర్నిచర్ డిజైన్","Custom Furniture":"కస్టమ్ ఫర్నిచర్",
+    "Hand Carving":"చేతి చెక్కడం","Traditional Wood Craft":"సాంప్రదాయ వుడ్ క్రాఫ్ట్",
+  },
+  hi: {
+    Dashboard:"डैशबोर्ड","Create / Edit Service Profile":"सर्विस प्रोफ़ाइल बनाएं / संपादित करें",
+    "My Service Profile":"मेरी सर्विस प्रोफ़ाइल","Customer Requirements":"ग्राहक आवश्यकताएं",
+    Notifications:"सूचनाएं","Update Location":"लोकेशन अपडेट","Updating Location...":"लोकेशन अपडेट हो रहा है...",
+    "My Profile":"मेरी प्रोफ़ाइल",Settings:"सेटिंग्स",Logout:"लॉगआउट",TimberMart:"टिम्बरमार्ट",
+    Carpenter:"बढ़ई","Location not added":"लोकेशन नहीं जोड़ी गई","CARPENTER SERVICE":"बढ़ई सेवा",
+    "No Commission":"कोई कमीशन नहीं","Direct Contact":"सीधा संपर्क","100% Secure":"100% सुरक्षित",
+    "We Connect. You Deal Directly.":"हम जोड़ते हैं। आप सीधे सौदा करें।","Timber Listings":"टिम्बर लिस्टिंग",
+    Refresh:"रिफ्रेश",View:"देखें","Loading notifications...":"सूचनाएं लोड हो रही हैं...","No notifications":"कोई सूचनाएं नहीं",
+    "Mark all read":"सभी को पढ़ा हुआ करें","Post Timber Listing":"टिम्बर लिस्टिंग पोस्ट करें",
+    "Nearest Timber Deals":"नज़दीकी टिम्बर डील्स",Expires:"समाप्ति",Expired:"समाप्त",
+    Available:"उपलब्ध","Available Now":"अभी उपलब्ध","Furniture Making":"फर्नीचर बनाना",
+    "Hand Design Work":"हैंड डिजाइन कार्य","Furniture Design":"फर्नीचर डिजाइन","Custom Furniture":"कस्टम फर्नीचर",
+    "Hand Carving":"हाथ से नक्काशी","Traditional Wood Craft":"पारंपरिक लकड़ी शिल्प",
+  },
+  ta: {
+    Dashboard:"டாஷ்போர்டு","Create / Edit Service Profile":"சேவை சுயவிவரத்தை உருவாக்கு / திருத்து",
+    "My Service Profile":"என் சேவை சுயவிவரம்","Customer Requirements":"வாடிக்கையாளர் தேவைகள்",
+    Notifications:"அறிவிப்புகள்","Update Location":"இருப்பிடத்தை புதுப்பி","Updating Location...":"இருப்பிடம் புதுப்பிக்கப்படுகிறது...",
+    "My Profile":"என் சுயவிவரம்",Settings:"அமைப்புகள்",Logout:"வெளியேறு",TimberMart:"டிம்பர்மார்ட்",
+    Carpenter:"தச்சர்","Location not added":"இருப்பிடம் சேர்க்கப்படவில்லை","CARPENTER SERVICE":"தச்சர் சேவை",
+    "No Commission":"கமிஷன் இல்லை","Direct Contact":"நேரடி தொடர்பு","100% Secure":"100% பாதுகாப்பானது",
+    "We Connect. You Deal Directly.":"நாங்கள் இணைக்கிறோம். நீங்கள் நேரடியாக ஒப்பந்தம் செய்யுங்கள்.",
+    "Timber Listings":"மரப் பட்டியல்கள்",Refresh:"புதுப்பி",View:"பார்க்க",
+    "Loading notifications...":"அறிவிப்புகள் ஏற்றப்படுகின்றன...","No notifications":"அறிவிப்புகள் இல்லை",
+    "Mark all read":"அனைத்தையும் படித்ததாக குறி","Post Timber Listing":"மரப் பட்டியலை பதிவு செய்",
+    "Nearest Timber Deals":"அருகிலுள்ள மர ஒப்பந்தங்கள்",Expires:"காலாவதி",Expired:"காலாவதி",
+    Available:"கிடைக்கும்","Available Now":"இப்போது கிடைக்கும்","Furniture Making":"தளபாடம் தயாரித்தல்",
+    "Hand Design Work":"கை வடிவமைப்பு வேலை","Furniture Design":"தளபாட வடிவமைப்பு","Custom Furniture":"தனிப்பயன் தளபாடம்",
+    "Hand Carving":"கை செதுக்குதல்","Traditional Wood Craft":"பாரம்பரிய மரக் கைவினை",
+  },
+  kn: {
+    Dashboard:"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್","Create / Edit Service Profile":"ಸೇವಾ ಪ್ರೊಫೈಲ್ ರಚಿಸಿ / ಸಂಪಾದಿಸಿ",
+    "My Service Profile":"ನನ್ನ ಸೇವಾ ಪ್ರೊಫೈಲ್","Customer Requirements":"ಗ್ರಾಹಕರ ಅಗತ್ಯಗಳು",
+    Notifications:"ಅಧಿಸೂಚನೆಗಳು","Update Location":"ಸ್ಥಳ ನವೀಕರಿಸಿ","Updating Location...":"ಸ್ಥಳ ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ...",
+    "My Profile":"ನನ್ನ ಪ್ರೊಫೈಲ್",Settings:"ಸೆಟ್ಟಿಂಗ್‌ಗಳು",Logout:"ಲಾಗ್‌ಔಟ್",TimberMart:"ಟಿಂಬರ್‌ಮಾರ್ಟ್",
+    Carpenter:"ಬಡಗಿ","Location not added":"ಸ್ಥಳ ಸೇರಿಸಲಾಗಿಲ್ಲ","CARPENTER SERVICE":"ಬಡಗಿ ಸೇವೆ",
+    "No Commission":"ಕಮಿಷನ್ ಇಲ್ಲ","Direct Contact":"ನೇರ ಸಂಪರ್ಕ","100% Secure":"100% ಸುರಕ್ಷಿತ",
+    "We Connect. You Deal Directly.":"ನಾವು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ. ನೀವು ನೇರವಾಗಿ ವ್ಯವಹರಿಸಿ.",
+    "Timber Listings":"ಟಿಂಬರ್ ಪಟ್ಟಿಗಳು",Refresh:"ರಿಫ್ರೆಶ್",View:"ವೀಕ್ಷಿಸಿ",
+    "Loading notifications...":"ಅಧಿಸೂಚನೆಗಳನ್ನು ಲೋಡ್ ಮಾಡಲಾಗುತ್ತಿದೆ...","No notifications":"ಯಾವುದೇ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ",
+    "Mark all read":"ಎಲ್ಲವನ್ನೂ ಓದಿದಂತೆ ಗುರುತಿಸಿ","Post Timber Listing":"ಟಿಂಬರ್ ಪಟ್ಟಿಯನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ",
+    "Nearest Timber Deals":"ಹತ್ತಿರದ ಟಿಂಬರ್ ವ್ಯವಹಾರಗಳು",Expires:"ಅವಧಿ",Expired:"ಅವಧಿ ಮುಗಿದಿದೆ",
+    Available:"ಲಭ್ಯವಿದೆ","Available Now":"ಈಗ ಲಭ್ಯವಿದೆ","Furniture Making":"ಫರ್ನಿಚರ್ ತಯಾರಿಕೆ",
+    "Hand Design Work":"ಹ್ಯಾಂಡ್ ಡಿಸೈನ್ ಕೆಲಸ","Furniture Design":"ಫರ್ನಿಚರ್ ಡಿಸೈನ್","Custom Furniture":"ಕಸ್ಟಮ್ ಫರ್ನಿಚರ್",
+    "Hand Carving":"ಕೈ ಕೆತ್ತನೆ","Traditional Wood Craft":"ಸಾಂಪ್ರದಾಯಿಕ ಮರದ ಕಲೆ",
+  }
+};
+
+const SKILL_LABELS = {
+  "Door Fitting":["Door Fitting","డోర్ ఫిట్టింగ్","दरवाज़ा फिटिंग","கதவு பொருத்துதல்","ಬಾಗಿಲು ಫಿಟ್ಟಿಂಗ್"],
+  "Window Fitting":["Window Fitting","విండో ఫిట్టింగ్","खिड़की फिटिंग","ஜன்னல் பொருத்துதல்","ಕಿಟಕಿ ಫಿಟ್ಟಿಂಗ್"],
+  "Furniture Making":["Furniture Making","ఫర్నిచర్ తయారీ","फर्नीचर बनाना","தளபாடம் தயாரித்தல்","ಫರ್ನಿಚರ್ ತಯಾರಿಕೆ"],
+  "Furniture Design":["Furniture Design","ఫర్నిచర్ డిజైన్","फर्नीचर डिजाइन","தளபாட வடிவமைப்பு","ಫರ್ನಿಚರ್ ಡಿಸೈನ್"],
+  "Hand Design Work":["Hand Design Work","హ్యాండ్ డిజైన్ వర్క్","हैंड डिजाइन कार्य","கை வடிவமைப்பு வேலை","ಹ್ಯಾಂಡ್ ಡಿಸೈನ್ ಕೆಲಸ"],
+  "Hand Carving":["Hand Carving","చేతి చెక్కడం","हाथ से नक्काशी","கை செதுக்குதல்","ಕೈ ಕೆತ್ತನೆ"],
+  "Wood Carving":["Wood Carving","వుడ్ కార్వింగ్","लकड़ी की नक्काशी","மர செதுக்குதல்","ಮರ ಕೆತ್ತನೆ"],
+  "Traditional Wood Craft":["Traditional Wood Craft","సాంప్రదాయ వుడ్ క్రాఫ్ట్","पारंपरिक लकड़ी शिल्प","பாரம்பரிய மரக் கைவினை","ಸಾಂಪ್ರದಾಯಿಕ ಮರದ ಕಲೆ"],
+  "Custom Furniture":["Custom Furniture","కస్టమ్ ఫర్నిచర్","कस्टम फर्नीचर","தனிப்பயன் தளபாடம்","ಕಸ್ಟಮ್ ಫರ್ನಿಚರ್"],
+};
+
 
 export default function CarpenterDashboard() {
   const navigate = useNavigate();
@@ -71,6 +167,9 @@ export default function CarpenterDashboard() {
 
   const [mobileMenu, setMobileMenu] = useState(false);
   const [search, setSearch] = useState("");
+  const [dashboardLanguage, setDashboardLanguage] = useState(
+    () => localStorage.getItem("timbermart_carpenter_language") || "en"
+  );
 
   const [showProfileWizard, setShowProfileWizard] = useState(false);
   const [profileStep, setProfileStep] = useState(1);
@@ -92,6 +191,20 @@ export default function CarpenterDashboard() {
   const [uploading, setUploading] = useState(false);
 
   const [portfolioFiles, setPortfolioFiles] = useState([]);
+
+  const tx = (key) => TRANSLATIONS[dashboardLanguage]?.[key] || TRANSLATIONS.en[key] || key;
+  const skillLabel = (skill) => {
+    const row = SKILL_LABELS[skill];
+    return row ? (row[{en:0,te:1,hi:2,ta:3,kn:4}[dashboardLanguage]] || row[0]) : skill;
+  };
+  const formatExpiry = (date) => {
+    if (!date) return "";
+    const diff = new Date(date).getTime() - Date.now();
+    if (diff <= 0) return `${tx("Expired")}`;
+    const days = Math.floor(diff / 86400000);
+    const hours = Math.floor((diff % 86400000) / 3600000);
+    return `${tx("Expires")}: ${days}d ${hours}h`;
+  };
 
   const [serviceForm, setServiceForm] = useState({
     skills: [],
@@ -371,7 +484,10 @@ export default function CarpenterDashboard() {
         tree_type: timberForm.tree_type.trim(), title: timberForm.title.trim(), wood_type: timberForm.tree_type.trim(),
         product_type: timberForm.tree_type.trim(), quantity: timberForm.quantity.trim(), quantity_unit: timberForm.quantity_unit,
         price: timberForm.price.trim() || null, condition: timberForm.condition.trim() || null, location,
-        description: timberForm.description.trim() || null, contact_preference: "Call / WhatsApp / Chat"
+        description: timberForm.description.trim() || null,
+        latitude: profile?.latitude ?? null,
+        longitude: profile?.longitude ?? null,
+        contact_preference: "Call / WhatsApp / Chat"
       }).select("*").single();
       if (listingError) throw listingError;
       let uploaded = 0;
@@ -1063,7 +1179,7 @@ export default function CarpenterDashboard() {
   );
 }
   return (
-    <div className="carpenter-app">
+    <div className={`carpenter-app carpenter-lang-${dashboardLanguage}`} lang={dashboardLanguage}>
 
       {/* =================================================
           HEADER
@@ -1084,6 +1200,16 @@ export default function CarpenterDashboard() {
         </div>
 
         <div className="carpenter-header-right">
+          <label className="carpenter-language-picker" title="Language">
+            <span>🌐</span>
+            <select value={dashboardLanguage} onChange={(e) => {
+              const value = e.target.value;
+              setDashboardLanguage(value);
+              localStorage.setItem("timbermart_carpenter_language", value);
+            }}>
+              {Object.entries(DASHBOARD_LANGUAGES).map(([code, label]) => <option key={code} value={code}>{label}</option>)}
+            </select>
+          </label>
 
           <button
             className="carpenter-bell"
@@ -1495,7 +1621,7 @@ export default function CarpenterDashboard() {
                 }}
               >
                 <span>🛠️</span>
-                <strong>Create / Edit Service Profile</strong>
+                <strong>{tx("Create / Edit Service Profile")}</strong>
                 <small>
                   Add skills and experience
                 </small>
@@ -1506,7 +1632,7 @@ export default function CarpenterDashboard() {
                 onClick={() => setShowService(true)}
               >
                 <span>📋</span>
-                <strong>My Service Profile</strong>
+                <strong>{tx("My Service Profile")}</strong>
                 <small>
                   View your public profile
                 </small>
@@ -1523,7 +1649,7 @@ export default function CarpenterDashboard() {
                 }
               >
                 <span>📋</span>
-                <strong>Customer Requirements</strong>
+                <strong>{tx("Customer Requirements")}</strong>
                 <small>
                   Find nearby customer work
                 </small>
@@ -1727,7 +1853,7 @@ export default function CarpenterDashboard() {
             <div className="carpenter-section-title">
 
               <div>
-                <h2>Customer Requirements</h2>
+                <h2>{tx("Customer Requirements")}</h2>
 
                 <p>
                   Connect with customers looking
@@ -1917,7 +2043,7 @@ export default function CarpenterDashboard() {
             <div className="carpenter-section-title">
               <div>
                 <span className="carpenter-section-kicker">TIMBER MARKETPLACE</span>
-                <h2>Timber Listings</h2>
+                <h2>{tx("Timber Listings")}</h2>
                 <p>
                   View standing trees and timber products posted on TimberMart.
                 </p>
@@ -1988,6 +2114,9 @@ export default function CarpenterDashboard() {
                         <span className={`carpenter-listing-status ${String(listing.status || "").toLowerCase()}`}>
                           {String(listing.status || "pending").toLowerCase() === "approved" ? "✓ Approved" : String(listing.status || "pending").toLowerCase() === "rejected" ? "✕ Rejected" : "◷ Pending Admin Approval"}
                         </span>
+                        <span className={`carpenter-listing-expiry ${new Date(listing.expires_at || new Date(new Date(listing.created_at).getTime() + 15*86400000)) <= new Date() ? "expired" : ""}`}>
+                          {formatExpiry(listing.expires_at || new Date(new Date(listing.created_at).getTime() + 15*86400000))}
+                        </span>
 
                         <h3>{listing.title || listing.wood_type || "Timber Listing"}</h3>
 
@@ -2041,17 +2170,17 @@ export default function CarpenterDashboard() {
 
             <div>
               <Check size={18} />
-              <span>No Commission</span>
+              <span>{tx("No Commission")}</span>
             </div>
 
             <div>
               <Phone size={18} />
-              <span>Direct Contact</span>
+              <span>{tx("Direct Contact")}</span>
             </div>
 
             <div>
               <Users size={18} />
-              <span>100% Secure</span>
+              <span>{tx("100% Secure")}</span>
             </div>
 
             <div className="carpenter-footer-main">
@@ -3428,7 +3557,7 @@ export default function CarpenterDashboard() {
             <div className="carpenter-notification-header">
               <div>
                 <span>UPDATES</span>
-                <h2>Notifications</h2>
+                <h2>{tx("Notifications")}</h2>
                 <small>TimberMart updates & admin announcements</small>
               </div>
               <button type="button" onClick={() => setShowNotifications(false)}>
@@ -3466,7 +3595,7 @@ export default function CarpenterDashboard() {
                       key={notification.id}
                       className={`carpenter-notification-item ${
                         !notification.is_read ? "unread" : ""
-                      }`}
+                      } ${notification.type === "nearest_deal" || notification.notification_type === "nearest_deal" ? "nearest-deal" : ""}`}
                       onClick={() => openCarpenterNotification(notification)}
                     >
                       <div className="carpenter-notification-icon">
@@ -3474,6 +3603,8 @@ export default function CarpenterDashboard() {
                           ? "📢"
                           : notification.type === "message"
                           ? "💬"
+                          : notification.type === "nearest_deal" || notification.notification_type === "nearest_deal"
+                          ? "📍"
                           : notification.post_type === "listing"
                           ? "🪵"
                           : "🔔"}
@@ -3483,7 +3614,7 @@ export default function CarpenterDashboard() {
                         {adminNotification && (
                           <span className="carpenter-admin-badge">TIMBERMART ADMIN</span>
                         )}
-                        <strong>{notification.title || "TimberMart Notification"}</strong>
+                        <strong>{notification.type === "nearest_deal" ? tx("Nearest Timber Deals") : (notification.title || "TimberMart Notification")}</strong>
                         <p>{notification.message || "You have a new TimberMart update."}</p>
 
                         {notification.image_url && (
@@ -3610,6 +3741,10 @@ export default function CarpenterDashboard() {
                       selectedListing.profiles?.location ||
                       "-"}
                   </strong>
+                </div>
+                <div className="carpenter-expiry-detail">
+                  <span>{tx("Expires")}</span>
+                  <strong>{formatExpiry(selectedListing.expires_at || new Date(new Date(selectedListing.created_at).getTime() + 15*86400000))}</strong>
                 </div>
               </div>
 

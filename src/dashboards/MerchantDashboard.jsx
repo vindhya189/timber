@@ -54,6 +54,46 @@ const CATEGORIES = [
   "Carpenter Services",
 ];
 
+
+
+const DASHBOARD_LANGUAGES = {
+  en: "English",
+  te: "తెలుగు",
+  hi: "हिन्दी",
+  ta: "தமிழ்",
+  kn: "ಕನ್ನಡ",
+};
+
+const DASHBOARD_TRANSLATIONS = {
+  en: {
+    "Buy / Timber":"Buy / Timber", "Sell Timber":"Sell Timber", "Requirement Wall":"Requirement Wall", "Jobs":"Jobs", "Post Job":"Post Job", "Find Workers":"Find Workers", "Patta Teak Suppliers":"Patta Teak Suppliers", "Imported Teak Suppliers":"Imported Teak Suppliers", "Update My Location":"Update My Location", "Updating Location...":"Updating Location...", "My Profile":"My Profile", "Settings":"Settings", "Logout":"Logout", "Direct Contact":"Direct Contact", "We Connect. You Deal Directly.":"We Connect. You Deal Directly.", "Timber Merchant":"Timber Merchant", "Buy. Sell.":"Buy. Sell.", "Connect Directly.":"Connect Directly.", "Timber Marketplace":"Timber Marketplace", "Find trees and timber, sell your products, post requirements and connect with workers.":"Find trees and timber, sell your products, post requirements and connect with workers.", "Add your location":"Add your location", "Update GPS":"Update GPS", "Updating...":"Updating...", "My Listings":"My Listings", "Requirements":"Requirements", "Workers":"Workers", "QUICK ACTIONS":"QUICK ACTIONS", "What do you want to do?":"What do you want to do?", "Add timber listing & photos":"Add timber listing & photos", "Post Requirement":"Post Requirement", "Find timber you need":"Find timber you need", "Post a Job":"Post a Job", "Connect with workers":"Connect with workers", "Search nearby workers":"Search nearby workers", "BUY":"BUY", "Find Trees & Timber":"Find Trees & Timber", "Wood Type":"Wood Type", "Location":"Location", "Max Price":"Max Price", "Search trees, timber, logs...":"Search trees, timber, logs...", "No photo":"No photo", "photos":"photos", "VERIFIED CATEGORY HUB":"VERIFIED CATEGORY HUB", "Real merchant and seller listings tagged for Patta / Indian Teak.":"Real merchant and seller listings tagged for Patta / Indian Teak.", "No Patta Teak supplier listings yet.":"No Patta Teak supplier listings yet.", "TRADE CATEGORY HUB":"TRADE CATEGORY HUB", "Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.":"Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.", "No imported teak supplier listings yet.":"No imported teak supplier listings yet.", "SELL":"SELL", "REQUIREMENT WALL":"REQUIREMENT WALL", "JOBS":"JOBS", "FIND WORKERS":"FIND WORKERS", "Search workers by name or location...":"Search workers by name or location...", "LIVE UPDATES":"LIVE UPDATES", "Notifications":"Notifications", "Mark all read":"Mark all read", "No notifications yet":"No notifications yet", "Admin approvals, nearby activity and marketplace updates will appear here.":"Admin approvals, nearby activity and marketplace updates will appear here.", "ADMIN":"ADMIN", "Teak • Old Wood • Fire Wood • Timber Products":"Teak • Old Wood • Fire Wood • Timber Products", "Add Timber Listing":"Add Timber Listing", "Listing Title":"Listing Title", "Product Type":"Product Type", "Quantity":"Quantity", "Price":"Price", "Price Type":"Price Type", "Description":"Description", "Add Photos":"Add Photos", "Up to 10 photos":"Up to 10 photos", "Submit Listing":"Submit Listing", "Submitting...":"Submitting...", "Close":"Close", "Remove photo":"Remove photo", "Language":"Language", "Dashboard Language":"Dashboard Language", "All listing photos":"All listing photos"
+  },
+  te: {
+    "Buy / Timber":"కొనుగోలు / కలప", "Sell Timber":"కలప అమ్మకం", "Requirement Wall":"అవసరాల గోడ", "Jobs":"ఉద్యోగాలు", "Post Job":"ఉద్యోగం పోస్ట్ చేయండి", "Find Workers":"కార్మికులను కనుగొనండి", "Patta Teak Suppliers":"పట్టా టేకు సరఫరాదారులు", "Imported Teak Suppliers":"దిగుమతి టేకు సరఫరాదారులు", "Update My Location":"నా లొకేషన్ అప్డేట్ చేయండి", "Updating Location...":"లొకేషన్ అప్డేట్ అవుతోంది...", "My Profile":"నా ప్రొఫైల్", "Settings":"సెట్టింగ్స్", "Logout":"లాగ్ అవుట్", "Direct Contact":"నేరుగా సంప్రదించండి", "We Connect. You Deal Directly.":"మేము కలుపుతాం. మీరు నేరుగా డీల్ చేయండి.", "Timber Merchant":"కలప వ్యాపారి", "Buy. Sell.":"కొనండి. అమ్మండి.", "Connect Directly.":"నేరుగా కనెక్ట్ అవ్వండి.", "Timber Marketplace":"కలప మార్కెట్‌ప్లేస్", "Find trees and timber, sell your products, post requirements and connect with workers.":"చెట్లు మరియు కలపను కనుగొని, మీ ఉత్పత్తులను అమ్మి, అవసరాలు పోస్ట్ చేసి కార్మికులతో కనెక్ట్ అవ్వండి.", "Add your location":"మీ లొకేషన్ జోడించండి", "Update GPS":"GPS అప్డేట్", "Updating...":"అప్డేట్ అవుతోంది...", "My Listings":"నా లిస్టింగ్స్", "Requirements":"అవసరాలు", "Workers":"కార్మికులు", "QUICK ACTIONS":"త్వరిత చర్యలు", "What do you want to do?":"మీరు ఏమి చేయాలనుకుంటున్నారు?", "Add timber listing & photos":"కలప లిస్టింగ్ మరియు ఫోటోలు జోడించండి", "Post Requirement":"అవసరం పోస్ట్ చేయండి", "Find timber you need":"మీకు కావాల్సిన కలపను కనుగొనండి", "Post a Job":"ఉద్యోగం పోస్ట్ చేయండి", "Connect with workers":"కార్మికులతో కనెక్ట్ అవ్వండి", "Search nearby workers":"దగ్గరలోని కార్మికులను వెతకండి", "BUY":"కొనుగోలు", "Find Trees & Timber":"చెట్లు & కలపను కనుగొనండి", "Wood Type":"చెక్క రకం", "Location":"ప్రాంతం", "Max Price":"గరిష్ఠ ధర", "Search trees, timber, logs...":"చెట్లు, కలప, దుంగలు వెతకండి...", "No photo":"ఫోటో లేదు", "photos":"ఫోటోలు", "VERIFIED CATEGORY HUB":"ధృవీకరించిన కేటగిరీ హబ్", "Real merchant and seller listings tagged for Patta / Indian Teak.":"పట్టా / ఇండియన్ టేక్‌గా గుర్తించిన నిజమైన వ్యాపారి లిస్టింగ్స్.", "No Patta Teak supplier listings yet.":"ఇంకా పట్టా టేకు సరఫరాదారుల లిస్టింగ్స్ లేవు.", "TRADE CATEGORY HUB":"ట్రేడ్ కేటగిరీ హబ్", "Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.":"ఇంపోర్టెడ్ / బర్మా / ఆఫ్రికన్ / మలేషియన్ టేక్‌గా గుర్తించిన మార్కెట్ లిస్టింగ్స్.", "No imported teak supplier listings yet.":"ఇంకా దిగుమతి టేకు సరఫరాదారుల లిస్టింగ్స్ లేవు.", "SELL":"అమ్మకం", "REQUIREMENT WALL":"అవసరాల గోడ", "JOBS":"ఉద్యోగాలు", "FIND WORKERS":"కార్మికులను కనుగొనండి", "Search workers by name or location...":"పేరు లేదా ప్రాంతంతో కార్మికులను వెతకండి...", "LIVE UPDATES":"లైవ్ అప్డేట్స్", "Notifications":"నోటిఫికేషన్స్", "Mark all read":"అన్నీ చదివినట్లుగా గుర్తించండి", "No notifications yet":"ఇంకా నోటిఫికేషన్స్ లేవు", "Admin approvals, nearby activity and marketplace updates will appear here.":"అడ్మిన్ ఆమోదాలు, సమీప కార్యకలాపాలు మరియు మార్కెట్ అప్డేట్స్ ఇక్కడ కనిపిస్తాయి.", "ADMIN":"అడ్మిన్", "Teak • Old Wood • Fire Wood • Timber Products":"టేకు • పాత చెక్క • కట్టెలు • కలప ఉత్పత్తులు", "Add Timber Listing":"కలప లిస్టింగ్ జోడించండి", "Listing Title":"లిస్టింగ్ పేరు", "Product Type":"ఉత్పత్తి రకం", "Quantity":"పరిమాణం", "Price":"ధర", "Price Type":"ధర రకం", "Description":"వివరణ", "Add Photos":"ఫోటోలు జోడించండి", "Up to 10 photos":"10 ఫోటోల వరకు", "Submit Listing":"లిస్టింగ్ పంపండి", "Submitting...":"పంపుతోంది...", "Close":"మూసివేయండి", "Remove photo":"ఫోటో తొలగించండి", "Language":"భాష", "Dashboard Language":"డాష్‌బోర్డ్ భాష", "All listing photos":"అన్ని లిస్టింగ్ ఫోటోలు"
+  },
+  hi: {
+    "Buy / Timber":"खरीद / लकड़ी", "Sell Timber":"लकड़ी बेचें", "Requirement Wall":"आवश्यकता वॉल", "Jobs":"नौकरियां", "Post Job":"नौकरी पोस्ट करें", "Find Workers":"कामगार खोजें", "Patta Teak Suppliers":"पट्टा सागौन सप्लायर", "Imported Teak Suppliers":"आयातित सागौन सप्लायर", "Update My Location":"मेरा स्थान अपडेट करें", "Updating Location...":"स्थान अपडेट हो रहा है...", "My Profile":"मेरी प्रोफ़ाइल", "Settings":"सेटिंग्स", "Logout":"लॉगआउट", "Direct Contact":"सीधा संपर्क", "We Connect. You Deal Directly.":"हम जोड़ते हैं। आप सीधे सौदा करें।", "Timber Merchant":"लकड़ी व्यापारी", "Buy. Sell.":"खरीदें। बेचें।", "Connect Directly.":"सीधे जुड़ें।", "Timber Marketplace":"लकड़ी मार्केटप्लेस", "Find trees and timber, sell your products, post requirements and connect with workers.":"पेड़ और लकड़ी खोजें, अपने उत्पाद बेचें, आवश्यकताएं पोस्ट करें और कामगारों से जुड़ें।", "Add your location":"अपना स्थान जोड़ें", "Update GPS":"GPS अपडेट", "Updating...":"अपडेट हो रहा है...", "My Listings":"मेरी लिस्टिंग", "Requirements":"आवश्यकताएं", "Workers":"कामगार", "QUICK ACTIONS":"त्वरित कार्य", "What do you want to do?":"आप क्या करना चाहते हैं?", "Add timber listing & photos":"लकड़ी की लिस्टिंग और फोटो जोड़ें", "Post Requirement":"आवश्यकता पोस्ट करें", "Find timber you need":"अपनी जरूरत की लकड़ी खोजें", "Post a Job":"नौकरी पोस्ट करें", "Connect with workers":"कामगारों से जुड़ें", "Search nearby workers":"पास के कामगार खोजें", "BUY":"खरीदें", "Find Trees & Timber":"पेड़ और लकड़ी खोजें", "Wood Type":"लकड़ी का प्रकार", "Location":"स्थान", "Max Price":"अधिकतम कीमत", "Search trees, timber, logs...":"पेड़, लकड़ी, लट्ठे खोजें...", "No photo":"फोटो नहीं", "photos":"फोटो", "VERIFIED CATEGORY HUB":"सत्यापित श्रेणी हब", "Real merchant and seller listings tagged for Patta / Indian Teak.":"पट्टा / भारतीय सागौन टैग वाली वास्तविक व्यापारी लिस्टिंग।", "No Patta Teak supplier listings yet.":"अभी कोई पट्टा सागौन सप्लायर लिस्टिंग नहीं है।", "TRADE CATEGORY HUB":"ट्रेड श्रेणी हब", "Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.":"आयातित / बर्मा / अफ्रीकी / मलेशियन सागौन टैग वाली मार्केट लिस्टिंग।", "No imported teak supplier listings yet.":"अभी कोई आयातित सागौन सप्लायर लिस्टिंग नहीं है।", "SELL":"बेचें", "REQUIREMENT WALL":"आवश्यकता वॉल", "JOBS":"नौकरियां", "FIND WORKERS":"कामगार खोजें", "Search workers by name or location...":"नाम या स्थान से कामगार खोजें...", "LIVE UPDATES":"लाइव अपडेट", "Notifications":"सूचनाएं", "Mark all read":"सभी पढ़े हुए करें", "No notifications yet":"अभी कोई सूचना नहीं", "Admin approvals, nearby activity and marketplace updates will appear here.":"एडमिन स्वीकृति, आसपास की गतिविधियां और मार्केट अपडेट यहां दिखाई देंगे।", "ADMIN":"एडमिन", "Teak • Old Wood • Fire Wood • Timber Products":"सागौन • पुरानी लकड़ी • जलाऊ लकड़ी • लकड़ी उत्पाद", "Add Timber Listing":"लकड़ी की लिस्टिंग जोड़ें", "Listing Title":"लिस्टिंग शीर्षक", "Product Type":"उत्पाद प्रकार", "Quantity":"मात्रा", "Price":"कीमत", "Price Type":"कीमत प्रकार", "Description":"विवरण", "Add Photos":"फोटो जोड़ें", "Up to 10 photos":"10 फोटो तक", "Submit Listing":"लिस्टिंग भेजें", "Submitting...":"भेजा जा रहा है...", "Close":"बंद करें", "Remove photo":"फोटो हटाएं", "Language":"भाषा", "Dashboard Language":"डैशबोर्ड भाषा", "All listing photos":"सभी लिस्टिंग फोटो"
+  },
+  ta: {
+    "Buy / Timber":"வாங்க / மரம்", "Sell Timber":"மரம் விற்பனை", "Requirement Wall":"தேவை சுவர்", "Jobs":"வேலைகள்", "Post Job":"வேலை இடுகையிடவும்", "Find Workers":"தொழிலாளர்களைக் கண்டறியவும்", "Patta Teak Suppliers":"பட்டா தேக்கு விற்பனையாளர்கள்", "Imported Teak Suppliers":"இறக்குமதி தேக்கு விற்பனையாளர்கள்", "Update My Location":"என் இருப்பிடத்தை புதுப்பிக்கவும்", "Updating Location...":"இருப்பிடம் புதுப்பிக்கப்படுகிறது...", "My Profile":"என் சுயவிவரம்", "Settings":"அமைப்புகள்", "Logout":"வெளியேறு", "Direct Contact":"நேரடி தொடர்பு", "We Connect. You Deal Directly.":"நாங்கள் இணைக்கிறோம். நீங்கள் நேரடியாக ஒப்பந்தம் செய்யுங்கள்.", "Timber Merchant":"மர வியாபாரி", "Buy. Sell.":"வாங்குங்கள். விற்குங்கள்.", "Connect Directly.":"நேரடியாக இணைக.", "Timber Marketplace":"மர சந்தை", "Find trees and timber, sell your products, post requirements and connect with workers.":"மரங்களையும் மரப்பொருட்களையும் கண்டுபிடித்து, பொருட்களை விற்று, தேவைகளை பதிவு செய்து தொழிலாளர்களுடன் இணையுங்கள்.", "Add your location":"உங்கள் இருப்பிடத்தைச் சேர்க்கவும்", "Update GPS":"GPS புதுப்பிக்கவும்", "Updating...":"புதுப்பிக்கப்படுகிறது...", "My Listings":"என் பட்டியல்கள்", "Requirements":"தேவைகள்", "Workers":"தொழிலாளர்கள்", "QUICK ACTIONS":"விரைவு செயல்கள்", "What do you want to do?":"நீங்கள் என்ன செய்ய விரும்புகிறீர்கள்?", "Add timber listing & photos":"மர பட்டியல் மற்றும் புகைப்படங்களைச் சேர்க்கவும்", "Post Requirement":"தேவையை பதிவு செய்யவும்", "Find timber you need":"தேவையான மரத்தை கண்டுபிடிக்கவும்", "Post a Job":"வேலை பதிவு செய்யவும்", "Connect with workers":"தொழிலாளர்களுடன் இணைக்கவும்", "Search nearby workers":"அருகிலுள்ள தொழிலாளர்களைத் தேடவும்", "BUY":"வாங்க", "Find Trees & Timber":"மரங்கள் & மரப்பொருட்களை கண்டுபிடிக்கவும்", "Wood Type":"மர வகை", "Location":"இடம்", "Max Price":"அதிகபட்ச விலை", "Search trees, timber, logs...":"மரங்கள், மரப்பொருட்கள், மரக்கட்டைகள் தேடவும்...", "No photo":"புகைப்படம் இல்லை", "photos":"புகைப்படங்கள்", "VERIFIED CATEGORY HUB":"சரிபார்க்கப்பட்ட வகை மையம்", "Real merchant and seller listings tagged for Patta / Indian Teak.":"பட்டா / இந்திய தேக்கு என குறிக்கப்பட்ட உண்மையான விற்பனையாளர் பட்டியல்கள்.", "No Patta Teak supplier listings yet.":"இன்னும் பட்டா தேக்கு விற்பனையாளர் பட்டியல்கள் இல்லை.", "TRADE CATEGORY HUB":"வர்த்தக வகை மையம்", "Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.":"இறக்குமதி / பர்மா / ஆப்பிரிக்க / மலேசிய தேக்கு என குறிக்கப்பட்ட சந்தை பட்டியல்கள்.", "No imported teak supplier listings yet.":"இன்னும் இறக்குமதி தேக்கு விற்பனையாளர் பட்டியல்கள் இல்லை.", "SELL":"விற்க", "REQUIREMENT WALL":"தேவை சுவர்", "JOBS":"வேலைகள்", "FIND WORKERS":"தொழிலாளர்களைக் கண்டறியவும்", "Search workers by name or location...":"பெயர் அல்லது இடத்தால் தொழிலாளர்களைத் தேடவும்...", "LIVE UPDATES":"நேரடி புதுப்பிப்புகள்", "Notifications":"அறிவிப்புகள்", "Mark all read":"அனைத்தையும் படித்ததாகக் குறிக்கவும்", "No notifications yet":"அறிவிப்புகள் இல்லை", "Admin approvals, nearby activity and marketplace updates will appear here.":"நிர்வாக அனுமதிகள், அருகிலுள்ள செயல்பாடுகள் மற்றும் சந்தை புதுப்பிப்புகள் இங்கே தோன்றும்.", "ADMIN":"நிர்வாகி", "Teak • Old Wood • Fire Wood • Timber Products":"தேக்கு • பழைய மரம் • விறகு • மரப் பொருட்கள்", "Add Timber Listing":"மர பட்டியலைச் சேர்க்கவும்", "Listing Title":"பட்டியல் தலைப்பு", "Product Type":"பொருள் வகை", "Quantity":"அளவு", "Price":"விலை", "Price Type":"விலை வகை", "Description":"விளக்கம்", "Add Photos":"புகைப்படங்களைச் சேர்க்கவும்", "Up to 10 photos":"10 புகைப்படங்கள் வரை", "Submit Listing":"பட்டியலை அனுப்பவும்", "Submitting...":"அனுப்பப்படுகிறது...", "Close":"மூடு", "Remove photo":"புகைப்படத்தை அகற்றவும்", "Language":"மொழி", "Dashboard Language":"டாஷ்போர்டு மொழி", "All listing photos":"அனைத்து பட்டியல் புகைப்படங்கள்"
+  },
+  kn: {
+    "Buy / Timber":"ಖರೀದಿ / ಮರ", "Sell Timber":"ಮರ ಮಾರಾಟ", "Requirement Wall":"ಅವಶ್ಯಕತೆ ಗೋಡೆ", "Jobs":"ಉದ್ಯೋಗಗಳು", "Post Job":"ಉದ್ಯೋಗ ಪೋಸ್ಟ್ ಮಾಡಿ", "Find Workers":"ಕಾರ್ಮಿಕರನ್ನು ಹುಡುಕಿ", "Patta Teak Suppliers":"ಪಟ್ಟಾ ತೇಗು ಪೂರೈಕೆದಾರರು", "Imported Teak Suppliers":"ಆಮದು ತೇಗು ಪೂರೈಕೆದಾರರು", "Update My Location":"ನನ್ನ ಸ್ಥಳವನ್ನು ನವೀಕರಿಸಿ", "Updating Location...":"ಸ್ಥಳ ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ...", "My Profile":"ನನ್ನ ಪ್ರೊಫೈಲ್", "Settings":"ಸೆಟ್ಟಿಂಗ್ಸ್", "Logout":"ಲಾಗ್ ಔಟ್", "Direct Contact":"ನೇರ ಸಂಪರ್ಕ", "We Connect. You Deal Directly.":"ನಾವು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ. ನೀವು ನೇರವಾಗಿ ವ್ಯವಹರಿಸಿ.", "Timber Merchant":"ಮರ ವ್ಯಾಪಾರಿ", "Buy. Sell.":"ಖರೀದಿಸಿ. ಮಾರಾಟ ಮಾಡಿ.", "Connect Directly.":"ನೇರವಾಗಿ ಸಂಪರ್ಕಿಸಿ.", "Timber Marketplace":"ಮರ ಮಾರುಕಟ್ಟೆ", "Find trees and timber, sell your products, post requirements and connect with workers.":"ಮರಗಳು ಮತ್ತು ಮರದ ವಸ್ತುಗಳನ್ನು ಹುಡುಕಿ, ಉತ್ಪನ್ನಗಳನ್ನು ಮಾರಾಟ ಮಾಡಿ, ಅವಶ್ಯಕತೆಗಳನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ ಮತ್ತು ಕಾರ್ಮಿಕರೊಂದಿಗೆ ಸಂಪರ್ಕಿಸಿ.", "Add your location":"ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಸೇರಿಸಿ", "Update GPS":"GPS ನವೀಕರಿಸಿ", "Updating...":"ನವೀಕರಿಸಲಾಗುತ್ತಿದೆ...", "My Listings":"ನನ್ನ ಪಟ್ಟಿಗಳು", "Requirements":"ಅವಶ್ಯಕತೆಗಳು", "Workers":"ಕಾರ್ಮಿಕರು", "QUICK ACTIONS":"ತ್ವರಿತ ಕಾರ್ಯಗಳು", "What do you want to do?":"ನೀವು ಏನು ಮಾಡಲು ಬಯಸುತ್ತೀರಿ?", "Add timber listing & photos":"ಮರದ ಪಟ್ಟಿ ಮತ್ತು ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ", "Post Requirement":"ಅವಶ್ಯಕತೆ ಪೋಸ್ಟ್ ಮಾಡಿ", "Find timber you need":"ನಿಮಗೆ ಬೇಕಾದ ಮರವನ್ನು ಹುಡುಕಿ", "Post a Job":"ಉದ್ಯೋಗ ಪೋಸ್ಟ್ ಮಾಡಿ", "Connect with workers":"ಕಾರ್ಮಿಕರೊಂದಿಗೆ ಸಂಪರ್ಕಿಸಿ", "Search nearby workers":"ಹತ್ತಿರದ ಕಾರ್ಮಿಕರನ್ನು ಹುಡುಕಿ", "BUY":"ಖರೀದಿ", "Find Trees & Timber":"ಮರಗಳು ಮತ್ತು ಮರದ ವಸ್ತುಗಳನ್ನು ಹುಡುಕಿ", "Wood Type":"ಮರದ ವಿಧ", "Location":"ಸ್ಥಳ", "Max Price":"ಗರಿಷ್ಠ ಬೆಲೆ", "Search trees, timber, logs...":"ಮರಗಳು, ಮರದ ವಸ್ತುಗಳು, ದಿಮ್ಮಿಗಳನ್ನು ಹುಡುಕಿ...", "No photo":"ಫೋಟೋ ಇಲ್ಲ", "photos":"ಫೋಟೋಗಳು", "VERIFIED CATEGORY HUB":"ಪರಿಶೀಲಿತ ವರ್ಗ ಕೇಂದ್ರ", "Real merchant and seller listings tagged for Patta / Indian Teak.":"ಪಟ್ಟಾ / ಭಾರತೀಯ ತೇಗು ಎಂದು ಗುರುತಿಸಲಾದ ನಿಜವಾದ ವ್ಯಾಪಾರಿ ಪಟ್ಟಿಗಳು.", "No Patta Teak supplier listings yet.":"ಇನ್ನೂ ಪಟ್ಟಾ ತೇಗು ಪೂರೈಕೆದಾರರ ಪಟ್ಟಿಗಳಿಲ್ಲ.", "TRADE CATEGORY HUB":"ವ್ಯಾಪಾರ ವರ್ಗ ಕೇಂದ್ರ", "Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.":"ಆಮದು / ಬರ್ಮಾ / ಆಫ್ರಿಕನ್ / ಮಲೇಶಿಯನ್ ತೇಗು ಎಂದು ಗುರುತಿಸಲಾದ ಮಾರುಕಟ್ಟೆ ಪಟ್ಟಿಗಳು.", "No imported teak supplier listings yet.":"ಇನ್ನೂ ಆಮದು ತೇಗು ಪೂರೈಕೆದಾರರ ಪಟ್ಟಿಗಳಿಲ್ಲ.", "SELL":"ಮಾರಾಟ", "REQUIREMENT WALL":"ಅವಶ್ಯಕತೆ ಗೋಡೆ", "JOBS":"ಉದ್ಯೋಗಗಳು", "FIND WORKERS":"ಕಾರ್ಮಿಕರನ್ನು ಹುಡುಕಿ", "Search workers by name or location...":"ಹೆಸರು ಅಥವಾ ಸ್ಥಳದಿಂದ ಕಾರ್ಮಿಕರನ್ನು ಹುಡುಕಿ...", "LIVE UPDATES":"ಲೈವ್ ಅಪ್‌ಡೇಟ್‌ಗಳು", "Notifications":"ಅಧಿಸೂಚನೆಗಳು", "Mark all read":"ಎಲ್ಲವನ್ನೂ ಓದಿದಂತೆ ಗುರುತಿಸಿ", "No notifications yet":"ಇನ್ನೂ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ", "Admin approvals, nearby activity and marketplace updates will appear here.":"ನಿರ್ವಾಹಕ ಅನುಮೋದನೆಗಳು, ಹತ್ತಿರದ ಚಟುವಟಿಕೆಗಳು ಮತ್ತು ಮಾರುಕಟ್ಟೆ ಅಪ್‌ಡೇಟ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.", "ADMIN":"ನಿರ್ವಾಹಕ", "Teak • Old Wood • Fire Wood • Timber Products":"ತೇಗು • ಹಳೆಯ ಮರ • ಉರುವಲು • ಮರದ ಉತ್ಪನ್ನಗಳು", "Add Timber Listing":"ಮರದ ಪಟ್ಟಿಯನ್ನು ಸೇರಿಸಿ", "Listing Title":"ಪಟ್ಟಿ ಶೀರ್ಷಿಕೆ", "Product Type":"ಉತ್ಪನ್ನದ ಪ್ರಕಾರ", "Quantity":"ಪ್ರಮಾಣ", "Price":"ಬೆಲೆ", "Price Type":"ಬೆಲೆ ಪ್ರಕಾರ", "Description":"ವಿವರಣೆ", "Add Photos":"ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ", "Up to 10 photos":"10 ಫೋಟೋಗಳವರೆಗೆ", "Submit Listing":"ಪಟ್ಟಿ ಕಳುಹಿಸಿ", "Submitting...":"ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...", "Close":"ಮುಚ್ಚಿ", "Remove photo":"ಫೋಟೋ ತೆಗೆದುಹಾಕಿ", "Language":"ಭಾಷೆ", "Dashboard Language":"ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ಭಾಷೆ", "All listing photos":"ಎಲ್ಲಾ ಪಟ್ಟಿ ಫೋಟೋಗಳು"
+  }
+};
+
+
+const UI_TRANSLATIONS = {
+  te: {"Buy • Sell • Connect":"కొనండి • అమ్మండి • కనెక్ట్ అవ్వండి","Filter":"ఫిల్టర్","Clear":"క్లియర్","No listings found":"లిస్టింగ్స్ ఏవీ లభించలేదు","No sellers have posted matching products yet.":"సరిపోలే ఉత్పత్తులను ఇంకా ఎవరూ పోస్ట్ చేయలేదు.","View Details":"వివరాలు చూడండి","My Timber Listings":"నా కలప లిస్టింగ్స్","Add Listing":"లిస్టింగ్ జోడించండి","You have no listings yet.":"మీకు ఇంకా లిస్టింగ్స్ లేవు.","Customer Requirements":"కస్టమర్ అవసరాలు","No requirements yet":"ఇంకా అవసరాలు లేవు","User-posted requirements will appear here.":"యూజర్లు పోస్ట్ చేసిన అవసరాలు ఇక్కడ కనిపిస్తాయి.","View Requirement":"అవసరాన్ని చూడండి","Find / Post Workers":"కార్మికులను కనుగొనండి / పోస్ట్ చేయండి","No jobs posted":"ఇంకా ఉద్యోగాలు పోస్ట్ చేయలేదు","Post a job to connect with workers.":"కార్మికులతో కనెక్ట్ అవ్వడానికి ఉద్యోగం పోస్ట్ చేయండి.","Nearby / Available Workers":"సమీప / అందుబాటులో ఉన్న కార్మికులు","No worker profiles yet":"ఇంకా కార్మికుల ప్రొఫైల్స్ లేవు","Workers who create profiles will appear here.":"ప్రొఫైల్ సృష్టించిన కార్మికులు ఇక్కడ కనిపిస్తారు.","Worker":"కార్మికుడు","View Profile":"ప్రొఫైల్ చూడండి","TimberMart only connects users.":"TimberMart వినియోగదారులను మాత్రమే కనెక్ట్ చేస్తుంది.","No Payments":"చెల్లింపులు లేవు","No Commission":"కమీషన్ లేదు","Nearby Connect":"సమీప కనెక్షన్","Post Your Requirement":"మీ అవసరాన్ని పోస్ట్ చేయండి","Requirement Title *":"అవసరం పేరు *","Category":"కేటగిరీ","Timber":"కలప","Trees":"చెట్లు","Logs":"దుంగలు","Doors":"తలుపులు","Furniture":"ఫర్నిచర్","Other":"ఇతర","Budget":"బడ్జెట్","JOBS":"ఉద్యోగాలు","Job Title *":"ఉద్యోగం పేరు *","Job Category":"ఉద్యోగ కేటగిరీ","Job Type":"ఉద్యోగ రకం","Full Time":"పూర్తి సమయం","Part Time":"పార్ట్ టైమ్","Project Based":"ప్రాజెక్ట్ ఆధారితం","Experience":"అనుభవం","Salary":"జీతం","Number of Positions":"పదవుల సంఖ్య","Accommodation Available":"వసతి అందుబాటులో ఉంది","Food Available":"భోజనం అందుబాటులో ఉంది","Job Description":"ఉద్యోగ వివరణ","Product Information":"ఉత్పత్తి సమాచారం","Product Type":"ఉత్పత్తి రకం","Posted":"పోస్ట్ చేసిన తేదీ","Seller":"విక్రేత","View Seller Profile":"విక్రేత ప్రొఫైల్ చూడండి","Call":"కాల్","Chat":"చాట్","WhatsApp":"వాట్సాప్","Required Quantity":"అవసరమైన పరిమాణం","Delete Requirement":"అవసరాన్ని తొలగించండి","About":"గురించి","Start a conversation":"సంభాషణ ప్రారంభించండి","Ask about timber, requirements, jobs or work details.":"కలప, అవసరాలు, ఉద్యోగాలు లేదా పని వివరాల గురించి అడగండి."},
+  hi: {"Buy • Sell • Connect":"खरीदें • बेचें • जुड़ें","Filter":"फ़िल्टर","Clear":"साफ़ करें","No listings found":"कोई लिस्टिंग नहीं मिली","No sellers have posted matching products yet.":"अभी तक किसी विक्रेता ने मेल खाने वाले उत्पाद पोस्ट नहीं किए हैं।","View Details":"विवरण देखें","My Timber Listings":"मेरी लकड़ी की लिस्टिंग","Add Listing":"लिस्टिंग जोड़ें","You have no listings yet.":"आपकी अभी कोई लिस्टिंग नहीं है।","Customer Requirements":"ग्राहक आवश्यकताएं","No requirements yet":"अभी कोई आवश्यकता नहीं","User-posted requirements will appear here.":"उपयोगकर्ताओं द्वारा पोस्ट की गई आवश्यकताएं यहां दिखाई देंगी।","View Requirement":"आवश्यकता देखें","Find / Post Workers":"कामगार खोजें / पोस्ट करें","No jobs posted":"अभी कोई नौकरी पोस्ट नहीं","Post a job to connect with workers.":"कामगारों से जुड़ने के लिए नौकरी पोस्ट करें।","Nearby / Available Workers":"पास के / उपलब्ध कामगार","No worker profiles yet":"अभी कोई कामगार प्रोफ़ाइल नहीं","Workers who create profiles will appear here.":"प्रोफ़ाइल बनाने वाले कामगार यहां दिखाई देंगे।","Worker":"कामगार","View Profile":"प्रोफ़ाइल देखें","TimberMart only connects users.":"TimberMart केवल उपयोगकर्ताओं को जोड़ता है।","No Payments":"कोई भुगतान नहीं","No Commission":"कोई कमीशन नहीं","Nearby Connect":"पास में कनेक्ट करें","Post Your Requirement":"अपनी आवश्यकता पोस्ट करें","Requirement Title *":"आवश्यकता शीर्षक *","Category":"श्रेणी","Timber":"लकड़ी","Trees":"पेड़","Logs":"लट्ठे","Doors":"दरवाज़े","Furniture":"फर्नीचर","Other":"अन्य","Budget":"बजट","JOBS":"नौकरियां","Job Title *":"नौकरी शीर्षक *","Job Category":"नौकरी श्रेणी","Job Type":"नौकरी प्रकार","Full Time":"पूर्णकालिक","Part Time":"अंशकालिक","Project Based":"प्रोजेक्ट आधारित","Experience":"अनुभव","Salary":"वेतन","Number of Positions":"पदों की संख्या","Accommodation Available":"आवास उपलब्ध","Food Available":"भोजन उपलब्ध","Job Description":"नौकरी विवरण","Product Information":"उत्पाद जानकारी","Product Type":"उत्पाद प्रकार","Posted":"पोस्ट किया गया","Seller":"विक्रेता","View Seller Profile":"विक्रेता प्रोफ़ाइल देखें","Call":"कॉल","Chat":"चैट","WhatsApp":"व्हाट्सऐप","Required Quantity":"आवश्यक मात्रा","Delete Requirement":"आवश्यकता हटाएं","About":"के बारे में","Start a conversation":"बातचीत शुरू करें","Ask about timber, requirements, jobs or work details.":"लकड़ी, आवश्यकताओं, नौकरियों या काम के विवरण के बारे में पूछें।"},
+  ta: {"Buy • Sell • Connect":"வாங்க • விற்க • இணைக்க","Filter":"வடிகட்டி","Clear":"அழி","No listings found":"பட்டியல்கள் எதுவும் இல்லை","No sellers have posted matching products yet.":"பொருந்தும் பொருட்களை இன்னும் எந்த விற்பனையாளரும் பதிவிடவில்லை.","View Details":"விவரங்களைப் பார்க்கவும்","My Timber Listings":"என் மரப் பட்டியல்கள்","Add Listing":"பட்டியலைச் சேர்க்கவும்","You have no listings yet.":"உங்களிடம் இன்னும் பட்டியல்கள் இல்லை.","Customer Requirements":"வாடிக்கையாளர் தேவைகள்","No requirements yet":"தேவைகள் இல்லை","User-posted requirements will appear here.":"பயனர்கள் பதிவிட்ட தேவைகள் இங்கே தோன்றும்.","View Requirement":"தேவையைப் பார்க்கவும்","Find / Post Workers":"தொழிலாளர்களைக் கண்டறிய / பதிவு செய்ய","No jobs posted":"வேலைகள் எதுவும் இல்லை","Post a job to connect with workers.":"தொழிலாளர்களுடன் இணைய வேலை பதிவு செய்யவும்.","Nearby / Available Workers":"அருகிலுள்ள / கிடைக்கும் தொழிலாளர்கள்","No worker profiles yet":"தொழிலாளர் சுயவிவரங்கள் இல்லை","Workers who create profiles will appear here.":"சுயவிவரம் உருவாக்கும் தொழிலாளர்கள் இங்கே தோன்றுவார்கள்.","Worker":"தொழிலாளர்","View Profile":"சுயவிவரத்தைப் பார்க்கவும்","TimberMart only connects users.":"TimberMart பயனர்களை மட்டும் இணைக்கிறது.","No Payments":"கட்டணம் இல்லை","No Commission":"கமிஷன் இல்லை","Nearby Connect":"அருகில் இணைப்பு","Post Your Requirement":"உங்கள் தேவையைப் பதிவு செய்யவும்","Requirement Title *":"தேவை தலைப்பு *","Category":"வகை","Timber":"மரம்","Trees":"மரங்கள்","Logs":"மரக்கட்டைகள்","Doors":"கதவுகள்","Furniture":"தளபாடங்கள்","Other":"மற்றவை","Budget":"பட்ஜெட்","JOBS":"வேலைகள்","Job Title *":"வேலை தலைப்பு *","Job Category":"வேலை வகை","Job Type":"வேலை வகை","Full Time":"முழுநேரம்","Part Time":"பகுதி நேரம்","Project Based":"திட்ட அடிப்படை","Experience":"அனுபவம்","Salary":"சம்பளம்","Number of Positions":"பதவிகளின் எண்ணிக்கை","Accommodation Available":"தங்குமிடம் உள்ளது","Food Available":"உணவு உள்ளது","Job Description":"வேலை விளக்கம்","Product Information":"பொருள் தகவல்","Product Type":"பொருள் வகை","Posted":"பதிவிட்டது","Seller":"விற்பனையாளர்","View Seller Profile":"விற்பனையாளர் சுயவிவரம்","Call":"அழைப்பு","Chat":"அரட்டை","WhatsApp":"வாட்ஸ்அப்","Required Quantity":"தேவையான அளவு","Delete Requirement":"தேவையை நீக்கு","About":"பற்றி","Start a conversation":"உரையாடலைத் தொடங்கவும்","Ask about timber, requirements, jobs or work details.":"மரம், தேவைகள், வேலைகள் அல்லது பணி விவரங்களைப் பற்றி கேளுங்கள்."},
+  kn: {"Buy • Sell • Connect":"ಖರೀದಿ • ಮಾರಾಟ • ಸಂಪರ್ಕ","Filter":"ಫಿಲ್ಟರ್","Clear":"ತೆರವುಗೊಳಿಸಿ","No listings found":"ಯಾವುದೇ ಪಟ್ಟಿಗಳು ಕಂಡುಬಂದಿಲ್ಲ","No sellers have posted matching products yet.":"ಹೊಂದುವ ಉತ್ಪನ್ನಗಳನ್ನು ಇನ್ನೂ ಯಾವುದೇ ಮಾರಾಟಗಾರರು ಪೋಸ್ಟ್ ಮಾಡಿಲ್ಲ.","View Details":"ವಿವರಗಳನ್ನು ನೋಡಿ","My Timber Listings":"ನನ್ನ ಮರದ ಪಟ್ಟಿಗಳು","Add Listing":"ಪಟ್ಟಿ ಸೇರಿಸಿ","You have no listings yet.":"ನಿಮ್ಮಲ್ಲಿ ಇನ್ನೂ ಯಾವುದೇ ಪಟ್ಟಿಗಳಿಲ್ಲ.","Customer Requirements":"ಗ್ರಾಹಕರ ಅವಶ್ಯಕತೆಗಳು","No requirements yet":"ಇನ್ನೂ ಅವಶ್ಯಕತೆಗಳಿಲ್ಲ","User-posted requirements will appear here.":"ಬಳಕೆದಾರರು ಪೋಸ್ಟ್ ಮಾಡಿದ ಅವಶ್ಯಕತೆಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.","View Requirement":"ಅವಶ್ಯಕತೆ ನೋಡಿ","Find / Post Workers":"ಕಾರ್ಮಿಕರನ್ನು ಹುಡುಕಿ / ಪೋಸ್ಟ್ ಮಾಡಿ","No jobs posted":"ಯಾವುದೇ ಉದ್ಯೋಗ ಪೋಸ್ಟ್ ಆಗಿಲ್ಲ","Post a job to connect with workers.":"ಕಾರ್ಮಿಕರೊಂದಿಗೆ ಸಂಪರ್ಕಿಸಲು ಉದ್ಯೋಗ ಪೋಸ್ಟ್ ಮಾಡಿ.","Nearby / Available Workers":"ಹತ್ತಿರದ / ಲಭ್ಯವಿರುವ ಕಾರ್ಮಿಕರು","No worker profiles yet":"ಇನ್ನೂ ಕಾರ್ಮಿಕರ ಪ್ರೊಫೈಲ್‌ಗಳಿಲ್ಲ","Workers who create profiles will appear here.":"ಪ್ರೊಫೈಲ್ ರಚಿಸುವ ಕಾರ್ಮಿಕರು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತಾರೆ.","Worker":"ಕಾರ್ಮಿಕ","View Profile":"ಪ್ರೊಫೈಲ್ ನೋಡಿ","TimberMart only connects users.":"TimberMart ಬಳಕೆದಾರರನ್ನು ಮಾತ್ರ ಸಂಪರ್ಕಿಸುತ್ತದೆ.","No Payments":"ಪಾವತಿಗಳಿಲ್ಲ","No Commission":"ಕಮಿಷನ್ ಇಲ್ಲ","Nearby Connect":"ಹತ್ತಿರದ ಸಂಪರ್ಕ","Post Your Requirement":"ನಿಮ್ಮ ಅವಶ್ಯಕತೆಯನ್ನು ಪೋಸ್ಟ್ ಮಾಡಿ","Requirement Title *":"ಅವಶ್ಯಕತೆ ಶೀರ್ಷಿಕೆ *","Category":"ವರ್ಗ","Timber":"ಮರ","Trees":"ಮರಗಳು","Logs":"ದಿಮ್ಮಿಗಳು","Doors":"ಬಾಗಿಲುಗಳು","Furniture":"ಪೀಠೋಪಕರಣಗಳು","Other":"ಇತರೆ","Budget":"ಬಜೆಟ್","JOBS":"ಉದ್ಯೋಗಗಳು","Job Title *":"ಉದ್ಯೋಗ ಶೀರ್ಷಿಕೆ *","Job Category":"ಉದ್ಯೋಗ ವರ್ಗ","Job Type":"ಉದ್ಯೋಗ ಪ್ರಕಾರ","Full Time":"ಪೂರ್ಣ ಸಮಯ","Part Time":"ಅರೆಕಾಲಿಕ","Project Based":"ಪ್ರಾಜೆಕ್ಟ್ ಆಧಾರಿತ","Experience":"ಅನುಭವ","Salary":"ಸಂಬಳ","Number of Positions":"ಹುದ್ದೆಗಳ ಸಂಖ್ಯೆ","Accommodation Available":"ವಸತಿ ಲಭ್ಯವಿದೆ","Food Available":"ಆಹಾರ ಲಭ್ಯವಿದೆ","Job Description":"ಉದ್ಯೋಗ ವಿವರಣೆ","Product Information":"ಉತ್ಪನ್ನ ಮಾಹಿತಿ","Product Type":"ಉತ್ಪನ್ನದ ಪ್ರಕಾರ","Posted":"ಪೋಸ್ಟ್ ಮಾಡಲಾಗಿದೆ","Seller":"ಮಾರಾಟಗಾರ","View Seller Profile":"ಮಾರಾಟಗಾರರ ಪ್ರೊಫೈಲ್ ನೋಡಿ","Call":"ಕರೆ","Chat":"ಚಾಟ್","WhatsApp":"ವಾಟ್ಸ್ಅಪ್","Required Quantity":"ಅಗತ್ಯ ಪ್ರಮಾಣ","Delete Requirement":"ಅವಶ್ಯಕತೆ ಅಳಿಸಿ","About":"ಕುರಿತು","Start a conversation":"ಸಂಭಾಷಣೆ ಪ್ರಾರಂಭಿಸಿ","Ask about timber, requirements, jobs or work details.":"ಮರ, ಅವಶ್ಯಕತೆಗಳು, ಉದ್ಯೋಗಗಳು ಅಥವಾ ಕೆಲಸದ ವಿವರಗಳ ಬಗ್ಗೆ ಕೇಳಿ."}
+};
+
+const getDashboardLanguage = () => {
+  try { return localStorage.getItem("timbermart_dashboard_language") || "en"; } catch { return "en"; }
+};
+
 const WOOD_TYPES = [
   "All Types",
   "Teak",
@@ -61,7 +101,263 @@ const WOOD_TYPES = [
   "Pine",
   "Eucalyptus",
   "Rosewood",
+  "Old Wood",
+  "Old Teak",
+  "Old Wood Furniture",
+  "Fire Wood",
 ];
+
+const TEAK_TYPES = [
+  "Balarsa Teak",
+  "Indian Patta Teak",
+  "Indian Local Teak",
+  "Bastar Teak",
+  "MP Teak",
+  "Gujarat Local Teak",
+  "Maharashtra Local Teak",
+  "Dandeli Teak",
+  "Nilambur Teak",
+  "Burma Teak",
+  "Thailand Teak",
+  "African Teak",
+  "Malaysian Teak",
+  "Andaman Teak",
+  "Nagpur Teak",
+  "Kerala Local Teak",
+  "Andhra Local Teak",
+  "Other Teak",
+];
+
+const OLD_WOOD_TYPES = [
+  "Old Wood",
+  "Old Teak",
+  "Old Wood Furniture",
+];
+
+const FIREWOOD_TYPES = [
+  "Jeedi (Cashew)",
+  "Mamidi (Mango)",
+  "Thati (Palm)",
+  "Kobari (Coconut)",
+  "Teak",
+  "Neem",
+  "Eucalyptus",
+  "Acacia",
+  "Subabul",
+  "Tamarind",
+  "Casuarina",
+  "Babul",
+  "Prosopis",
+  "Other Fire Wood",
+];
+
+const SELL_FORM_LANGUAGES = {
+  en: {
+    name: "English",
+    sell: "SELL TIMBER",
+    title: "Add Timber Listing",
+    listingTitle: "Listing Title",
+    titlePlaceholder: "Example: Balarsa Teak Wood Logs",
+    woodType: "Wood Category",
+    selectWood: "Select Wood Category",
+    teakType: "Teak Type",
+    selectTeak: "Select Teak Type",
+    oldWoodType: "Old Wood Type",
+    selectOldWood: "Select Old Wood Type",
+    firewoodType: "Fire Wood Type",
+    selectFirewood: "Select Fire Wood Type",
+    productType: "Product Type",
+    quantity: "Quantity",
+    quantityPlaceholder: "15 CMT",
+    location: "Location",
+    locationPlaceholder: "Rajahmundry, AP",
+    price: "Price",
+    pricePlaceholder: "85000 / CMT",
+    priceType: "Price Type",
+    fixed: "Fixed Price",
+    negotiable: "Negotiable",
+    description: "Description",
+    descriptionPlaceholder: "Describe wood quality, size, availability...",
+    photos: "Add Photos",
+    photosHint: "Up to 10 photos",
+    addPhotos: "Add timber photos",
+    formats: "JPG / PNG / WEBP",
+    submit: "Submit Listing",
+    submitting: "Submitting...",
+    required: "Required",
+  },
+  te: {
+    name: "తెలుగు",
+    sell: "చెక్క అమ్మకం",
+    title: "చెక్క వివరాలను జోడించండి",
+    listingTitle: "లిస్టింగ్ పేరు",
+    titlePlaceholder: "ఉదా: బాలర్సా టేకు దుంగలు",
+    woodType: "చెక్క వర్గం",
+    selectWood: "చెక్క వర్గాన్ని ఎంచుకోండి",
+    teakType: "టేకు రకం",
+    selectTeak: "టేకు రకాన్ని ఎంచుకోండి",
+    oldWoodType: "పాత చెక్క రకం",
+    selectOldWood: "పాత చెక్క రకాన్ని ఎంచుకోండి",
+    firewoodType: "కట్టెల రకం",
+    selectFirewood: "కట్టెల రకాన్ని ఎంచుకోండి",
+    productType: "ఉత్పత్తి రకం",
+    quantity: "పరిమాణం",
+    quantityPlaceholder: "15 CMT",
+    location: "ప్రాంతం",
+    locationPlaceholder: "రాజమండ్రి, AP",
+    price: "ధర",
+    pricePlaceholder: "85000 / CMT",
+    priceType: "ధర రకం",
+    fixed: "స్థిర ధర",
+    negotiable: "చర్చించవచ్చు",
+    description: "వివరణ",
+    descriptionPlaceholder: "చెక్క నాణ్యత, పరిమాణం, లభ్యత వివరించండి...",
+    photos: "ఫోటోలు జోడించండి",
+    photosHint: "10 ఫోటోల వరకు",
+    addPhotos: "చెక్క ఫోటోలు జోడించండి",
+    formats: "JPG / PNG / WEBP",
+    submit: "లిస్టింగ్ పంపండి",
+    submitting: "పంపుతోంది...",
+    required: "అవసరం",
+  },
+  hi: {
+    name: "हिन्दी",
+    sell: "लकड़ी बेचें",
+    title: "लकड़ी की लिस्टिंग जोड़ें",
+    listingTitle: "लिस्टिंग शीर्षक",
+    titlePlaceholder: "उदाहरण: बलारसा सागौन लकड़ी",
+    woodType: "लकड़ी श्रेणी",
+    selectWood: "लकड़ी श्रेणी चुनें",
+    teakType: "सागौन प्रकार",
+    selectTeak: "सागौन प्रकार चुनें",
+    oldWoodType: "पुरानी लकड़ी प्रकार",
+    selectOldWood: "पुरानी लकड़ी प्रकार चुनें",
+    firewoodType: "जलाऊ लकड़ी प्रकार",
+    selectFirewood: "जलाऊ लकड़ी प्रकार चुनें",
+    productType: "उत्पाद प्रकार",
+    quantity: "मात्रा",
+    quantityPlaceholder: "15 CMT",
+    location: "स्थान",
+    locationPlaceholder: "राजमुंदरी, AP",
+    price: "कीमत",
+    pricePlaceholder: "85000 / CMT",
+    priceType: "कीमत प्रकार",
+    fixed: "निश्चित कीमत",
+    negotiable: "बातचीत योग्य",
+    description: "विवरण",
+    descriptionPlaceholder: "लकड़ी की गुणवत्ता, आकार और उपलब्धता लिखें...",
+    photos: "फोटो जोड़ें",
+    photosHint: "10 फोटो तक",
+    addPhotos: "लकड़ी की फोटो जोड़ें",
+    formats: "JPG / PNG / WEBP",
+    submit: "लिस्टिंग भेजें",
+    submitting: "भेजा जा रहा है...",
+    required: "आवश्यक",
+  },
+  ta: {
+    name: "தமிழ்",
+    sell: "மரக்கட்டை விற்பனை",
+    title: "மர விற்பனை பட்டியலைச் சேர்க்கவும்",
+    listingTitle: "பட்டியல் தலைப்பு",
+    titlePlaceholder: "உதா: பாலர்சா தேக்கு மரக்கட்டைகள்",
+    woodType: "மர வகை",
+    selectWood: "மர வகையைத் தேர்வு செய்யவும்",
+    teakType: "தேக்கு வகை",
+    selectTeak: "தேக்கு வகையைத் தேர்வு செய்யவும்",
+    oldWoodType: "பழைய மர வகை",
+    selectOldWood: "பழைய மர வகையைத் தேர்வு செய்யவும்",
+    firewoodType: "விறகு வகை",
+    selectFirewood: "விறகு வகையைத் தேர்வு செய்யவும்",
+    productType: "பொருள் வகை",
+    quantity: "அளவு",
+    quantityPlaceholder: "15 CMT",
+    location: "இடம்",
+    locationPlaceholder: "ராஜமுந்திரி, AP",
+    price: "விலை",
+    pricePlaceholder: "85000 / CMT",
+    priceType: "விலை வகை",
+    fixed: "நிலையான விலை",
+    negotiable: "பேச்சுவார்த்தை",
+    description: "விளக்கம்",
+    descriptionPlaceholder: "மரத்தின் தரம், அளவு, கிடைக்கும் தன்மை...",
+    photos: "புகைப்படங்களைச் சேர்க்கவும்",
+    photosHint: "10 புகைப்படங்கள் வரை",
+    addPhotos: "மர புகைப்படங்களைச் சேர்க்கவும்",
+    formats: "JPG / PNG / WEBP",
+    submit: "பட்டியலை அனுப்பவும்",
+    submitting: "அனுப்பப்படுகிறது...",
+    required: "தேவை",
+  },
+  kn: {
+    name: "ಕನ್ನಡ",
+    sell: "ಮರ ಮಾರಾಟ",
+    title: "ಮರದ ಪಟ್ಟಿಯನ್ನು ಸೇರಿಸಿ",
+    listingTitle: "ಪಟ್ಟಿ ಶೀರ್ಷಿಕೆ",
+    titlePlaceholder: "ಉದಾ: ಬಾಲಾರ್ಸಾ ತೇಗು ಮರದ ದಿಮ್ಮಿಗಳು",
+    woodType: "ಮರದ ವರ್ಗ",
+    selectWood: "ಮರದ ವರ್ಗ ಆಯ್ಕೆಮಾಡಿ",
+    teakType: "ತೇಗು ಪ್ರಕಾರ",
+    selectTeak: "ತೇಗು ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ",
+    oldWoodType: "ಹಳೆಯ ಮರದ ಪ್ರಕಾರ",
+    selectOldWood: "ಹಳೆಯ ಮರದ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ",
+    firewoodType: "ಉರುವಲು ಮರದ ಪ್ರಕಾರ",
+    selectFirewood: "ಉರುವಲು ಮರದ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ",
+    productType: "ಉತ್ಪನ್ನದ ಪ್ರಕಾರ",
+    quantity: "ಪ್ರಮಾಣ",
+    quantityPlaceholder: "15 CMT",
+    location: "ಸ್ಥಳ",
+    locationPlaceholder: "ರಾಜಮಂದ್ರಿ, AP",
+    price: "ಬೆಲೆ",
+    pricePlaceholder: "85000 / CMT",
+    priceType: "ಬೆಲೆ ಪ್ರಕಾರ",
+    fixed: "ನಿಗದಿತ ಬೆಲೆ",
+    negotiable: "ಚರ್ಚಿಸಬಹುದಾದ",
+    description: "ವಿವರಣೆ",
+    descriptionPlaceholder: "ಮರದ ಗುಣಮಟ್ಟ, ಗಾತ್ರ ಮತ್ತು ಲಭ್ಯತೆ...",
+    photos: "ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ",
+    photosHint: "10 ಫೋಟೋಗಳವರೆಗೆ",
+    addPhotos: "ಮರದ ಫೋಟೋಗಳನ್ನು ಸೇರಿಸಿ",
+    formats: "JPG / PNG / WEBP",
+    submit: "ಪಟ್ಟಿ ಕಳುಹಿಸಿ",
+    submitting: "ಕಳುಹಿಸಲಾಗುತ್ತಿದೆ...",
+    required: "ಅಗತ್ಯ",
+  },
+};
+
+function getSellFormText(language) {
+  return SELL_FORM_LANGUAGES[language] || SELL_FORM_LANGUAGES.en;
+}
+
+const localizeOption = (value, language) => {
+  const map = {
+    te: {
+      Teak: "టేకు", Neem: "వేప", Pine: "పైన్", Eucalyptus: "యూకలిప్టస్",
+      Rosewood: "రోజ్‌వుడ్", "Old Wood": "పాత చెక్క", "Old Teak": "పాత టేకు",
+      "Old Wood Furniture": "పాత చెక్క ఫర్నిచర్", "Fire Wood": "కట్టెలు",
+      "Fixed Price": "స్థిర ధర", Negotiable: "చర్చించవచ్చు"
+    },
+    hi: {
+      Teak: "सागौन", Neem: "नीम", Pine: "चीड़", Eucalyptus: "नीलगिरी",
+      Rosewood: "शीशम", "Old Wood": "पुरानी लकड़ी", "Old Teak": "पुराना सागौन",
+      "Old Wood Furniture": "पुराना लकड़ी फर्नीचर", "Fire Wood": "जलाऊ लकड़ी",
+      "Fixed Price": "निश्चित कीमत", Negotiable: "बातचीत योग्य"
+    },
+    ta: {
+      Teak: "தேக்கு", Neem: "வேம்பு", Pine: "பைன்", Eucalyptus: "யூகலிப்டஸ்",
+      Rosewood: "ரோஸ்வுட்", "Old Wood": "பழைய மரம்", "Old Teak": "பழைய தேக்கு",
+      "Old Wood Furniture": "பழைய மர தளபாடங்கள்", "Fire Wood": "விறகு",
+      "Fixed Price": "நிலையான விலை", Negotiable: "பேச்சுவார்த்தை"
+    },
+    kn: {
+      Teak: "ತೇಗು", Neem: "ಬೇವು", Pine: "ಪೈನ್", Eucalyptus: "ನೀಲಗಿರಿ",
+      Rosewood: "ರೋಸ್‌ವುಡ್", "Old Wood": "ಹಳೆಯ ಮರ", "Old Teak": "ಹಳೆಯ ತೇಗು",
+      "Old Wood Furniture": "ಹಳೆಯ ಮರದ ಫರ್ನಿಚರ್", "Fire Wood": "ಉರುವಲು",
+      "Fixed Price": "ನಿಗದಿತ ಬೆಲೆ", Negotiable: "ಚರ್ಚಿಸಬಹುದಾದ"
+    }
+  };
+  return map[language]?.[value] || value;
+};
+
 
 const JOB_CATEGORIES = [
   "Machine Operator",
@@ -224,6 +520,8 @@ export default function MerchantDashboard() {
   const [sellForm, setSellForm] = useState({
     title: "",
     wood_type: "",
+    wood_subtype: "",
+    wood_subtype_group: "",
     product_type: "Timber",
     quantity: "",
     location: "",
@@ -234,6 +532,10 @@ export default function MerchantDashboard() {
 
   const [sellPhotos, setSellPhotos] = useState([]);
   const [selling, setSelling] = useState(false);
+  const [sellLanguage, setSellLanguage] = useState(() => localStorage.getItem("timbermart_sell_language") || "en");
+  const [dashboardLanguage, setDashboardLanguage] = useState(getDashboardLanguage);
+  const t = (key) => DASHBOARD_TRANSLATIONS[dashboardLanguage]?.[key] || UI_TRANSLATIONS[dashboardLanguage]?.[key] || DASHBOARD_TRANSLATIONS.en[key] || key;
+  const tx = (key) => t(key);
 
   /* =====================================================
      REQUIREMENT FORM
@@ -630,7 +932,7 @@ export default function MerchantDashboard() {
   ===================================================== */
   const pattaTeakListings = useMemo(() => {
     return listings.filter((item) => {
-      const text = [item.title, item.wood_type, item.product_type, item.description, item.category]
+      const text = [item.title, item.wood_type, item.wood_subtype, item.product_type, item.description, item.category]
         .filter(Boolean).join(" ").toLowerCase();
       return /patta teak|patta|indian teak/.test(text) &&
         (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
@@ -639,7 +941,7 @@ export default function MerchantDashboard() {
 
   const importedTeakListings = useMemo(() => {
     return listings.filter((item) => {
-      const text = [item.title, item.wood_type, item.product_type, item.description, item.category]
+      const text = [item.title, item.wood_type, item.wood_subtype, item.product_type, item.description, item.category]
         .filter(Boolean).join(" ").toLowerCase();
       return /imported teak|imported|burma teak|african teak|malaysian teak/.test(text) &&
         (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
@@ -710,6 +1012,7 @@ export default function MerchantDashboard() {
 
       const title = String(item.title || "").toLowerCase();
       const wood = String(item.wood_type || "").toLowerCase();
+      const subtype = String(item.wood_subtype || "").toLowerCase();
       const product = String(
         item.product_type || ""
       ).toLowerCase();
@@ -721,6 +1024,7 @@ export default function MerchantDashboard() {
         !q ||
         title.includes(q) ||
         wood.includes(q) ||
+        subtype.includes(q) ||
         product.includes(q) ||
         itemLocation.includes(q);
 
@@ -844,6 +1148,11 @@ export default function MerchantDashboard() {
       return;
     }
 
+    if (["Teak", "Old Wood", "Fire Wood"].includes(sellForm.wood_type) && !sellForm.wood_subtype.trim()) {
+      alert("Please select the specific wood type.");
+      return;
+    }
+
     setSelling(true);
 
     const { data: listing, error } = await supabase
@@ -856,6 +1165,8 @@ export default function MerchantDashboard() {
         longitude: profile?.longitude ?? null,
         title: sellForm.title.trim(),
         wood_type: sellForm.wood_type.trim(),
+        wood_subtype: sellForm.wood_subtype.trim() || null,
+        wood_subtype_group: sellForm.wood_subtype_group || null,
         product_type: sellForm.product_type,
         quantity: sellForm.quantity.trim(),
         location:
@@ -921,6 +1232,8 @@ export default function MerchantDashboard() {
     setSellForm({
       title: "",
       wood_type: "",
+      wood_subtype: "",
+      wood_subtype_group: "",
       product_type: "Timber",
       quantity: "",
       location: profile?.location || "",
@@ -1477,7 +1790,7 @@ export default function MerchantDashboard() {
   ===================================================== */
 
   return (
-    <div className="merchant-app">
+    <div className={`merchant-app merchant-lang-${dashboardLanguage}`} lang={dashboardLanguage}>
 
       {/* =================================================
           TOP BAR
@@ -1525,13 +1838,30 @@ export default function MerchantDashboard() {
           <button
             className={`merchant-icon-btn merchant-notification-trigger ${unreadNotificationCount ? "has-unread" : ""}`}
             onClick={() => setNotificationOpen((value) => !value)}
-            aria-label="Notifications"
+            aria-label={t("Notifications")}
           >
             <Bell size={19} />
             {unreadNotificationCount > 0 && (
               <span className="merchant-notification-count">{unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}</span>
             )}
           </button>
+
+          <div className="merchant-dashboard-language">
+            <span>🌐</span>
+            <select
+              value={dashboardLanguage}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDashboardLanguage(next);
+                try { localStorage.setItem("timbermart_dashboard_language", next); } catch {}
+              }}
+              aria-label={t("Dashboard Language")}
+            >
+              {Object.entries(DASHBOARD_LANGUAGES).map(([key, label]) => (
+                <option key={key} value={key}>{label}</option>
+              ))}
+            </select>
+          </div>
 
           <button
             className="merchant-mini-profile"
@@ -1590,9 +1920,7 @@ export default function MerchantDashboard() {
 
             <div>
               <strong>TimberMart</strong>
-              <small>
-                Buy • Sell • Connect
-              </small>
+              <small>{tx("Buy • Sell • Connect")}</small>
             </div>
           </div>
 
@@ -1811,7 +2139,7 @@ export default function MerchantDashboard() {
             <h1>
               Buy. Sell.
               <br />
-              <span>Connect Directly.</span>
+              <span>{t("Connect Directly.")}</span>
             </h1>
 
             <p>
@@ -1836,7 +2164,7 @@ export default function MerchantDashboard() {
 
           <div className="merchant-hero-wood">
             <div>🪵</div>
-            <span>Timber Marketplace</span>
+            <span>{t("Timber Marketplace")}</span>
           </div>
 
         </section>
@@ -1856,7 +2184,7 @@ export default function MerchantDashboard() {
                 ).length
               }
             </strong>
-            <small>My Listings</small>
+            <small>{t("My Listings")}</small>
           </div>
 
           <div>
@@ -1864,7 +2192,7 @@ export default function MerchantDashboard() {
             <strong>
               {requirements.length}
             </strong>
-            <small>Requirements</small>
+            <small>{t("Requirements")}</small>
           </div>
 
           <div>
@@ -1872,7 +2200,7 @@ export default function MerchantDashboard() {
             <strong>
               {workers.length}
             </strong>
-            <small>Workers</small>
+            <small>{t("Workers")}</small>
           </div>
 
           <div>
@@ -1880,7 +2208,7 @@ export default function MerchantDashboard() {
             <strong>
               {jobs.length}
             </strong>
-            <small>Jobs</small>
+            <small>{t("Jobs")}</small>
           </div>
 
         </section>
@@ -1891,7 +2219,7 @@ export default function MerchantDashboard() {
 
           <div className="merchant-section-title">
             <div>
-              <span>QUICK ACTIONS</span>
+              <span>{t("QUICK ACTIONS")}</span>
               <h2>
                 What do you want to do?
               </h2>
@@ -1906,7 +2234,7 @@ export default function MerchantDashboard() {
               }
             >
               <div>🪵</div>
-              <strong>Sell Timber</strong>
+              <strong>{t("Sell Timber")}</strong>
               <small>
                 Add timber listing & photos
               </small>
@@ -1932,7 +2260,7 @@ export default function MerchantDashboard() {
               }
             >
               <div>💼</div>
-              <strong>Post a Job</strong>
+              <strong>{t("Post a Job")}</strong>
               <small>
                 Connect with workers
               </small>
@@ -1969,7 +2297,7 @@ export default function MerchantDashboard() {
           <div className="merchant-section-title">
 
             <div>
-              <span>BUY</span>
+              <span>{t("BUY")}</span>
               <h2>
                 Find Trees & Timber
               </h2>
@@ -1990,7 +2318,7 @@ export default function MerchantDashboard() {
               onChange={(e) =>
                 setSearch(e.target.value)
               }
-              placeholder="Search trees, timber, logs..."
+              placeholder={t("Search trees, timber, logs...")}
             />
 
             <button
@@ -2000,9 +2328,7 @@ export default function MerchantDashboard() {
                 )
               }
             >
-              <SlidersHorizontal size={17} />
-              Filter
-            </button>
+              <SlidersHorizontal size={17} />{tx("Filter")}</button>
 
           </div>
 
@@ -2020,7 +2346,7 @@ export default function MerchantDashboard() {
                   setCategory(item)
                 }
               >
-                {item}
+                {tx(item)}
               </button>
             ))}
 
@@ -2030,7 +2356,7 @@ export default function MerchantDashboard() {
             <div className="merchant-filter-panel">
 
               <div>
-                <label>Wood Type</label>
+                <label>{t("Wood Type")}</label>
 
                 <select
                   value={woodType}
@@ -2050,7 +2376,7 @@ export default function MerchantDashboard() {
               </div>
 
               <div>
-                <label>Location</label>
+                <label>{t("Location")}</label>
 
                 <input
                   value={locationFilter}
@@ -2059,12 +2385,12 @@ export default function MerchantDashboard() {
                       e.target.value
                     )
                   }
-                  placeholder="Rajahmundry..."
+                  placeholder={dashboardLanguage === "te" ? "రాజమండ్రి..." : dashboardLanguage === "hi" ? "राजमुंदरी..." : dashboardLanguage === "ta" ? "ராஜமுந்திரி..." : dashboardLanguage === "kn" ? "ರಾಜಮಂದ್ರಿ..." : "Rajahmundry..."}
                 />
               </div>
 
               <div>
-                <label>Max Price</label>
+                <label>{t("Max Price")}</label>
 
                 <input
                   type="number"
@@ -2082,9 +2408,7 @@ export default function MerchantDashboard() {
                   setLocationFilter("");
                   setMaxPrice("");
                 }}
-              >
-                Clear
-              </button>
+              >{tx("Clear")}</button>
 
             </div>
           )}
@@ -2092,9 +2416,7 @@ export default function MerchantDashboard() {
           {filteredListings.length === 0 ? (
             <div className="merchant-empty">
               <div>🪵</div>
-              <h3>
-                No listings found
-              </h3>
+              <h3>{tx("No listings found")}</h3>
               <p>
                 No sellers have posted
                 matching products yet.
@@ -2129,7 +2451,7 @@ export default function MerchantDashboard() {
                         {image ? (
                           <img src={image} alt={listing.title} />
                         ) : (
-                          <div className="merchant-no-photo">🪵<small>No photo</small></div>
+                          <div className="merchant-no-photo">🪵<small>{t("No photo")}</small></div>
                         )}
 
                         {images.length > 0 && (
@@ -2162,7 +2484,7 @@ export default function MerchantDashboard() {
                       </div>
 
                       {images.length > 0 && (
-                        <div className="merchant-photo-strip" aria-label="All listing photos">
+                        <div className="merchant-photo-strip" aria-label={t("All listing photos")}>
                           {images.map((url, photoIndex) => (
                             <button key={`${url}-${photoIndex}`} type="button" onClick={() => setSelectedListing(listing)} title={`Photo ${photoIndex + 1}`}>
                               <img src={url} alt="" />
@@ -2208,9 +2530,7 @@ export default function MerchantDashboard() {
                               listing
                             )
                           }
-                        >
-                          View Details
-                          <ChevronRight
+                        >{tx("View Details")}<ChevronRight
                             size={15}
                           />
                         </button>
@@ -2233,15 +2553,15 @@ export default function MerchantDashboard() {
         <section className="merchant-special-section merchant-patta-section">
           <div className="merchant-special-header">
             <div>
-              <span>VERIFIED CATEGORY HUB</span>
+              <span>{t("VERIFIED CATEGORY HUB")}</span>
               <h2>🌿 Patta Teak Suppliers</h2>
-              <p>Real merchant and seller listings tagged for Patta / Indian Teak.</p>
+              <p>{t("Real merchant and seller listings tagged for Patta / Indian Teak.")}</p>
             </div>
             <span className="merchant-special-count">{pattaTeakListings.length}</span>
           </div>
           <div className="merchant-special-grid">
             {pattaTeakListings.length === 0 ? (
-              <div className="merchant-empty-small merchant-special-empty">No Patta Teak supplier listings yet.</div>
+              <div className="merchant-empty-small merchant-special-empty">{t("No Patta Teak supplier listings yet.")}</div>
             ) : pattaTeakListings.map((listing) => {
               const images = getImages(listing);
               return (
@@ -2260,15 +2580,15 @@ export default function MerchantDashboard() {
         <section className="merchant-special-section merchant-imported-section">
           <div className="merchant-special-header">
             <div>
-              <span>TRADE CATEGORY HUB</span>
+              <span>{t("TRADE CATEGORY HUB")}</span>
               <h2>🌎 Imported Teak Suppliers</h2>
-              <p>Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.</p>
+              <p>{t("Actual marketplace listings tagged for Imported / Burma / African / Malaysian teak.")}</p>
             </div>
             <span className="merchant-special-count">{importedTeakListings.length}</span>
           </div>
           <div className="merchant-special-grid">
             {importedTeakListings.length === 0 ? (
-              <div className="merchant-empty-small merchant-special-empty">No imported teak supplier listings yet.</div>
+              <div className="merchant-empty-small merchant-special-empty">{t("No imported teak supplier listings yet.")}</div>
             ) : importedTeakListings.map((listing) => {
               const images = getImages(listing);
               return (
@@ -2291,10 +2611,8 @@ export default function MerchantDashboard() {
           <div className="merchant-section-title">
 
             <div>
-              <span>SELL</span>
-              <h2>
-                My Timber Listings
-              </h2>
+              <span>{t("SELL")}</span>
+              <h2>{tx("My Timber Listings")}</h2>
             </div>
 
             <button
@@ -2302,9 +2620,7 @@ export default function MerchantDashboard() {
                 setShowSellModal(true)
               }
             >
-              <Plus size={16} />
-              Add Listing
-            </button>
+              <Plus size={16} />{tx("Add Listing")}</button>
 
           </div>
 
@@ -2318,9 +2634,7 @@ export default function MerchantDashboard() {
 
               <div className="merchant-empty-small">
                 <span>🪵</span>
-                <strong>
-                  You have no listings yet.
-                </strong>
+                <strong>{tx("You have no listings yet.")}</strong>
                 <button
                   onClick={() =>
                     setShowSellModal(true)
@@ -2393,10 +2707,8 @@ export default function MerchantDashboard() {
           <div className="merchant-section-title">
 
             <div>
-              <span>REQUIREMENT WALL</span>
-              <h2>
-                Customer Requirements
-              </h2>
+              <span>{t("REQUIREMENT WALL")}</span>
+              <h2>{tx("Customer Requirements")}</h2>
             </div>
 
             <button
@@ -2418,9 +2730,7 @@ export default function MerchantDashboard() {
 
               <div className="merchant-empty">
                 <div>📋</div>
-                <h3>
-                  No requirements yet
-                </h3>
+                <h3>{tx("No requirements yet")}</h3>
                 <p>
                   User-posted requirements
                   will appear here.
@@ -2490,9 +2800,7 @@ export default function MerchantDashboard() {
                             requirement
                           )
                         }
-                      >
-                        View Requirement
-                        <ChevronRight
+                      >{tx("View Requirement")}<ChevronRight
                           size={15}
                         />
                       </button>
@@ -2516,10 +2824,8 @@ export default function MerchantDashboard() {
           <div className="merchant-section-title">
 
             <div>
-              <span>JOBS</span>
-              <h2>
-                Find / Post Workers
-              </h2>
+              <span>{t("JOBS")}</span>
+              <h2>{tx("Find / Post Workers")}</h2>
             </div>
 
             <button
@@ -2539,9 +2845,7 @@ export default function MerchantDashboard() {
 
               <div className="merchant-empty">
                 <div>💼</div>
-                <h3>
-                  No jobs posted
-                </h3>
+                <h3>{tx("No jobs posted")}</h3>
                 <p>
                   Post a job to connect
                   with workers.
@@ -2634,10 +2938,8 @@ export default function MerchantDashboard() {
           <div className="merchant-section-title">
 
             <div>
-              <span>FIND WORKERS</span>
-              <h2>
-                Nearby / Available Workers
-              </h2>
+              <span>{t("FIND WORKERS")}</span>
+              <h2>{tx("Nearby / Available Workers")}</h2>
             </div>
 
             <span className="merchant-count">
@@ -2651,7 +2953,7 @@ export default function MerchantDashboard() {
             <Search size={17} />
 
             <input
-              placeholder="Search workers by name or location..."
+              placeholder={t("Search workers by name or location...")}
               onChange={(e) => {
                 const value =
                   e.target.value.toLowerCase();
@@ -2690,9 +2992,7 @@ export default function MerchantDashboard() {
 
             <div className="merchant-empty">
               <div>👷</div>
-              <h3>
-                No worker profiles yet
-              </h3>
+              <h3>{tx("No worker profiles yet")}</h3>
               <p>
                 Workers who create profiles
                 will appear here.
@@ -2734,9 +3034,7 @@ export default function MerchantDashboard() {
                       "Worker"}
                   </h3>
 
-                  <span className="merchant-worker-role">
-                    Worker
-                  </span>
+                  <span className="merchant-worker-role">{tx("Worker")}</span>
 
                   {worker.location && (
                     <p>
@@ -2759,9 +3057,7 @@ export default function MerchantDashboard() {
                           worker.id
                         )
                       }
-                    >
-                      View Profile
-                    </button>
+                    >{tx("View Profile")}</button>
 
                     <button
                       onClick={() =>
@@ -2804,9 +3100,7 @@ export default function MerchantDashboard() {
             <ShieldCheck size={30} />
 
             <div>
-              <strong>
-                TimberMart only connects users.
-              </strong>
+              <strong>{tx("TimberMart only connects users.")}</strong>
 
               <p>
                 TimberMart does not provide
@@ -2823,14 +3117,10 @@ export default function MerchantDashboard() {
           <div className="merchant-footer-items">
 
             <span>
-              <ShieldCheck size={16} />
-              No Payments
-            </span>
+              <ShieldCheck size={16} />{tx("No Payments")}</span>
 
             <span>
-              <span>💼</span>
-              No Commission
-            </span>
+              <span>💼</span>{tx("No Commission")}</span>
 
             <span>
               <Phone size={16} />
@@ -2838,9 +3128,7 @@ export default function MerchantDashboard() {
             </span>
 
             <span>
-              <MapPin size={16} />
-              Nearby Connect
-            </span>
+              <MapPin size={16} />{tx("Nearby Connect")}</span>
 
             <strong>
               🤝 We Connect. You Deal Directly.
@@ -2860,11 +3148,11 @@ export default function MerchantDashboard() {
           <section className="merchant-notification-panel" onClick={(e) => e.stopPropagation()}>
             <header>
               <div>
-                <span>LIVE UPDATES</span>
+                <span>{t("LIVE UPDATES")}</span>
                 <h3>Notifications {unreadNotificationCount > 0 && <b>{unreadNotificationCount} new</b>}</h3>
               </div>
               <div className="merchant-notification-actions">
-                <button onClick={markAllNotificationsRead} disabled={notificationBusy || !unreadNotificationCount}>Mark all read</button>
+                <button onClick={markAllNotificationsRead} disabled={notificationBusy || !unreadNotificationCount}>{t("Mark all read")}</button>
                 <button onClick={() => setNotificationOpen(false)}><X size={18} /></button>
               </div>
             </header>
@@ -2873,8 +3161,8 @@ export default function MerchantDashboard() {
               {notifications.length === 0 ? (
                 <div className="merchant-notification-empty">
                   <Bell size={28} />
-                  <strong>No notifications yet</strong>
-                  <p>Admin approvals, nearby activity and marketplace updates will appear here.</p>
+                  <strong>{t("No notifications yet")}</strong>
+                  <p>{t("Admin approvals, nearby activity and marketplace updates will appear here.")}</p>
                 </div>
               ) : notifications.map((item) => {
                 const distance = notificationDistance(item);
@@ -2898,7 +3186,7 @@ export default function MerchantDashboard() {
                       <span className="merchant-notification-title">{item.title || "TimberMart Update"}</span>
                       <span className="merchant-notification-message">{item.message}</span>
                       <span className="merchant-notification-meta">
-                        {admin && <b>ADMIN</b>}
+                        {admin && <b>{t("ADMIN")}</b>}
                         {near && <b className="near">NEARBY • {distance.toFixed(1)} KM</b>}
                         <time>{formatDate(item.created_at)}</time>
                       </span>
@@ -2917,326 +3205,216 @@ export default function MerchantDashboard() {
       ================================================= */}
 
       {showSellModal && (
-        <div
-          className="merchant-modal-backdrop"
-          onClick={() =>
-            setShowSellModal(false)
-          }
-        >
-
-          <div
-            className="merchant-form-modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            <div className="merchant-modal-head">
-
+        <div className="merchant-modal-backdrop" onClick={() => setShowSellModal(false)}>
+          <div className="merchant-form-modal merchant-sell-tree-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="merchant-modal-head merchant-sell-head">
               <div>
-                <span>
-                  SELL TIMBER
-                </span>
-
-                <h2>
-                  Add Timber Listing
-                </h2>
+                <span>{getSellFormText(sellLanguage).sell}</span>
+                <h2>{getSellFormText(sellLanguage).title}</h2>
+                <p className="merchant-sell-subtitle">{t("Teak • Old Wood • Fire Wood • Timber Products")}</p>
               </div>
-
-              <button
-                onClick={() =>
-                  setShowSellModal(false)
-                }
-              >
-                <X size={20} />
-              </button>
-
+              <div className="merchant-sell-head-actions">
+                <select
+                  className="merchant-language-select"
+                  value={sellLanguage}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    setSellLanguage(next);
+                    localStorage.setItem("timbermart_sell_language", next);
+                  }}
+                  aria-label="Sell form language"
+                >
+                  {Object.entries(SELL_FORM_LANGUAGES).map(([key, value]) => (
+                    <option key={key} value={key}>{value.name}</option>
+                  ))}
+                </select>
+                <button type="button" onClick={() => setShowSellModal(false)} aria-label="Close">
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
-            <form
-              onSubmit={handleSellTimber}
-              className="merchant-form"
-            >
+            <form onSubmit={handleSellTimber} className="merchant-form merchant-sell-form">
+              {(() => {
+                const T = getSellFormText(sellLanguage);
+                const subtypeOptions =
+                  sellForm.wood_type === "Teak"
+                    ? TEAK_TYPES
+                    : sellForm.wood_type === "Old Wood"
+                    ? OLD_WOOD_TYPES
+                    : sellForm.wood_type === "Fire Wood"
+                    ? FIREWOOD_TYPES
+                    : [];
 
-              <label>
-                Listing Title *
-                <input
-                  value={sellForm.title}
-                  onChange={(e) =>
-                    setSellForm({
-                      ...sellForm,
-                      title: e.target.value,
-                    })
-                  }
-                  placeholder="Example: Teak Wood Logs"
-                  required
-                />
-              </label>
+                return (
+                  <>
+                    <label>
+                      {T.listingTitle} *
+                      <input
+                        value={sellForm.title}
+                        onChange={(e) => setSellForm({ ...sellForm, title: e.target.value })}
+                        placeholder={T.titlePlaceholder}
+                        required
+                      />
+                    </label>
 
-              <div className="merchant-form-two">
-
-                <label>
-                  Wood Type *
-                  <select
-                    value={sellForm.wood_type}
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        wood_type:
-                          e.target.value,
-                      })
-                    }
-                    required
-                  >
-                    <option value="">
-                      Select Wood
-                    </option>
-
-                    {WOOD_TYPES.slice(1).map(
-                      (wood) => (
-                        <option
-                          key={wood}
-                          value={wood}
+                    <div className="merchant-form-two">
+                      <label>
+                        {T.woodType} *
+                        <select
+                          value={sellForm.wood_type}
+                          onChange={(e) => {
+                            const wood_type = e.target.value;
+                            const group =
+                              wood_type === "Teak" ? "teak_type" :
+                              wood_type === "Old Wood" ? "old_wood_type" :
+                              wood_type === "Fire Wood" ? "firewood_type" : "";
+                            setSellForm({
+                              ...sellForm,
+                              wood_type,
+                              wood_subtype: "",
+                              wood_subtype_group: group,
+                            });
+                          }}
+                          required
                         >
-                          {wood}
-                        </option>
-                      )
+                          <option value="">{T.selectWood}</option>
+                          {WOOD_TYPES.slice(1).map((wood) => (
+                            <option key={wood} value={wood}>{localizeOption(wood, sellLanguage)}</option>
+                          ))}
+                        </select>
+                      </label>
+
+                      <label>
+                        {T.productType}
+                        <select
+                          value={sellForm.product_type}
+                          onChange={(e) => setSellForm({ ...sellForm, product_type: e.target.value })}
+                        >
+                          {["Timber", "Wood Logs", "Timber Planks", "Beams", "Battens", "Plywood", "Doors", "Frames", "Furniture", "Interior", "Other"].map((item) => (
+                            <option key={item}>{item}</option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+
+                    {sellForm.wood_type === "Teak" && (
+                      <label className="merchant-dependent-field">
+                        {T.teakType} *
+                        <select
+                          value={sellForm.wood_subtype}
+                          onChange={(e) => setSellForm({ ...sellForm, wood_subtype: e.target.value, wood_subtype_group: "teak_type" })}
+                          required
+                        >
+                          <option value="">{T.selectTeak}</option>
+                          {TEAK_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
+                        </select>
+                        <small>Balarsa, Indian Patta, Bastar, MP, Gujarat, Maharashtra, Dandeli, Nilambur and more.</small>
+                      </label>
                     )}
-                  </select>
-                </label>
 
-                <label>
-                  Product Type
-                  <select
-                    value={
-                      sellForm.product_type
-                    }
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        product_type:
-                          e.target.value,
-                      })
-                    }
-                  >
-                    <option>
-                      Timber
-                    </option>
-                    <option>
-                      Wood Logs
-                    </option>
-                    <option>
-                      Timber Planks
-                    </option>
-                    <option>
-                      Beams
-                    </option>
-                    <option>
-                      Battens
-                    </option>
-                    <option>
-                      Plywood
-                    </option>
-                    <option>
-                      Doors
-                    </option>
-                    <option>
-                      Frames
-                    </option>
-                    <option>
-                      Furniture
-                    </option>
-                    <option>
-                      Other
-                    </option>
-                  </select>
-                </label>
-
-              </div>
-
-              <div className="merchant-form-two">
-
-                <label>
-                  Quantity
-                  <input
-                    value={
-                      sellForm.quantity
-                    }
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        quantity:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="15 CMT"
-                  />
-                </label>
-
-                <label>
-                  Location
-                  <input
-                    value={
-                      sellForm.location
-                    }
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        location:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="Rajahmundry, AP"
-                  />
-                </label>
-
-              </div>
-
-              <div className="merchant-form-two">
-
-                <label>
-                  Price
-                  <input
-                    value={sellForm.price}
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        price:
-                          e.target.value,
-                      })
-                    }
-                    placeholder="85000 / CMT"
-                  />
-                </label>
-
-                <label>
-                  Price Type
-                  <select
-                    value={
-                      sellForm.price_type
-                    }
-                    onChange={(e) =>
-                      setSellForm({
-                        ...sellForm,
-                        price_type:
-                          e.target.value,
-                      })
-                    }
-                  >
-                    <option>
-                      Fixed Price
-                    </option>
-                    <option>
-                      Negotiable
-                    </option>
-                  </select>
-                </label>
-
-              </div>
-
-              <label>
-                Description
-                <textarea
-                  value={
-                    sellForm.description
-                  }
-                  onChange={(e) =>
-                    setSellForm({
-                      ...sellForm,
-                      description:
-                        e.target.value,
-                    })
-                  }
-                  placeholder="Describe wood quality, size, availability..."
-                  rows="4"
-                />
-              </label>
-
-              <div className="merchant-photo-upload">
-
-                <div className="merchant-upload-title">
-                  <ImagePlus size={18} />
-                  <strong>
-                    Add Photos
-                  </strong>
-                  <small>
-                    Up to 10 photos
-                  </small>
-                </div>
-
-                <label className="merchant-upload-box">
-
-                  <ImagePlus size={27} />
-
-                  <span>
-                    Add timber photos
-                  </span>
-
-                  <small>
-                    JPG / PNG / WEBP
-                  </small>
-
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={
-                      handlePhotoSelect
-                    }
-                  />
-
-                </label>
-
-                {sellPhotos.length > 0 && (
-                  <div className="merchant-photo-grid">
-
-                    {sellPhotos.map(
-                      (file, index) => (
-                        <div
-                          key={`${file.name}-${index}`}
+                    {sellForm.wood_type === "Old Wood" && (
+                      <label className="merchant-dependent-field">
+                        {T.oldWoodType} *
+                        <select
+                          value={sellForm.wood_subtype}
+                          onChange={(e) => setSellForm({ ...sellForm, wood_subtype: e.target.value, wood_subtype_group: "old_wood_type" })}
+                          required
                         >
+                          <option value="">{T.selectOldWood}</option>
+                          {OLD_WOOD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
+                        </select>
+                      </label>
+                    )}
 
-                          <img
-                            src={URL.createObjectURL(
-                              file
-                            )}
-                            alt=""
-                          />
+                    {sellForm.wood_type === "Fire Wood" && (
+                      <label className="merchant-dependent-field">
+                        {T.firewoodType} *
+                        <select
+                          value={sellForm.wood_subtype}
+                          onChange={(e) => setSellForm({ ...sellForm, wood_subtype: e.target.value, wood_subtype_group: "firewood_type" })}
+                          required
+                        >
+                          <option value="">{T.selectFirewood}</option>
+                          {FIREWOOD_TYPES.map((item) => <option key={item} value={item}>{item}</option>)}
+                        </select>
+                        <small>Cashew, Mango, Palm, Coconut, Teak and other common firewood options.</small>
+                      </label>
+                    )}
 
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeSellPhoto(
-                                index
-                              )
-                            }
-                          >
-                            <X size={13} />
-                          </button>
+                    <div className="merchant-form-two">
+                      <label>
+                        {T.quantity}
+                        <input value={sellForm.quantity} onChange={(e) => setSellForm({ ...sellForm, quantity: e.target.value })} placeholder={T.quantityPlaceholder} />
+                      </label>
+                      <label>
+                        {T.location}
+                        <input value={sellForm.location} onChange={(e) => setSellForm({ ...sellForm, location: e.target.value })} placeholder={T.locationPlaceholder} />
+                      </label>
+                    </div>
 
+                    <div className="merchant-form-two">
+                      <label>
+                        {T.price}
+                        <input value={sellForm.price} onChange={(e) => setSellForm({ ...sellForm, price: e.target.value })} placeholder={T.pricePlaceholder} />
+                      </label>
+                      <label>
+                        {T.priceType}
+                        <select
+                          value={sellForm.price_type}
+                          onChange={(e) => setSellForm({ ...sellForm, price_type: e.target.value })}
+                        >
+                          <option value="Fixed Price">{T.fixed}</option>
+                          <option value="Negotiable">{T.negotiable}</option>
+                        </select>
+                      </label>
+                    </div>
+
+                    <label>
+                      {T.description}
+                      <textarea
+                        value={sellForm.description}
+                        onChange={(e) => setSellForm({ ...sellForm, description: e.target.value })}
+                        placeholder={T.descriptionPlaceholder}
+                        rows="4"
+                      />
+                    </label>
+
+                    <div className="merchant-photo-upload">
+                      <div className="merchant-upload-title">
+                        <ImagePlus size={18} />
+                        <strong>{T.photos}</strong>
+                        <small>{T.photosHint}</small>
+                      </div>
+                      <label className="merchant-upload-box">
+                        <ImagePlus size={27} />
+                        <span>{T.addPhotos}</span>
+                        <small>{T.formats}</small>
+                        <input type="file" accept="image/*" multiple onChange={handlePhotoSelect} />
+                      </label>
+
+                      {sellPhotos.length > 0 && (
+                        <div className="merchant-photo-grid">
+                          {sellPhotos.map((file, index) => (
+                            <div key={`${file.name}-${index}`}>
+                              <img src={URL.createObjectURL(file)} alt="" />
+                              <button type="button" onClick={() => removeSellPhoto(index)} aria-label="Remove photo">
+                                <X size={13} />
+                              </button>
+                            </div>
+                          ))}
                         </div>
-                      )
-                    )}
+                      )}
+                    </div>
 
-                  </div>
-                )}
-
-              </div>
-
-              <button
-                className="merchant-submit-btn"
-                type="submit"
-                disabled={selling}
-              >
-                {selling
-                  ? "Posting..."
-                  : "Preview & Post Listing"}
-              </button>
-
+                    <button className="merchant-submit-btn merchant-sell-submit" disabled={selling}>
+                      {selling ? T.submitting : T.submit}
+                    </button>
+                  </>
+                );
+              })()}
             </form>
-
           </div>
-
         </div>
       )}
 
@@ -3268,9 +3446,7 @@ export default function MerchantDashboard() {
                   REQUIREMENT WALL
                 </span>
 
-                <h2>
-                  Post Your Requirement
-                </h2>
+                <h2>{tx("Post Your Requirement")}</h2>
               </div>
 
               <button
@@ -3292,9 +3468,7 @@ export default function MerchantDashboard() {
               }
             >
 
-              <label>
-                Requirement Title *
-                <input
+              <label>{tx("Requirement Title *")}<input
                   value={
                     requirementForm.title
                   }
@@ -3305,16 +3479,14 @@ export default function MerchantDashboard() {
                         e.target.value,
                     })
                   }
-                  placeholder="Need 25 CMT Teak Timber"
+                  placeholder={tx("Need 25 CMT Teak Timber")}
                   required
                 />
               </label>
 
               <div className="merchant-form-two">
 
-                <label>
-                  Category
-                  <select
+                <label>{tx("Category")}<select
                     value={
                       requirementForm.category
                     }
@@ -3326,24 +3498,12 @@ export default function MerchantDashboard() {
                       })
                     }
                   >
-                    <option>
-                      Timber
-                    </option>
-                    <option>
-                      Trees
-                    </option>
-                    <option>
-                      Logs
-                    </option>
-                    <option>
-                      Doors
-                    </option>
-                    <option>
-                      Furniture
-                    </option>
-                    <option>
-                      Other
-                    </option>
+                    <option>{tx("Timber")}</option>
+                    <option>{tx("Trees")}</option>
+                    <option>{tx("Logs")}</option>
+                    <option>{tx("Doors")}</option>
+                    <option>{tx("Furniture")}</option>
+                    <option>{tx("Other")}</option>
                   </select>
                 </label>
 
@@ -3360,7 +3520,7 @@ export default function MerchantDashboard() {
                           e.target.value,
                       })
                     }
-                    placeholder="25 CMT"
+                    placeholder={tx("25 CMT")}
                   />
                 </label>
 
@@ -3379,13 +3539,11 @@ export default function MerchantDashboard() {
                         e.target.value,
                     })
                   }
-                  placeholder="Rajahmundry, AP"
+                  placeholder={tx("Rajahmundry, AP")}
                 />
               </label>
 
-              <label>
-                Budget
-                <input
+              <label>{tx("Budget")}<input
                   value={
                     requirementForm.budget
                   }
@@ -3396,7 +3554,7 @@ export default function MerchantDashboard() {
                         e.target.value,
                     })
                   }
-                  placeholder="₹ 4,00,000 approx."
+                  placeholder={tx("₹ 4,00,000 approx.")}
                 />
               </label>
 
@@ -3414,7 +3572,7 @@ export default function MerchantDashboard() {
                     })
                   }
                   rows="4"
-                  placeholder="Explain what timber/product you need..."
+                  placeholder={tx("Explain what timber/product you need...")}
                 />
               </label>
 
@@ -3458,9 +3616,7 @@ export default function MerchantDashboard() {
             <div className="merchant-modal-head">
 
               <div>
-                <span>
-                  JOBS
-                </span>
+                <span>{tx("JOBS")}</span>
 
                 <h2>
                   Post a Job
@@ -3482,9 +3638,7 @@ export default function MerchantDashboard() {
               onSubmit={handleJobPost}
             >
 
-              <label>
-                Job Title *
-                <input
+              <label>{tx("Job Title *")}<input
                   value={jobForm.title}
                   onChange={(e) =>
                     setJobForm({
@@ -3493,16 +3647,14 @@ export default function MerchantDashboard() {
                         e.target.value,
                     })
                   }
-                  placeholder="Saw Mill Machine Operator"
+                  placeholder={tx("Saw Mill Machine Operator")}
                   required
                 />
               </label>
 
               <div className="merchant-form-two">
 
-                <label>
-                  Job Category
-                  <select
+                <label>{tx("Job Category")}<select
                     value={
                       jobForm.category
                     }
@@ -3526,9 +3678,7 @@ export default function MerchantDashboard() {
                   </select>
                 </label>
 
-                <label>
-                  Job Type
-                  <select
+                <label>{tx("Job Type")}<select
                     value={
                       jobForm.job_type
                     }
@@ -3540,15 +3690,9 @@ export default function MerchantDashboard() {
                       })
                     }
                   >
-                    <option>
-                      Full Time
-                    </option>
-                    <option>
-                      Part Time
-                    </option>
-                    <option>
-                      Project Based
-                    </option>
+                    <option>{tx("Full Time")}</option>
+                    <option>{tx("Part Time")}</option>
+                    <option>{tx("Project Based")}</option>
                   </select>
                 </label>
 
@@ -3556,9 +3700,7 @@ export default function MerchantDashboard() {
 
               <div className="merchant-form-two">
 
-                <label>
-                  Experience
-                  <select
+                <label>{tx("Experience")}<select
                     value={
                       jobForm.experience
                     }
@@ -3582,9 +3724,7 @@ export default function MerchantDashboard() {
                   </select>
                 </label>
 
-                <label>
-                  Salary
-                  <input
+                <label>{tx("Salary")}<input
                     value={jobForm.salary}
                     onChange={(e) =>
                       setJobForm({
@@ -3593,7 +3733,7 @@ export default function MerchantDashboard() {
                           e.target.value,
                       })
                     }
-                    placeholder="₹ 18,000 - ₹ 25,000 / Month"
+                    placeholder={tx("₹ 18,000 - ₹ 25,000 / Month")}
                   />
                 </label>
 
@@ -3612,13 +3752,11 @@ export default function MerchantDashboard() {
                           e.target.value,
                       })
                     }
-                    placeholder="Rajahmundry, AP"
+                    placeholder={tx("Rajahmundry, AP")}
                   />
                 </label>
 
-                <label>
-                  Number of Positions
-                  <input
+                <label>{tx("Number of Positions")}<input
                     type="number"
                     min="1"
                     value={
@@ -3651,9 +3789,7 @@ export default function MerchantDashboard() {
                           e.target.checked,
                       })
                     }
-                  />
-                  Accommodation Available
-                </label>
+                  />{tx("Accommodation Available")}</label>
 
                 <label>
                   <input
@@ -3668,15 +3804,11 @@ export default function MerchantDashboard() {
                           e.target.checked,
                       })
                     }
-                  />
-                  Food Available
-                </label>
+                  />{tx("Food Available")}</label>
 
               </div>
 
-              <label>
-                Job Description
-                <textarea
+              <label>{tx("Job Description")}<textarea
                   rows="5"
                   value={
                     jobForm.description
@@ -3688,7 +3820,7 @@ export default function MerchantDashboard() {
                         e.target.value,
                     })
                   }
-                  placeholder="Describe the work, responsibilities and requirements..."
+                  placeholder={tx("Describe the work, responsibilities and requirements...")}
                 />
               </label>
 
@@ -3801,9 +3933,7 @@ export default function MerchantDashboard() {
 
               <div className="merchant-detail-info">
 
-                <h3>
-                  Product Information
-                </h3>
+                <h3>{tx("Product Information")}</h3>
 
                 <div>
                   <span>
@@ -3817,9 +3947,7 @@ export default function MerchantDashboard() {
                 </div>
 
                 <div>
-                  <span>
-                    Product Type
-                  </span>
+                  <span>{tx("Product Type")}</span>
 
                   <strong>
                     {selectedListing.product_type ||
@@ -3850,9 +3978,7 @@ export default function MerchantDashboard() {
                 </div>
 
                 <div>
-                  <span>
-                    Posted
-                  </span>
+                  <span>{tx("Posted")}</span>
 
                   <strong>
                     {formatDate(
@@ -3886,13 +4012,9 @@ export default function MerchantDashboard() {
                 </div>
 
                 <section>
-                  <small>
-                    Seller
-                  </small>
+                  <small>{tx("Seller")}</small>
 
-                  <strong>
-                    View Seller Profile
-                  </strong>
+                  <strong>{tx("View Seller Profile")}</strong>
                 </section>
 
                 <button
@@ -3918,9 +4040,7 @@ export default function MerchantDashboard() {
                     )
                   }
                 >
-                  <Phone size={17} />
-                  Call
-                </button>
+                  <Phone size={17} />{tx("Call")}</button>
 
                 <button
                   onClick={async () => {
@@ -3941,9 +4061,7 @@ export default function MerchantDashboard() {
                 >
                   <MessageCircle
                     size={17}
-                  />
-                  Chat
-                </button>
+                  />{tx("Chat")}</button>
 
                 <button
                   onClick={() =>
@@ -3951,9 +4069,7 @@ export default function MerchantDashboard() {
                       selectedListing.user_id
                     )
                   }
-                >
-                  WhatsApp
-                </button>
+                >{tx("WhatsApp")}</button>
 
               </div>
 
@@ -4019,9 +4135,7 @@ export default function MerchantDashboard() {
 
               <div>
                 <Package size={16} />
-                <span>
-                  Required Quantity
-                </span>
+                <span>{tx("Required Quantity")}</span>
                 <strong>
                   {selectedRequirement.quantity ||
                     "-"}
@@ -4030,9 +4144,7 @@ export default function MerchantDashboard() {
 
               <div>
                 <span>₹</span>
-                <span>
-                  Budget
-                </span>
+                <span>{tx("Budget")}</span>
                 <strong>
                   {selectedRequirement.budget ||
                     "-"}
@@ -4064,9 +4176,7 @@ export default function MerchantDashboard() {
                   )
                 }
               >
-                <User size={17} />
-                View Profile
-              </button>
+                <User size={17} />{tx("View Profile")}</button>
 
               <button
                 onClick={() =>
@@ -4075,9 +4185,7 @@ export default function MerchantDashboard() {
                   )
                 }
               >
-                <Phone size={17} />
-                Call
-              </button>
+                <Phone size={17} />{tx("Call")}</button>
 
               <button
                 onClick={async () => {
@@ -4098,9 +4206,7 @@ export default function MerchantDashboard() {
               >
                 <MessageCircle
                   size={17}
-                />
-                Chat
-              </button>
+                />{tx("Chat")}</button>
 
             </div>
 
@@ -4114,9 +4220,7 @@ export default function MerchantDashboard() {
                   )
                 }
               >
-                <Trash2 size={16} />
-                Delete Requirement
-              </button>
+                <Trash2 size={16} />{tx("Delete Requirement")}</button>
             )}
 
           </div>
@@ -4196,9 +4300,7 @@ export default function MerchantDashboard() {
 
               {selectedSeller.bio && (
                 <div className="merchant-about">
-                  <h3>
-                    About
-                  </h3>
+                  <h3>{tx("About")}</h3>
 
                   <p>
                     {selectedSeller.bio}
@@ -4216,9 +4318,7 @@ export default function MerchantDashboard() {
                     )
                   }
                 >
-                  <Phone size={17} />
-                  Call
-                </button>
+                  <Phone size={17} />{tx("Call")}</button>
 
                 <button
                   onClick={() =>
@@ -4229,9 +4329,7 @@ export default function MerchantDashboard() {
                 >
                   <MessageCircle
                     size={17}
-                  />
-                  Chat
-                </button>
+                  />{tx("Chat")}</button>
 
                 <button
                   onClick={() =>
@@ -4241,9 +4339,7 @@ export default function MerchantDashboard() {
                       selectedSeller.name
                     )
                   }
-                >
-                  WhatsApp
-                </button>
+                >{tx("WhatsApp")}</button>
 
               </div>
 
@@ -4336,9 +4432,7 @@ export default function MerchantDashboard() {
                     size={35}
                   />
 
-                  <strong>
-                    Start a conversation
-                  </strong>
+                  <strong>{tx("Start a conversation")}</strong>
 
                   <p>
                     Ask about timber,
@@ -4409,7 +4503,7 @@ export default function MerchantDashboard() {
                     sendMessage();
                   }
                 }}
-                placeholder="Type a message..."
+                placeholder={tx("Type a message...")}
               />
 
               <button

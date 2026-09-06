@@ -6,6 +6,70 @@
   box-sizing: border-box;
 }
 
+
+/* =========================================================
+   MULTI-LANGUAGE SELECTOR
+========================================================= */
+
+.farmer-language-switcher {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 9px;
+  border: 1px solid #e2e9e3;
+  border-radius: 11px;
+  background: #fff;
+  color: #4f6256;
+  transition: .2s ease;
+}
+
+.farmer-language-switcher:hover {
+  border-color: #b8d0bc;
+  background: #f8fbf8;
+}
+
+.farmer-language-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: grid;
+  place-items: center;
+  background: #eaf6ed;
+  color: #247a3c;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.farmer-language-switcher select {
+  min-width: 76px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #405449;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (max-width: 720px) {
+  .farmer-language-switcher {
+    min-height: 38px;
+    padding: 0 7px;
+  }
+
+  .farmer-language-switcher select {
+    min-width: 62px;
+    font-size: 10px;
+  }
+
+  .farmer-language-icon {
+    display: none;
+  }
+}
+
+
 .farmer-dashboard {
   min-height: 100vh;
   background: #f5f8f5;

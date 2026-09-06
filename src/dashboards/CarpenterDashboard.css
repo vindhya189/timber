@@ -484,3 +484,276 @@
 @media(max-width:420px){.carpenter-listing-create-copy{gap:11px}.carpenter-listing-create-icon{width:48px;height:48px;font-size:23px}.carpenter-listing-create-card h2{font-size:20px}.carpenter-timber-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.carpenter-approval-flow{font-size:12px}.carpenter-modal-head h2{font-size:21px}.carpenter-form-actions{gap:7px}.carpenter-primary-btn,.carpenter-secondary-btn{padding:11px 9px;font-size:12px}}
 
 .carpenter-listing-status{display:inline-flex;align-items:center;width:max-content;margin:7px 0 2px;padding:5px 9px;border-radius:999px;background:#fff4d8;color:#8a5a00;font-size:11px;font-weight:800}.carpenter-listing-status.approved{background:#e8f7ee;color:#176b43}.carpenter-listing-status.rejected{background:#fff0ef;color:#b42318}.carpenter-listing-photo-grid,.carpenter-requirement-images{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.carpenter-listing-photo-grid img,.carpenter-requirement-images img{width:100%;height:120px;object-fit:cover;border-radius:10px;display:block}.carpenter-listing-photo-button{display:block;width:100%;border:0;background:transparent;padding:0;cursor:pointer}@media(max-width:720px){.carpenter-listing-photo-grid,.carpenter-requirement-images{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.carpenter-listing-photo-grid img,.carpenter-requirement-images img{height:150px}}@media(max-width:420px){.carpenter-listing-photo-grid,.carpenter-requirement-images{grid-template-columns:repeat(2,minmax(0,1fr))}.carpenter-listing-photo-grid img,.carpenter-requirement-images img{height:125px}}
+
+
+/* =========================================================
+   CARPENTER DASHBOARD — MULTI LANGUAGE + NEAREST DEALS + EXPIRY
+========================================================= */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Mandali&family=Noto+Sans+Devanagari:wght@400;500;600;700;800&family=Noto+Sans+Kannada:wght@400;500;600;700;800&family=Noto+Sans+Tamil:wght@400;500;600;700;800&display=swap');
+
+.carpenter-app{
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px;
+}
+.carpenter-app button,.carpenter-app input,.carpenter-app textarea,.carpenter-app select{font-size:14px}
+.carpenter-language-picker{
+  display:flex;align-items:center;gap:5px;border:1px solid var(--carp-border);
+  background:#fff;border-radius:10px;padding:0 7px;height:42px;color:var(--carp-green-800);
+}
+.carpenter-language-picker span{font-size:16px}
+.carpenter-language-picker select{
+  border:0;outline:0;background:transparent;color:var(--carp-ink);
+  font-weight:800;font-size:13px;cursor:pointer;max-width:105px;
+}
+.carpenter-listing-expiry{
+  display:inline-flex;align-items:center;width:max-content;margin:6px 0 3px;
+  padding:5px 9px;border-radius:999px;background:#fff7df;color:#8b641d;
+  font-size:11px!important;font-weight:900!important;
+}
+.carpenter-listing-expiry.expired{
+  background:#fff0ef;color:#b42318;
+}
+.carpenter-expiry-detail strong{color:#8b641d}
+.carpenter-notification-item.nearest-deal{
+  border-color:#b9ddca;background:#f0fbf5;
+}
+.carpenter-notification-item.nearest-deal .carpenter-notification-icon{
+  background:#dff4e8;
+}
+.carpenter-nearest-distance{
+  display:inline-flex;align-items:center;gap:5px;margin-top:5px;
+  padding:4px 8px;border-radius:999px;background:#e5f6ec;color:#176b43;
+  font-size:10px;font-weight:900;
+}
+.carpenter-language-note{
+  padding:10px 12px;border-radius:10px;background:#f4faf6;
+  color:#557064;font-size:12px;font-weight:700;margin-bottom:12px;
+}
+
+/* Larger readable Indic-script typography */
+.carpenter-lang-te{
+  font-family:Mandali,"Noto Sans Telugu",sans-serif;
+  font-size:15px;
+}
+.carpenter-lang-te .carpenter-nav button,
+.carpenter-lang-te .carpenter-section-title p,
+.carpenter-lang-te .carpenter-timber-card p,
+.carpenter-lang-te .carpenter-notification-content p,
+.carpenter-lang-te .carpenter-wizard-step select,
+.carpenter-lang-te .carpenter-wizard-step textarea,
+.carpenter-lang-te .carpenter-wizard-step input{font-size:15px}
+.carpenter-lang-hi{
+  font-family:"Noto Sans Devanagari",Inter,sans-serif;
+  font-size:14px;
+}
+.carpenter-lang-ta{
+  font-family:"Noto Sans Tamil",Inter,sans-serif;
+  font-size:15px;
+}
+.carpenter-lang-kn{
+  font-family:"Noto Sans Kannada",Inter,sans-serif;
+  font-size:15px;
+}
+.carpenter-lang-hi .carpenter-nav button,
+.carpenter-lang-hi .carpenter-notification-content p,
+.carpenter-lang-ta .carpenter-nav button,
+.carpenter-lang-ta .carpenter-notification-content p,
+.carpenter-lang-kn .carpenter-nav button,
+.carpenter-lang-kn .carpenter-notification-content p{
+  font-size:14px;
+}
+
+@media(max-width:700px){
+  .carpenter-language-picker{height:38px;padding:0 5px}
+  .carpenter-language-picker select{font-size:12px;max-width:82px}
+  .carpenter-lang-te,.carpenter-lang-ta,.carpenter-lang-kn{font-size:14px}
+  .carpenter-listing-expiry{font-size:10px!important}
+}
+@media(max-width:420px){
+  .carpenter-language-picker span{display:none}
+  .carpenter-language-picker select{max-width:72px}
+}
+
+/* =========================================================
+   LARGE LANGUAGE FONT BOOST
+   Telugu / Hindi / Tamil / Kannada / English
+   ========================================================= */
+.carpenter-app,
+.carpenter-app button,
+.carpenter-app input,
+.carpenter-app select,
+.carpenter-app textarea {
+  font-size: 16px;
+}
+
+/* Telugu - extra large because Telugu glyphs can visually appear smaller */
+.carpenter-app[lang="te"],
+.carpenter-app.merchant-lang-te,
+.carpenter-lang-te {
+  font-family: "Noto Sans Telugu", "Nirmala UI", "Gautami", sans-serif !important;
+  font-size: 18px !important;
+}
+
+.carpenter-app[lang="te"] .carpenter-nav button,
+.carpenter-app[lang="te"] .carpenter-section-title p,
+.carpenter-app[lang="te"] .carpenter-hero p,
+.carpenter-app[lang="te"] .carpenter-tools-grid strong,
+.carpenter-app[lang="te"] .carpenter-tools-grid small,
+.carpenter-app[lang="te"] .carpenter-status-left strong,
+.carpenter-app[lang="te"] .carpenter-status-left span,
+.carpenter-app[lang="te"] .carpenter-listing-meta span,
+.carpenter-app[lang="te"] .carpenter-listing-footer small,
+.carpenter-app[lang="te"] .carpenter-timber-card p,
+.carpenter-app[lang="te"] .carpenter-requirement > p,
+.carpenter-app[lang="te"] .carpenter-requirement-meta span,
+.carpenter-app[lang="te"] .carpenter-notification-content p,
+.carpenter-app[lang="te"] .carpenter-notification-content small,
+.carpenter-app[lang="te"] .carpenter-wizard-step > p,
+.carpenter-app[lang="te"] .carpenter-wizard-step label,
+.carpenter-app[lang="te"] .carpenter-wizard-step input,
+.carpenter-app[lang="te"] .carpenter-wizard-step select,
+.carpenter-app[lang="te"] .carpenter-wizard-step textarea,
+.carpenter-app[lang="te"] .carpenter-skills button,
+.carpenter-app[lang="te"] .carpenter-work-types button,
+.carpenter-app[lang="te"] .carpenter-wizard-buttons button,
+.carpenter-app[lang="te"] .carpenter-wizard-next,
+.carpenter-app[lang="te"] .carpenter-primary-btn,
+.carpenter-app[lang="te"] .carpenter-secondary-btn {
+  font-size: 18px !important;
+  line-height: 1.55 !important;
+}
+
+.carpenter-app[lang="te"] .carpenter-section-title h2,
+.carpenter-app[lang="te"] .carpenter-modal-header h2,
+.carpenter-app[lang="te"] .carpenter-wizard-step h3,
+.carpenter-app[lang="te"] .carpenter-notification-header h2,
+.carpenter-app[lang="te"] .carpenter-timber-card h3,
+.carpenter-app[lang="te"] .carpenter-requirement h3 {
+  font-size: 24px !important;
+  line-height: 1.35 !important;
+}
+
+.carpenter-app[lang="te"] .carpenter-hero h1 {
+  font-size: clamp(34px, 6vw, 52px) !important;
+  line-height: 1.2 !important;
+}
+
+/* Hindi */
+.carpenter-app[lang="hi"] {
+  font-family: "Noto Sans Devanagari", "Nirmala UI", sans-serif !important;
+  font-size: 17px !important;
+}
+.carpenter-app[lang="hi"] .carpenter-nav button,
+.carpenter-app[lang="hi"] .carpenter-section-title p,
+.carpenter-app[lang="hi"] .carpenter-hero p,
+.carpenter-app[lang="hi"] .carpenter-tools-grid strong,
+.carpenter-app[lang="hi"] .carpenter-timber-card p,
+.carpenter-app[lang="hi"] .carpenter-requirement > p,
+.carpenter-app[lang="hi"] .carpenter-notification-content p,
+.carpenter-app[lang="hi"] .carpenter-wizard-step label,
+.carpenter-app[lang="hi"] .carpenter-wizard-step input,
+.carpenter-app[lang="hi"] .carpenter-wizard-step select,
+.carpenter-app[lang="hi"] .carpenter-wizard-step textarea,
+.carpenter-app[lang="hi"] .carpenter-skills button,
+.carpenter-app[lang="hi"] .carpenter-work-types button {
+  font-size: 17px !important;
+  line-height: 1.5 !important;
+}
+
+/* Tamil */
+.carpenter-app[lang="ta"] {
+  font-family: "Noto Sans Tamil", "Nirmala UI", sans-serif !important;
+  font-size: 18px !important;
+}
+.carpenter-app[lang="ta"] .carpenter-nav button,
+.carpenter-app[lang="ta"] .carpenter-section-title p,
+.carpenter-app[lang="ta"] .carpenter-hero p,
+.carpenter-app[lang="ta"] .carpenter-tools-grid strong,
+.carpenter-app[lang="ta"] .carpenter-timber-card p,
+.carpenter-app[lang="ta"] .carpenter-requirement > p,
+.carpenter-app[lang="ta"] .carpenter-notification-content p,
+.carpenter-app[lang="ta"] .carpenter-wizard-step label,
+.carpenter-app[lang="ta"] .carpenter-wizard-step input,
+.carpenter-app[lang="ta"] .carpenter-wizard-step select,
+.carpenter-app[lang="ta"] .carpenter-wizard-step textarea,
+.carpenter-app[lang="ta"] .carpenter-skills button,
+.carpenter-app[lang="ta"] .carpenter-work-types button {
+  font-size: 18px !important;
+  line-height: 1.55 !important;
+}
+
+/* Kannada */
+.carpenter-app[lang="kn"] {
+  font-family: "Noto Sans Kannada", "Nirmala UI", sans-serif !important;
+  font-size: 18px !important;
+}
+.carpenter-app[lang="kn"] .carpenter-nav button,
+.carpenter-app[lang="kn"] .carpenter-section-title p,
+.carpenter-app[lang="kn"] .carpenter-hero p,
+.carpenter-app[lang="kn"] .carpenter-tools-grid strong,
+.carpenter-app[lang="kn"] .carpenter-timber-card p,
+.carpenter-app[lang="kn"] .carpenter-requirement > p,
+.carpenter-app[lang="kn"] .carpenter-notification-content p,
+.carpenter-app[lang="kn"] .carpenter-wizard-step label,
+.carpenter-app[lang="kn"] .carpenter-wizard-step input,
+.carpenter-app[lang="kn"] .carpenter-wizard-step select,
+.carpenter-app[lang="kn"] .carpenter-wizard-step textarea,
+.carpenter-app[lang="kn"] .carpenter-skills button,
+.carpenter-app[lang="kn"] .carpenter-work-types button {
+  font-size: 18px !important;
+  line-height: 1.55 !important;
+}
+
+/* English */
+.carpenter-app[lang="en"] {
+  font-family: Inter, "Segoe UI", sans-serif !important;
+  font-size: 16px !important;
+}
+
+/* Keep controls comfortably tall for larger scripts */
+.carpenter-app[lang="te"] select,
+.carpenter-app[lang="te"] input,
+.carpenter-app[lang="te"] textarea,
+.carpenter-app[lang="ta"] select,
+.carpenter-app[lang="ta"] input,
+.carpenter-app[lang="ta"] textarea,
+.carpenter-app[lang="kn"] select,
+.carpenter-app[lang="kn"] input,
+.carpenter-app[lang="kn"] textarea,
+.carpenter-app[lang="hi"] select,
+.carpenter-app[lang="hi"] input,
+.carpenter-app[lang="hi"] textarea {
+  min-height: 50px;
+  padding: 12px 14px !important;
+}
+
+@media (max-width: 700px) {
+  .carpenter-app[lang="te"],
+  .carpenter-app[lang="ta"],
+  .carpenter-app[lang="kn"] {
+    font-size: 17px !important;
+  }
+
+  .carpenter-app[lang="te"] .carpenter-nav button,
+  .carpenter-app[lang="te"] .carpenter-section-title p,
+  .carpenter-app[lang="te"] .carpenter-tools-grid strong,
+  .carpenter-app[lang="te"] .carpenter-tools-grid small,
+  .carpenter-app[lang="te"] .carpenter-timber-card p,
+  .carpenter-app[lang="te"] .carpenter-requirement > p,
+  .carpenter-app[lang="te"] .carpenter-notification-content p,
+  .carpenter-app[lang="te"] .carpenter-wizard-step label,
+  .carpenter-app[lang="te"] .carpenter-wizard-step input,
+  .carpenter-app[lang="te"] .carpenter-wizard-step select,
+  .carpenter-app[lang="te"] .carpenter-wizard-step textarea,
+  .carpenter-app[lang="te"] .carpenter-skills button,
+  .carpenter-app[lang="te"] .carpenter-work-types button {
+    font-size: 17px !important;
+  }
+
+  .carpenter-app[lang="te"] .carpenter-section-title h2,
+  .carpenter-app[lang="te"] .carpenter-modal-header h2,
+  .carpenter-app[lang="te"] .carpenter-wizard-step h3,
+  .carpenter-app[lang="te"] .carpenter-notification-header h2 {
+    font-size: 22px !important;
+  }
+}

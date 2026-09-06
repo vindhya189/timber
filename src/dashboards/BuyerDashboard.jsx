@@ -40,10 +40,398 @@ const CATEGORIES = [
   "Frames",
   "Furniture",
   "Interior",
+  "Fire Wood",
   "Carpenter Services",
 ];
 
-const WOOD_TYPES = ["All Types", "Teak", "Neem", "Pine", "Eucalyptus", "Rosewood"];
+const WOOD_TYPES = [
+  "All Types",
+  "Teak",
+  "Neem",
+  "Pine",
+  "Eucalyptus",
+  "Rosewood",
+  "Old Wood",
+  "Old Teak",
+  "Old Wood Furniture",
+  "Fire Wood",
+];
+
+const TEAK_TYPES = [
+  "Balarsa Teak",
+  "Indian Patta Teak",
+  "Indian Local Teak",
+  "Bastar Teak",
+  "MP Teak",
+  "Gujarat Local Teak",
+  "Maharashtra Local Teak",
+  "Dandeli Teak",
+  "Nellambar Teak",
+  "Other Teak",
+];
+
+const FIREWOOD_TYPES = [
+  "Jeedi Mamidi",
+  "Mamidi",
+  "Thati",
+  "Kobari",
+  "Teak",
+  "Unka",
+  "Other Fire Wood",
+];
+
+const LANGUAGE_OPTIONS = [
+  { code: "en", label: "English" },
+  { code: "te", label: "తెలుగు" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ta", label: "தமிழ்" },
+  { code: "kn", label: "ಕನ್ನಡ" },
+];
+
+const TRANSLATIONS = {
+  en: {
+    language:"Language", buyTimber:"Buy Timber", searchListings:"Search Listings", chats:"Chats", notifications:"Notifications",
+    saved:"Saved", requirementWall:"Requirement Wall", importedSuppliers:"Imported Wood Bulk Suppliers", pattaSupplier:"Indian Patta Teak Supplier",
+    myProfile:"My Profile", settings:"Settings", logout:"Logout", directContact:"Direct Contact", directContactNote:"We Connect. You Deal Directly.",
+    buyerHomeowner:"Buyer / Homeowner", locationActive:"Location active", locationNotSet:"Location not set",
+    buyQuality:"Buy Quality Timber", directlyFrom:"Directly from Sellers.", heroText:"Find timber, logs, planks and wood products from nearby sellers on TimberMart.",
+    locationNeeded:"Location needed for 40 KM alerts", gpsOn:"GPS ON", gpsOff:"GPS OFF", saving:"Saving...", updateLocation:"Update Location",
+    enableLocation:"Enable Location", qualityTimber:"Quality Timber", searchPlaceholder:"Search timber, seller or location...", filters:"Filters",
+    explore:"EXPLORE", shopByCategory:"Shop by Category", viewAll:"View All", woodType:"Wood Type", teakType:"Teak Type",
+    fireWoodType:"Fire Wood Type", location:"Location", maxPrice:"Maximum Price", clearFilters:"Clear Filters", timberMarket:"TIMBER MARKET",
+    productListings:"Product Listings", listing:"listing", listings:"listings", noListings:"No timber listings found",
+    noListingsText:"Sellers have not posted matching listings yet. Try another category or search.", clearSearch:"Clear Search",
+    seller:"Seller", locationNotAdded:"Location not added", priceOnContact:"Price on contact", available:"Available", viewDetails:"View Details",
+    supplierNetwork:"SUPPLIER NETWORK", importedTitle:"Imported Wood Bulk Suppliers", pattaTitle:"Indian Patta Teak Supplier",
+    importedText:"Bulk and imported-wood listings currently available on TimberMart.", pattaText:"Listings tagged with Patta Teak / Indian Teak from sellers on TimberMart.",
+    close:"Close", noSupplier:"No matching supplier listings yet", browseAll:"Browse All Listings", savedListings:"Saved Listings",
+    directDeals:"DIRECT DEALS", myOrders:"My Orders", noOrders:"No orders yet", orderText:"Your direct deal requests will appear here.",
+    wideCategories:"Wide Categories", verifiedSellers:"Verified Sellers", nearbyConnect:"Nearby Connect", productInformation:"Product Information",
+    productType:"Product Type", serviceType:"Service Type", quantity:"Quantity", postedOn:"Posted On", description:"Description",
+    viewSeller:"View seller profile", callSeller:"Call Seller", whatsapp:"WhatsApp", chatNow:"Chat Now", messages:"MESSAGES",
+    noChats:"No chats yet", chatEmpty:"Open a timber listing and tap Chat Now to start a conversation with a seller.",
+    startConversation:"Start a conversation", askAbout:"Ask about timber, quantity, price or availability.", typeMessage:"Type a message...",
+    onlineDirect:"Online / Direct Contact", products:"Products", contact:"Contact", local:"Local", sellerLabel:"Seller", aboutSeller:"About Seller",
+    call:"Call", chat:"Chat", locationGpsError:"This browser does not support GPS location.",
+    permissionDenied:"Location permission was denied. Allow location access in your browser.", locationUnavailable:"Your location could not be determined.",
+    locationTimeout:"Location request timed out. Please try again.", saveLocationError:"Could not get your location.",
+    notificationLoading:"Loading notifications...", noNotifications:"No notifications", notificationEmpty:"Matching nearby posts and account updates will appear here.",
+    markAllRead:"Mark all read", updates:"UPDATES", kmAway:"km away", timberMartUser:"TimberMart User", timberOrder:"Timber Order", ongoing:"Ongoing",
+    allCategory:"All",
+    treesCategory:"Trees",
+    logsCategory:"Logs",
+    timberCategory:"Timber",
+    planksCategory:"Planks",
+    plywoodCategory:"Plywood",
+    doorsCategory:"Doors",
+    framesCategory:"Frames",
+    furnitureCategory:"Furniture",
+    interiorCategory:"Interior",
+    fireWoodCategory:"Fire Wood",
+    carpenterServicesCategory:"Carpenter Services",
+    allTypes:"All Types",
+    teak:"Teak",
+    neem:"Neem",
+    pine:"Pine",
+    eucalyptus:"Eucalyptus",
+    rosewood:"Rosewood",
+    oldWood:"Old Wood",
+    oldTeak:"Old Teak",
+    oldWoodFurniture:"Old Wood Furniture",
+    fireWood:"Fire Wood",
+    balarsaTeak:"Balarsa Teak",
+    indianPattaTeak:"Indian Patta Teak",
+    indianLocalTeak:"Indian Local Teak",
+    bastarTeak:"Bastar Teak",
+    mpTeak:"MP Teak",
+    gujaratLocalTeak:"Gujarat Local Teak",
+    maharashtraLocalTeak:"Maharashtra Local Teak",
+    dandeliTeak:"Dandeli Teak",
+    nellambarTeak:"Nellambar Teak",
+    otherTeak:"Other Teak",
+    jeediMamidi:"Jeedi Mamidi",
+    mamidi:"Mamidi",
+    thati:"Thati",
+    kobari:"Kobari",
+    unka:"Unka",
+    otherFireWood:"Other Fire Wood",
+  },
+  te: {
+    language:"భాష", buyTimber:"కలప కొనండి", searchListings:"లిస్టింగ్స్ వెతకండి", chats:"చాట్స్", notifications:"నోటిఫికేషన్స్", saved:"సేవ్ చేసినవి",
+    requirementWall:"అవసరాల గోడ", importedSuppliers:"ఇంపోర్టెడ్ వుడ్ బల్క్ సప్లయర్లు", pattaSupplier:"ఇండియన్ పట్టా టీక్ సప్లయర్",
+    myProfile:"నా ప్రొఫైల్", settings:"సెట్టింగ్స్", logout:"లాగ్ అవుట్", directContact:"డైరెక్ట్ కాంటాక్ట్", directContactNote:"మేము కనెక్ట్ చేస్తాం. మీరు డీల్ చేసుకోండి.",
+    buyerHomeowner:"కొనుగోలుదారు / ఇంటి యజమాని", locationActive:"లొకేషన్ యాక్టివ్", locationNotSet:"లొకేషన్ సెట్ కాలేదు",
+    buyQuality:"నాణ్యమైన కలప కొనండి", directlyFrom:"నేరుగా విక్రేతల నుండి.", heroText:"TimberMartలో దగ్గరలోని విక్రేతల నుండి కలప, దుంగలు, పలకలు మరియు వుడ్ ఉత్పత్తులను కనుగొనండి.",
+    locationNeeded:"40 KM అలర్ట్స్ కోసం లొకేషన్ అవసరం", gpsOn:"GPS ON", gpsOff:"GPS OFF", saving:"సేవ్ అవుతోంది...", updateLocation:"లొకేషన్ అప్‌డేట్",
+    enableLocation:"లొకేషన్ ఎనేబుల్", qualityTimber:"నాణ్యమైన కలప", searchPlaceholder:"కలప, విక్రేత లేదా లొకేషన్ వెతకండి...", filters:"ఫిల్టర్లు",
+    explore:"అన్వేషించండి", shopByCategory:"కేటగిరీ ద్వారా కొనండి", viewAll:"అన్నీ చూడండి", woodType:"వుడ్ టైప్", teakType:"టీక్ టైప్",
+    fireWoodType:"ఫైర్ వుడ్ టైప్", location:"లొకేషన్", maxPrice:"గరిష్ట ధర", clearFilters:"ఫిల్టర్లు క్లియర్", timberMarket:"టింబర్ మార్కెట్",
+    productListings:"ప్రొడక్ట్ లిస్టింగ్స్", listing:"లిస్టింగ్", listings:"లిస్టింగ్స్", noListings:"కలప లిస్టింగ్స్ కనిపించలేదు",
+    noListingsText:"మీకు సరిపడే లిస్టింగ్స్ లేవు. మరో కేటగిరీ లేదా సెర్చ్ ప్రయత్నించండి.", clearSearch:"సెర్చ్ క్లియర్", seller:"విక్రేత",
+    locationNotAdded:"లొకేషన్ జోడించలేదు", priceOnContact:"ధర కోసం సంప్రదించండి", available:"అందుబాటులో", viewDetails:"వివరాలు చూడండి",
+    supplierNetwork:"సప్లయర్ నెట్‌వర్క్", importedTitle:"ఇంపోర్టెడ్ వుడ్ బల్క్ సప్లయర్లు", pattaTitle:"ఇండియన్ పట్టా టీక్ సప్లయర్",
+    importedText:"TimberMartలో ప్రస్తుతం అందుబాటులో ఉన్న బల్క్ మరియు ఇంపోర్టెడ్ వుడ్ లిస్టింగ్స్.", pattaText:"పట్టా టీక్ / ఇండియన్ టీక్ ట్యాగ్ చేసిన లిస్టింగ్స్.",
+    close:"మూసివేయి", noSupplier:"సరిపడే సప్లయర్ లిస్టింగ్స్ లేవు", browseAll:"అన్ని లిస్టింగ్స్ చూడండి", savedListings:"సేవ్ చేసిన లిస్టింగ్స్",
+    directDeals:"డైరెక్ట్ డీల్స్", myOrders:"నా ఆర్డర్లు", noOrders:"ఇంకా ఆర్డర్లు లేవు", orderText:"మీ డైరెక్ట్ డీల్ రిక్వెస్ట్స్ ఇక్కడ కనిపిస్తాయి.",
+    wideCategories:"విస్తృత కేటగిరీలు", verifiedSellers:"వెరిఫైడ్ విక్రేతలు", nearbyConnect:"దగ్గరలో కనెక్ట్", productInformation:"ప్రొడక్ట్ సమాచారం",
+    productType:"ప్రొడక్ట్ టైప్", serviceType:"సర్వీస్ టైప్", quantity:"పరిమాణం", postedOn:"పోస్ట్ చేసిన తేదీ", description:"వివరణ",
+    viewSeller:"విక్రేత ప్రొఫైల్ చూడండి", callSeller:"విక్రేతకు కాల్", whatsapp:"వాట్సాప్", chatNow:"చాట్ చేయండి", messages:"మెసేజెస్",
+    noChats:"ఇంకా చాట్స్ లేవు", chatEmpty:"లిస్టింగ్ ఓపెన్ చేసి Chat Now నొక్కి విక్రేతతో మాట్లాడండి.", startConversation:"సంభాషణ ప్రారంభించండి",
+    askAbout:"కలప, పరిమాణం, ధర లేదా అందుబాటుపై అడగండి.", typeMessage:"మెసేజ్ టైప్ చేయండి...", onlineDirect:"ఆన్‌లైన్ / డైరెక్ట్ కాంటాక్ట్",
+    products:"ప్రొడక్ట్స్", contact:"కాంటాక్ట్", local:"లోకల్", sellerLabel:"విక్రేత", aboutSeller:"విక్రేత గురించి", call:"కాల్", chat:"చాట్",
+    locationGpsError:"ఈ బ్రౌజర్ GPS లొకేషన్‌ను సపోర్ట్ చేయదు.", permissionDenied:"లొకేషన్ అనుమతి నిరాకరించబడింది. బ్రౌజర్‌లో లొకేషన్ అనుమతించండి.",
+    locationUnavailable:"మీ లొకేషన్ కనుగొనలేకపోయాము.", locationTimeout:"లొకేషన్ రిక్వెస్ట్ సమయం ముగిసింది.", saveLocationError:"లొకేషన్ పొందలేకపోయాము.",
+    notificationLoading:"నోటిఫికేషన్స్ లోడ్ అవుతున్నాయి...", noNotifications:"నోటిఫికేషన్స్ లేవు", notificationEmpty:"దగ్గరలోని పోస్టులు మరియు అకౌంట్ అప్‌డేట్స్ ఇక్కడ కనిపిస్తాయి.",
+    markAllRead:"అన్నీ చదివినట్లు చేయి", updates:"అప్‌డేట్స్", kmAway:"కి.మీ దూరంలో", timberMartUser:"TimberMart యూజర్", timberOrder:"టింబర్ ఆర్డర్", ongoing:"కొనసాగుతోంది",
+    allCategory:"అన్నీ",
+    treesCategory:"చెట్లు",
+    logsCategory:"దుంగలు",
+    timberCategory:"టింబర్",
+    planksCategory:"పలకలు",
+    plywoodCategory:"ప్లైవుడ్",
+    doorsCategory:"తలుపులు",
+    framesCategory:"ఫ్రేమ్స్",
+    furnitureCategory:"ఫర్నిచర్",
+    interiorCategory:"ఇంటీరియర్",
+    fireWoodCategory:"ఫైర్ వుడ్",
+    carpenterServicesCategory:"కార్పెంటర్ సేవలు",
+    allTypes:"అన్ని రకాలు",
+    teak:"టీక్",
+    neem:"వేప",
+    pine:"పైన్",
+    eucalyptus:"యూకలిప్టస్",
+    rosewood:"రోజ్‌వుడ్",
+    oldWood:"పాత కలప",
+    oldTeak:"పాత టీక్",
+    oldWoodFurniture:"పాత కలప ఫర్నిచర్",
+    fireWood:"ఫైర్ వుడ్",
+    balarsaTeak:"బలర్సా టీక్",
+    indianPattaTeak:"ఇండియన్ పట్టా టీక్",
+    indianLocalTeak:"ఇండియన్ లోకల్ టీక్",
+    bastarTeak:"బస్తర్ టీక్",
+    mpTeak:"ఎంపీ టీక్",
+    gujaratLocalTeak:"గుజరాత్ లోకల్ టీక్",
+    maharashtraLocalTeak:"మహారాష్ట్ర లోకల్ టీక్",
+    dandeliTeak:"దాండేలి టీక్",
+    nellambarTeak:"నెల్లంబర్ టీక్",
+    otherTeak:"ఇతర టీక్",
+    jeediMamidi:"జీడీ మామిడి",
+    mamidi:"మామిడి",
+    thati:"తాటి",
+    kobari:"కొబ్బరి",
+    unka:"ఉంక",
+    otherFireWood:"ఇతర ఫైర్ వుడ్",
+  },
+  hi: {
+    language:"भाषा", buyTimber:"लकड़ी खरीदें", searchListings:"लिस्टिंग खोजें", chats:"चैट", notifications:"सूचनाएं", saved:"सहेजे गए",
+    requirementWall:"आवश्यकता दीवार", importedSuppliers:"इम्पोर्टेड वुड बल्क सप्लायर", pattaSupplier:"इंडियन पट्टा टीक सप्लायर", myProfile:"मेरी प्रोफ़ाइल",
+    settings:"सेटिंग्स", logout:"लॉग आउट", directContact:"सीधा संपर्क", directContactNote:"हम जोड़ते हैं। आप सीधे सौदा करें।", buyerHomeowner:"खरीदार / गृहस्वामी",
+    locationActive:"लोकेशन सक्रिय", locationNotSet:"लोकेशन सेट नहीं है", buyQuality:"गुणवत्तापूर्ण लकड़ी खरीदें", directlyFrom:"सीधे विक्रेताओं से।",
+    heroText:"TimberMart पर नज़दीकी विक्रेताओं से लकड़ी, लॉग, प्लैंक और वुड उत्पाद खोजें।", locationNeeded:"40 KM अलर्ट के लिए लोकेशन जरूरी है",
+    gpsOn:"GPS ON", gpsOff:"GPS OFF", saving:"सेव हो रहा है...", updateLocation:"लोकेशन अपडेट", enableLocation:"लोकेशन सक्षम करें", qualityTimber:"गुणवत्तापूर्ण लकड़ी",
+    searchPlaceholder:"लकड़ी, विक्रेता या लोकेशन खोजें...", filters:"फ़िल्टर", explore:"खोजें", shopByCategory:"श्रेणी से खरीदें", viewAll:"सभी देखें",
+    woodType:"वुड टाइप", teakType:"टीक टाइप", fireWoodType:"फायर वुड टाइप", location:"लोकेशन", maxPrice:"अधिकतम कीमत", clearFilters:"फ़िल्टर साफ़ करें",
+    timberMarket:"टिम्बर मार्केट", productListings:"प्रोडक्ट लिस्टिंग", listing:"लिस्टिंग", listings:"लिस्टिंग्स", noListings:"कोई लकड़ी लिस्टिंग नहीं मिली",
+    noListingsText:"मेल खाती लिस्टिंग नहीं हैं। दूसरी श्रेणी या खोज आज़माएं।", clearSearch:"खोज साफ़ करें", seller:"विक्रेता", locationNotAdded:"लोकेशन नहीं जोड़ी गई",
+    priceOnContact:"कीमत के लिए संपर्क करें", available:"उपलब्ध", viewDetails:"विवरण देखें", supplierNetwork:"सप्लायर नेटवर्क",
+    importedTitle:"इम्पोर्टेड वुड बल्क सप्लायर", pattaTitle:"इंडियन पट्टा टीक सप्लायर", importedText:"TimberMart पर उपलब्ध बल्क और इम्पोर्टेड वुड लिस्टिंग।",
+    pattaText:"पट्टा टीक / इंडियन टीक टैग वाली लिस्टिंग।", close:"बंद करें", noSupplier:"कोई मेल खाती सप्लायर लिस्टिंग नहीं", browseAll:"सभी लिस्टिंग देखें",
+    savedListings:"सहेजी गई लिस्टिंग", directDeals:"सीधे सौदे", myOrders:"मेरे ऑर्डर", noOrders:"अभी कोई ऑर्डर नहीं", orderText:"आपके सीधे सौदे के अनुरोध यहां दिखाई देंगे।",
+    wideCategories:"विभिन्न श्रेणियां", verifiedSellers:"सत्यापित विक्रेता", nearbyConnect:"नज़दीकी कनेक्शन", productInformation:"उत्पाद जानकारी",
+    productType:"उत्पाद प्रकार", serviceType:"सेवा प्रकार", quantity:"मात्रा", postedOn:"पोस्ट किया गया", description:"विवरण", viewSeller:"विक्रेता प्रोफ़ाइल देखें",
+    callSeller:"विक्रेता को कॉल", whatsapp:"WhatsApp", chatNow:"चैट करें", messages:"संदेश", noChats:"अभी कोई चैट नहीं",
+    chatEmpty:"लिस्टिंग खोलें और Chat Now दबाकर विक्रेता से बात करें।", startConversation:"बातचीत शुरू करें", askAbout:"लकड़ी, मात्रा, कीमत या उपलब्धता के बारे में पूछें।",
+    typeMessage:"संदेश लिखें...", onlineDirect:"ऑनलाइन / सीधा संपर्क", products:"उत्पाद", contact:"संपर्क", local:"स्थानीय", sellerLabel:"विक्रेता", aboutSeller:"विक्रेता के बारे में",
+    call:"कॉल", chat:"चैट", locationGpsError:"यह ब्राउज़र GPS लोकेशन सपोर्ट नहीं करता।", permissionDenied:"लोकेशन अनुमति अस्वीकार हुई। ब्राउज़र में लोकेशन अनुमति दें।",
+    locationUnavailable:"लोकेशन नहीं मिल सकी।", locationTimeout:"लोकेशन अनुरोध का समय समाप्त हो गया।", saveLocationError:"लोकेशन प्राप्त नहीं हो सकी।",
+    notificationLoading:"सूचनाएं लोड हो रही हैं...", noNotifications:"कोई सूचनाएं नहीं", notificationEmpty:"नज़दीकी पोस्ट और अकाउंट अपडेट यहां दिखाई देंगे।",
+    markAllRead:"सभी पढ़ा हुआ करें", updates:"अपडेट्स", kmAway:"किमी दूर", timberMartUser:"TimberMart यूज़र", timberOrder:"टिम्बर ऑर्डर", ongoing:"जारी",
+    allCategory:"All",
+    treesCategory:"Trees",
+    logsCategory:"Logs",
+    timberCategory:"Timber",
+    planksCategory:"Planks",
+    plywoodCategory:"Plywood",
+    doorsCategory:"Doors",
+    framesCategory:"Frames",
+    furnitureCategory:"Furniture",
+    interiorCategory:"Interior",
+    fireWoodCategory:"Fire Wood",
+    carpenterServicesCategory:"Carpenter Services",
+    allTypes:"All Types",
+    teak:"Teak",
+    neem:"Neem",
+    pine:"Pine",
+    eucalyptus:"Eucalyptus",
+    rosewood:"Rosewood",
+    oldWood:"Old Wood",
+    oldTeak:"Old Teak",
+    oldWoodFurniture:"Old Wood Furniture",
+    fireWood:"Fire Wood",
+    balarsaTeak:"Balarsa Teak",
+    indianPattaTeak:"Indian Patta Teak",
+    indianLocalTeak:"Indian Local Teak",
+    bastarTeak:"Bastar Teak",
+    mpTeak:"MP Teak",
+    gujaratLocalTeak:"Gujarat Local Teak",
+    maharashtraLocalTeak:"Maharashtra Local Teak",
+    dandeliTeak:"Dandeli Teak",
+    nellambarTeak:"Nellambar Teak",
+    otherTeak:"Other Teak",
+    jeediMamidi:"Jeedi Mamidi",
+    mamidi:"Mamidi",
+    thati:"Thati",
+    kobari:"Kobari",
+    unka:"Unka",
+    otherFireWood:"Other Fire Wood",
+  },
+  ta: {
+    language:"மொழி", buyTimber:"மரம் வாங்க", searchListings:"பட்டியல்களை தேடுக", chats:"அரட்டைகள்", notifications:"அறிவிப்புகள்", saved:"சேமித்தவை",
+    requirementWall:"தேவை சுவர்", importedSuppliers:"இறக்குமதி மர மொத்த விற்பனையாளர்கள்", pattaSupplier:"இந்திய பட்டா டீக் சப்ளையர்", myProfile:"என் சுயவிவரம்",
+    settings:"அமைப்புகள்", logout:"வெளியேறு", directContact:"நேரடி தொடர்பு", directContactNote:"நாங்கள் இணைக்கிறோம். நீங்கள் நேரடியாக ஒப்பந்தம் செய்யுங்கள்.",
+    buyerHomeowner:"வாங்குபவர் / வீட்டு உரிமையாளர்", locationActive:"இருப்பிடம் செயலில்", locationNotSet:"இருப்பிடம் அமைக்கப்படவில்லை",
+    buyQuality:"தரமான மரத்தை வாங்குங்கள்", directlyFrom:"விற்பவர்களிடமிருந்து நேரடியாக.", heroText:"TimberMart-ல் அருகிலுள்ள விற்பவர்களிடமிருந்து மரம், கட்டைகள், பலகைகள் மற்றும் மரப் பொருட்களை கண்டறியுங்கள்.",
+    locationNeeded:"40 KM அலர்ட்களுக்கு இருப்பிடம் தேவை", gpsOn:"GPS ON", gpsOff:"GPS OFF", saving:"சேமிக்கிறது...", updateLocation:"இருப்பிடத்தை புதுப்பிக்கவும்",
+    enableLocation:"இருப்பிடத்தை இயக்கு", qualityTimber:"தரமான மரம்", searchPlaceholder:"மரம், விற்பவர் அல்லது இருப்பிடம் தேடுங்கள்...", filters:"வடிகட்டிகள்",
+    explore:"ஆராயுங்கள்", shopByCategory:"வகை மூலம் வாங்குங்கள்", viewAll:"அனைத்தையும் காண்க", woodType:"மர வகை", teakType:"டீக் வகை", fireWoodType:"விறகு வகை",
+    location:"இருப்பிடம்", maxPrice:"அதிகபட்ச விலை", clearFilters:"வடிகட்டிகளை அழிக்கவும்", timberMarket:"டிம்பர் மார்க்கெட்", productListings:"தயாரிப்பு பட்டியல்கள்",
+    listing:"பட்டியல்", listings:"பட்டியல்கள்", noListings:"மர பட்டியல்கள் இல்லை", noListingsText:"பொருந்தும் பட்டியல்கள் இல்லை. வேறு வகை அல்லது தேடலை முயற்சிக்கவும்.",
+    clearSearch:"தேடலை அழிக்கவும்", seller:"விற்பவர்", locationNotAdded:"இருப்பிடம் சேர்க்கப்படவில்லை", priceOnContact:"விலைக்கு தொடர்பு கொள்ளவும்", available:"கிடைக்கும்", viewDetails:"விவரங்களை காண்க",
+    supplierNetwork:"சப்ளையர் நெட்வொர்க்", importedTitle:"இறக்குமதி மர மொத்த சப்ளையர்கள்", pattaTitle:"இந்திய பட்டா டீக் சப்ளையர்",
+    importedText:"TimberMart-ல் கிடைக்கும் மொத்த மற்றும் இறக்குமதி மர பட்டியல்கள்.", pattaText:"பட்டா டீக் / இந்திய டீக் குறியிட்ட பட்டியல்கள்.", close:"மூடு",
+    noSupplier:"பொருந்தும் சப்ளையர் பட்டியல்கள் இல்லை", browseAll:"அனைத்து பட்டியல்களையும் காண்க", savedListings:"சேமித்த பட்டியல்கள்", directDeals:"நேரடி ஒப்பந்தங்கள்",
+    myOrders:"என் ஆர்டர்கள்", noOrders:"இன்னும் ஆர்டர்கள் இல்லை", orderText:"உங்கள் நேரடி ஒப்பந்த கோரிக்கைகள் இங்கே தோன்றும்.", wideCategories:"பல வகைகள்",
+    verifiedSellers:"சரிபார்க்கப்பட்ட விற்பவர்கள்", nearbyConnect:"அருகிலுள்ள இணைப்பு", productInformation:"தயாரிப்பு தகவல்", productType:"தயாரிப்பு வகை", serviceType:"சேவை வகை",
+    quantity:"அளவு", postedOn:"பதிவிட்ட தேதி", description:"விளக்கம்", viewSeller:"விற்பவர் சுயவிவரத்தை காண்க", callSeller:"விற்பவரை அழைக்கவும்", whatsapp:"WhatsApp",
+    chatNow:"அரட்டை", messages:"செய்திகள்", noChats:"இன்னும் அரட்டைகள் இல்லை", chatEmpty:"பட்டியலைத் திறந்து Chat Now அழுத்தி விற்பவருடன் பேசுங்கள்.",
+    startConversation:"உரையாடலை தொடங்குங்கள்", askAbout:"மரம், அளவு, விலை அல்லது கிடைப்பது பற்றி கேளுங்கள்.", typeMessage:"செய்தியை உள்ளிடவும்...",
+    onlineDirect:"ஆன்லைன் / நேரடி தொடர்பு", products:"தயாரிப்புகள்", contact:"தொடர்பு", local:"உள்ளூர்", sellerLabel:"விற்பவர்", aboutSeller:"விற்பவர் பற்றி", call:"அழைப்பு", chat:"அரட்டை",
+    locationGpsError:"இந்த உலாவி GPS இருப்பிடத்தை ஆதரிக்காது.", permissionDenied:"இருப்பிட அனுமதி மறுக்கப்பட்டது. உலாவியில் அனுமதிக்கவும்.", locationUnavailable:"இருப்பிடத்தை கண்டறிய முடியவில்லை.",
+    locationTimeout:"இருப்பிட கோரிக்கை நேரம் முடிந்தது.", saveLocationError:"இருப்பிடத்தை பெற முடியவில்லை.", notificationLoading:"அறிவிப்புகள் ஏற்றப்படுகின்றன...",
+    noNotifications:"அறிவிப்புகள் இல்லை", notificationEmpty:"அருகிலுள்ள பதிவுகள் மற்றும் கணக்கு புதுப்பிப்புகள் இங்கே தோன்றும்.", markAllRead:"அனைத்தையும் படித்ததாக குறிக்கவும்",
+    updates:"புதுப்பிப்புகள்", kmAway:"கிமீ தொலைவில்", timberMartUser:"TimberMart பயனர்", timberOrder:"டிம்பர் ஆர்டர்", ongoing:"நடைபெறுகிறது",
+    allCategory:"All",
+    treesCategory:"Trees",
+    logsCategory:"Logs",
+    timberCategory:"Timber",
+    planksCategory:"Planks",
+    plywoodCategory:"Plywood",
+    doorsCategory:"Doors",
+    framesCategory:"Frames",
+    furnitureCategory:"Furniture",
+    interiorCategory:"Interior",
+    fireWoodCategory:"Fire Wood",
+    carpenterServicesCategory:"Carpenter Services",
+    allTypes:"All Types",
+    teak:"Teak",
+    neem:"Neem",
+    pine:"Pine",
+    eucalyptus:"Eucalyptus",
+    rosewood:"Rosewood",
+    oldWood:"Old Wood",
+    oldTeak:"Old Teak",
+    oldWoodFurniture:"Old Wood Furniture",
+    fireWood:"Fire Wood",
+    balarsaTeak:"Balarsa Teak",
+    indianPattaTeak:"Indian Patta Teak",
+    indianLocalTeak:"Indian Local Teak",
+    bastarTeak:"Bastar Teak",
+    mpTeak:"MP Teak",
+    gujaratLocalTeak:"Gujarat Local Teak",
+    maharashtraLocalTeak:"Maharashtra Local Teak",
+    dandeliTeak:"Dandeli Teak",
+    nellambarTeak:"Nellambar Teak",
+    otherTeak:"Other Teak",
+    jeediMamidi:"Jeedi Mamidi",
+    mamidi:"Mamidi",
+    thati:"Thati",
+    kobari:"Kobari",
+    unka:"Unka",
+    otherFireWood:"Other Fire Wood",
+  },
+  kn: {
+    language:"ಭಾಷೆ", buyTimber:"ಮರ ಖರೀದಿಸಿ", searchListings:"ಲಿಸ್ಟಿಂಗ್ ಹುಡುಕಿ", chats:"ಚಾಟ್‌ಗಳು", notifications:"ಅಧಿಸೂಚನೆಗಳು", saved:"ಉಳಿಸಿದವು",
+    requirementWall:"ಅಗತ್ಯಗಳ ಗೋಡೆ", importedSuppliers:"ಆಮದು ಮರದ ಬಲ್ಕ್ ಪೂರೈಕೆದಾರರು", pattaSupplier:"ಇಂಡಿಯನ್ ಪಟ್ಟಾ ಟೀಕ್ ಪೂರೈಕೆದಾರ", myProfile:"ನನ್ನ ಪ್ರೊಫೈಲ್",
+    settings:"ಸೆಟ್ಟಿಂಗ್ಸ್", logout:"ಲಾಗ್ ಔಟ್", directContact:"ನೇರ ಸಂಪರ್ಕ", directContactNote:"ನಾವು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ. ನೀವು ನೇರವಾಗಿ ವ್ಯವಹರಿಸಿ.", buyerHomeowner:"ಖರೀದಿದಾರ / ಮನೆ ಮಾಲೀಕ",
+    locationActive:"ಸ್ಥಳ ಸಕ್ರಿಯ", locationNotSet:"ಸ್ಥಳ ಸೆಟ್ ಆಗಿಲ್ಲ", buyQuality:"ಗುಣಮಟ್ಟದ ಮರ ಖರೀದಿಸಿ", directlyFrom:"ಮಾರಾಟಗಾರರಿಂದ ನೇರವಾಗಿ.",
+    heroText:"TimberMart ನಲ್ಲಿ ಹತ್ತಿರದ ಮಾರಾಟಗಾರರಿಂದ ಮರ, ಲಾಗ್‌ಗಳು, ಪ್ಲ್ಯಾಂಕ್‌ಗಳು ಮತ್ತು ಮರದ ಉತ್ಪನ್ನಗಳನ್ನು ಹುಡುಕಿ.", locationNeeded:"40 KM ಎಚ್ಚರಿಕೆಗಳಿಗೆ ಸ್ಥಳ ಅಗತ್ಯ",
+    gpsOn:"GPS ON", gpsOff:"GPS OFF", saving:"ಉಳಿಸಲಾಗುತ್ತಿದೆ...", updateLocation:"ಸ್ಥಳ ನವೀಕರಿಸಿ", enableLocation:"ಸ್ಥಳ ಸಕ್ರಿಯಗೊಳಿಸಿ", qualityTimber:"ಗುಣಮಟ್ಟದ ಮರ",
+    searchPlaceholder:"ಮರ, ಮಾರಾಟಗಾರ ಅಥವಾ ಸ್ಥಳ ಹುಡುಕಿ...", filters:"ಫಿಲ್ಟರ್‌ಗಳು", explore:"ಅನ್ವೇಷಿಸಿ", shopByCategory:"ವರ್ಗದ ಮೂಲಕ ಖರೀದಿ", viewAll:"ಎಲ್ಲವನ್ನೂ ನೋಡಿ",
+    woodType:"ಮರದ ಪ್ರಕಾರ", teakType:"ಟೀಕ್ ಪ್ರಕಾರ", fireWoodType:"ಉರುವಲು ಪ್ರಕಾರ", location:"ಸ್ಥಳ", maxPrice:"ಗರಿಷ್ಠ ಬೆಲೆ", clearFilters:"ಫಿಲ್ಟರ್ ತೆರವು", timberMarket:"ಟಿಂಬರ್ ಮಾರ್ಕೆಟ್",
+    productListings:"ಉತ್ಪನ್ನ ಲಿಸ್ಟಿಂಗ್‌ಗಳು", listing:"ಲಿಸ್ಟಿಂಗ್", listings:"ಲಿಸ್ಟಿಂಗ್‌ಗಳು", noListings:"ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು ಸಿಗಲಿಲ್ಲ",
+    noListingsText:"ಹೊಂದಾಣಿಕೆಯ ಲಿಸ್ಟಿಂಗ್‌ಗಳಿಲ್ಲ. ಬೇರೆ ವರ್ಗ ಅಥವಾ ಹುಡುಕಾಟ ಪ್ರಯತ್ನಿಸಿ.", clearSearch:"ಹುಡುಕಾಟ ತೆರವು", seller:"ಮಾರಾಟಗಾರ", locationNotAdded:"ಸ್ಥಳ ಸೇರಿಸಲಾಗಿಲ್ಲ",
+    priceOnContact:"ಬೆಲೆಗೆ ಸಂಪರ್ಕಿಸಿ", available:"ಲಭ್ಯ", viewDetails:"ವಿವರ ನೋಡಿ", supplierNetwork:"ಪೂರೈಕೆದಾರರ ಜಾಲ", importedTitle:"ಆಮದು ಮರದ ಬಲ್ಕ್ ಪೂರೈಕೆದಾರರು",
+    pattaTitle:"ಇಂಡಿಯನ್ ಪಟ್ಟಾ ಟೀಕ್ ಪೂರೈಕೆದಾರ", importedText:"TimberMart ನಲ್ಲಿ ಲಭ್ಯವಿರುವ ಬಲ್ಕ್ ಮತ್ತು ಆಮದು ಮರದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು.", pattaText:"ಪಟ್ಟಾ ಟೀಕ್ / ಇಂಡಿಯನ್ ಟೀಕ್ ಟ್ಯಾಗ್ ಮಾಡಿದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು.",
+    close:"ಮುಚ್ಚಿ", noSupplier:"ಹೊಂದಾಣಿಕೆಯ ಪೂರೈಕೆದಾರ ಲಿಸ್ಟಿಂಗ್‌ಗಳಿಲ್ಲ", browseAll:"ಎಲ್ಲಾ ಲಿಸ್ಟಿಂಗ್‌ಗಳನ್ನು ನೋಡಿ", savedListings:"ಉಳಿಸಿದ ಲಿಸ್ಟಿಂಗ್‌ಗಳು",
+    directDeals:"ನೇರ ವ್ಯವಹಾರಗಳು", myOrders:"ನನ್ನ ಆರ್ಡರ್‌ಗಳು", noOrders:"ಇನ್ನೂ ಆರ್ಡರ್‌ಗಳಿಲ್ಲ", orderText:"ನಿಮ್ಮ ನೇರ ವ್ಯವಹಾರ ವಿನಂತಿಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+    wideCategories:"ವಿಸ್ತೃತ ವರ್ಗಗಳು", verifiedSellers:"ಪರಿಶೀಲಿತ ಮಾರಾಟಗಾರರು", nearbyConnect:"ಹತ್ತಿರದ ಸಂಪರ್ಕ", productInformation:"ಉತ್ಪನ್ನ ಮಾಹಿತಿ", productType:"ಉತ್ಪನ್ನ ಪ್ರಕಾರ",
+    serviceType:"ಸೇವೆಯ ಪ್ರಕಾರ", quantity:"ಪ್ರಮಾಣ", postedOn:"ಪೋಸ್ಟ್ ಮಾಡಿದ ದಿನಾಂಕ", description:"ವಿವರಣೆ", viewSeller:"ಮಾರಾಟಗಾರರ ಪ್ರೊಫೈಲ್ ನೋಡಿ", callSeller:"ಮಾರಾಟಗಾರರಿಗೆ ಕರೆ",
+    whatsapp:"WhatsApp", chatNow:"ಚಾಟ್ ಮಾಡಿ", messages:"ಸಂದೇಶಗಳು", noChats:"ಇನ್ನೂ ಚಾಟ್‌ಗಳಿಲ್ಲ", chatEmpty:"ಲಿಸ್ಟಿಂಗ್ ತೆರೆಯಿರಿ ಮತ್ತು Chat Now ಒತ್ತಿ ಮಾರಾಟಗಾರರೊಂದಿಗೆ ಮಾತನಾಡಿ.",
+    startConversation:"ಸಂಭಾಷಣೆ ಪ್ರಾರಂಭಿಸಿ", askAbout:"ಮರ, ಪ್ರಮಾಣ, ಬೆಲೆ ಅಥವಾ ಲಭ್ಯತೆಯ ಬಗ್ಗೆ ಕೇಳಿ.", typeMessage:"ಸಂದೇಶ ಟೈಪ್ ಮಾಡಿ...", onlineDirect:"ಆನ್‌ಲೈನ್ / ನೇರ ಸಂಪರ್ಕ",
+    products:"ಉತ್ಪನ್ನಗಳು", contact:"ಸಂಪರ್ಕ", local:"ಸ್ಥಳೀಯ", sellerLabel:"ಮಾರಾಟಗಾರ", aboutSeller:"ಮಾರಾಟಗಾರರ ಬಗ್ಗೆ", call:"ಕರೆ", chat:"ಚಾಟ್",
+    locationGpsError:"ಈ ಬ್ರೌಸರ್ GPS ಸ್ಥಳವನ್ನು ಬೆಂಬಲಿಸುವುದಿಲ್ಲ.", permissionDenied:"ಸ್ಥಳ ಅನುಮತಿ ನಿರಾಕರಿಸಲಾಗಿದೆ. ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಅನುಮತಿಸಿ.", locationUnavailable:"ಸ್ಥಳ ಕಂಡುಹಿಡಿಯಲಾಗಲಿಲ್ಲ.",
+    locationTimeout:"ಸ್ಥಳ ವಿನಂತಿಯ ಸಮಯ ಮುಗಿದಿದೆ.", saveLocationError:"ಸ್ಥಳ ಪಡೆಯಲಾಗಲಿಲ್ಲ.", notificationLoading:"ಅಧಿಸೂಚನೆಗಳು ಲೋಡ್ ಆಗುತ್ತಿವೆ...", noNotifications:"ಯಾವುದೇ ಅಧಿಸೂಚನೆಗಳಿಲ್ಲ",
+    notificationEmpty:"ಹತ್ತಿರದ ಪೋಸ್ಟ್‌ಗಳು ಮತ್ತು ಖಾತೆ ಅಪ್‌ಡೇಟ್‌ಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.", markAllRead:"ಎಲ್ಲವನ್ನೂ ಓದಿದಂತೆ ಗುರುತಿಸಿ", updates:"ಅಪ್‌ಡೇಟ್‌ಗಳು", kmAway:"ಕಿಮೀ ದೂರ",
+    timberMartUser:"TimberMart ಬಳಕೆದಾರ", timberOrder:"ಟಿಂಬರ್ ಆರ್ಡರ್", ongoing:"ಮುಂದುವರಿಯುತ್ತಿದೆ",
+    allCategory:"All",
+    treesCategory:"Trees",
+    logsCategory:"Logs",
+    timberCategory:"Timber",
+    planksCategory:"Planks",
+    plywoodCategory:"Plywood",
+    doorsCategory:"Doors",
+    framesCategory:"Frames",
+    furnitureCategory:"Furniture",
+    interiorCategory:"Interior",
+    fireWoodCategory:"Fire Wood",
+    carpenterServicesCategory:"Carpenter Services",
+    allTypes:"All Types",
+    teak:"Teak",
+    neem:"Neem",
+    pine:"Pine",
+    eucalyptus:"Eucalyptus",
+    rosewood:"Rosewood",
+    oldWood:"Old Wood",
+    oldTeak:"Old Teak",
+    oldWoodFurniture:"Old Wood Furniture",
+    fireWood:"Fire Wood",
+    balarsaTeak:"Balarsa Teak",
+    indianPattaTeak:"Indian Patta Teak",
+    indianLocalTeak:"Indian Local Teak",
+    bastarTeak:"Bastar Teak",
+    mpTeak:"MP Teak",
+    gujaratLocalTeak:"Gujarat Local Teak",
+    maharashtraLocalTeak:"Maharashtra Local Teak",
+    dandeliTeak:"Dandeli Teak",
+    nellambarTeak:"Nellambar Teak",
+    otherTeak:"Other Teak",
+    jeediMamidi:"Jeedi Mamidi",
+    mamidi:"Mamidi",
+    thati:"Thati",
+    kobari:"Kobari",
+    unka:"Unka",
+    otherFireWood:"Other Fire Wood",
+  },
+};
+
+const CATEGORY_LABEL_KEYS = {
+  All:"allCategory", Trees:"treesCategory", Logs:"logsCategory", Timber:"timberCategory", Planks:"planksCategory",
+  Plywood:"plywoodCategory", Doors:"doorsCategory", Frames:"framesCategory", Furniture:"furnitureCategory", Interior:"interiorCategory",
+  "Fire Wood":"fireWoodCategory", "Carpenter Services":"carpenterServicesCategory",
+};
+
+const WOOD_LABEL_KEYS = {
+  "All Types":"allTypes", Teak:"teak", Neem:"neem", Pine:"pine", Eucalyptus:"eucalyptus", Rosewood:"rosewood",
+  "Old Wood":"oldWood", "Old Teak":"oldTeak", "Old Wood Furniture":"oldWoodFurniture", "Fire Wood":"fireWood",
+};
+
+const TYPE_LABEL_KEYS = {
+  "Balarsa Teak":"balarsaTeak", "Indian Patta Teak":"indianPattaTeak", "Indian Local Teak":"indianLocalTeak",
+  "Bastar Teak":"bastarTeak", "MP Teak":"mpTeak", "Gujarat Local Teak":"gujaratLocalTeak",
+  "Maharashtra Local Teak":"maharashtraLocalTeak", "Dandeli Teak":"dandeliTeak", "Nellambar Teak":"nellambarTeak",
+  "Other Teak":"otherTeak", "Jeedi Mamidi":"jeediMamidi", Mamidi:"mamidi", Thati:"thati", Kobari:"kobari",
+  Teak:"teak", Unka:"unka", "Other Fire Wood":"otherFireWood",
+};
 
 function normalizePhone(phone = "") {
   return String(phone).replace(/\D/g, "");
@@ -155,6 +543,28 @@ export default function BuyerDashboard() {
   const [supplierMode, setSupplierMode] = useState(null);
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState("");
+  const [language, setLanguage] = useState(() => localStorage.getItem("timbermart_language") || "en");
+  const [teakType, setTeakType] = useState("");
+  const [firewoodType, setFirewoodType] = useState("");
+
+  const t = (key) =>
+    TRANSLATIONS[language]?.[key] ??
+    TRANSLATIONS.en[key] ??
+    key;
+
+  const labelFor = (value) => {
+    const key =
+      CATEGORY_LABEL_KEYS[value] ||
+      WOOD_LABEL_KEYS[value] ||
+      TYPE_LABEL_KEYS[value];
+
+    return key ? t(key) : value;
+  };
+
+  function changeLanguage(nextLanguage) {
+    setLanguage(nextLanguage);
+    localStorage.setItem("timbermart_language", nextLanguage);
+  }
 
   /* -------------------------------------------------------
      LOCATION - 40 KM NOTIFICATION SUPPORT
@@ -164,7 +574,7 @@ export default function BuyerDashboard() {
     if (!session?.user?.id) return;
 
     if (!navigator.geolocation) {
-      setLocationError("This browser does not support GPS location.");
+      setLocationError(t("locationGpsError"));
       return;
     }
 
@@ -221,11 +631,11 @@ export default function BuyerDashboard() {
       (error) => {
         setLocationSaving(false);
         const messages = {
-          1: "Location permission was denied. Allow location access in your browser.",
-          2: "Your location could not be determined.",
-          3: "Location request timed out. Please try again.",
+          1: t("permissionDenied"),
+          2: t("locationUnavailable"),
+          3: t("locationTimeout"),
         };
-        setLocationError(messages[error.code] || "Could not get your location.");
+        setLocationError(messages[error.code] || t("saveLocationError"));
       },
       {
         enableHighAccuracy: true,
@@ -586,9 +996,7 @@ export default function BuyerDashboard() {
     // Requirement notification
     if (
       notification.requirement_id ||
-      notification.post_type === "requirement" ||
-      notification.type === "requirement_approved" ||
-      notification.type === "requirement_rejected"
+      notification.post_type === "requirement"
     ) {
       const requirementId =
         notification.requirement_id || notification.post_id;
@@ -596,7 +1004,7 @@ export default function BuyerDashboard() {
       if (!requirementId) return;
 
       const { data, error } = await supabase
-        .from("buyer_requirements")
+        .from("requirements")
         .select("*")
         .eq("id", requirementId)
         .maybeSingle();
@@ -618,11 +1026,7 @@ export default function BuyerDashboard() {
     }
 
     // Official Admin Post / Advertisement notification
-    if (
-      notification.post_id ||
-      notification.source === "admin_post" ||
-      ["announcement", "admin_post", "advertisement", "ad"].includes(String(notification.type || "").toLowerCase())
-    ) {
+    if (notification.post_id || notification.source === "admin_post") {
       const postId = notification.post_id;
 
       if (postId) {
@@ -820,6 +1224,15 @@ export default function BuyerDashboard() {
       const product = String(listing.product_type || "").toLowerCase();
       const service = String(listing.service_type || "").toLowerCase();
       const listLocation = String(listing.location || "").toLowerCase();
+      const subtype = String(
+        listing.teak_type ||
+        listing.teakType ||
+        listing.wood_subtype ||
+        listing.wood_type_detail ||
+        listing.firewood_type ||
+        listing.fire_wood_type ||
+        ""
+      ).toLowerCase();
 
       const matchesSearch =
         !search ||
@@ -827,21 +1240,38 @@ export default function BuyerDashboard() {
         wood.includes(search) ||
         product.includes(search) ||
         service.includes(search) ||
+        subtype.includes(search) ||
         listLocation.includes(search);
 
       const matchesCategory =
         category === "All" ||
-        title.toLowerCase().includes(category.toLowerCase()) ||
+        title.includes(category.toLowerCase()) ||
         product.includes(category.toLowerCase()) ||
         service.includes(category.toLowerCase()) ||
         (category === "Timber" &&
           ["teak", "neem", "pine", "eucalyptus", "rosewood"].some((x) =>
             wood.includes(x)
-          ));
+          )) ||
+        (category === "Fire Wood" &&
+          (wood.includes("fire") || subtype.includes("fire")));
 
       const matchesWood =
         woodType === "All Types" ||
-        wood === woodType.toLowerCase();
+        wood === woodType.toLowerCase() ||
+        subtype === woodType.toLowerCase() ||
+        wood.includes(woodType.toLowerCase());
+
+      const matchesTeak =
+        woodType !== "Teak" ||
+        !teakType ||
+        subtype === teakType.toLowerCase() ||
+        subtype.includes(teakType.toLowerCase());
+
+      const matchesFirewood =
+        woodType !== "Fire Wood" ||
+        !firewoodType ||
+        subtype === firewoodType.toLowerCase() ||
+        subtype.includes(firewoodType.toLowerCase());
 
       const matchesLocation =
         !location || listLocation.includes(location);
@@ -859,6 +1289,8 @@ export default function BuyerDashboard() {
         matchesSearch &&
         matchesCategory &&
         matchesWood &&
+        matchesTeak &&
+        matchesFirewood &&
         matchesLocation &&
         matchesPrice
       );
@@ -868,6 +1300,8 @@ export default function BuyerDashboard() {
     searchText,
     category,
     woodType,
+    teakType,
+    firewoodType,
     locationFilter,
     maxPrice,
   ]);
@@ -929,28 +1363,13 @@ export default function BuyerDashboard() {
      PRODUCT DETAILS
   ------------------------------------------------------- */
 
-  useEffect(() => {
-    const modalOpen = Boolean(selectedListing);
-
-    if (!modalOpen) return;
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [selectedListing]);
-
   async function openProduct(listing) {
     if (!listing?.id) return;
 
-    // Use the already-loaded listing immediately so the modal opens fast.
     const localImages = getListingImages(listing);
     setSelectedListing(listing);
     setSelectedDetailImage(localImages[0] || "");
 
-    // Then fetch the complete listing again so every image/detail is present.
     const { data, error } = await supabase
       .from("listings")
       .select(`
@@ -973,6 +1392,30 @@ export default function BuyerDashboard() {
       console.error("Product details error:", error);
     }
   }
+
+  useEffect(() => {
+    const modalOpen = Boolean(
+      selectedListing ||
+      selectedAdminPost ||
+      selectedSeller ||
+      chatOpen ||
+      showChatList ||
+      showNotifications
+    );
+
+    document.body.style.overflow = modalOpen ? "hidden" : "";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [
+    selectedListing,
+    selectedAdminPost,
+    selectedSeller,
+    chatOpen,
+    showChatList,
+    showNotifications,
+  ]);
 
   /* -------------------------------------------------------
      CALL
@@ -1272,6 +1715,21 @@ export default function BuyerDashboard() {
             />
           </button>
 
+          <label className="buyer-language-select" title={t("language")}>
+            <span>🌐</span>
+            <select
+              value={language}
+              onChange={(e) => changeLanguage(e.target.value)}
+              aria-label={t("language")}
+            >
+              {LANGUAGE_OPTIONS.map((option) => (
+                <option key={option.code} value={option.code}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <button
             className="buyer-icon-button buyer-notification-button"
             title="Notifications"
@@ -1358,7 +1816,7 @@ export default function BuyerDashboard() {
 
           <div>
             <strong>{profile?.name || "Buyer"}</strong>
-            <span>Buyer / Homeowner</span>
+            <span>{t("buyerHomeowner")}</span>
 
             {profile?.location && (
               <small>
@@ -1368,7 +1826,7 @@ export default function BuyerDashboard() {
             )}
 
             <em className={hasLocation ? "buyer-gps-status on" : "buyer-gps-status"}>
-              {hasLocation ? "● Location active" : "○ Location not set"}
+              {hasLocation ? `● ${t("locationActive")}` : `○ ${t("locationNotSet")}`}
             </em>
           </div>
 
@@ -1384,7 +1842,7 @@ export default function BuyerDashboard() {
             }}
           >
             <ShoppingBag size={18} />
-            <span>Buy Timber</span>
+            <span>{t("buyTimber")}</span>
           </button>
 
           <button
@@ -1397,8 +1855,9 @@ export default function BuyerDashboard() {
             }}
           >
             <Search size={18} />
-            <span>Search Listings</span>
+            <span>{t("searchListings")}</span>
           </button>
+
 
           <button
             className={showChatList ? "active" : ""}
@@ -1409,7 +1868,7 @@ export default function BuyerDashboard() {
             }}
           >
             <MessageCircle size={18} />
-            <span>Chats</span>
+            <span>{t("chats")}</span>
             {chatContacts.length > 0 && <b>{chatContacts.length}</b>}
           </button>
 
@@ -1422,7 +1881,7 @@ export default function BuyerDashboard() {
             }}
           >
             <Bell size={18} />
-            <span>Notifications</span>
+            <span>{t("notifications")}</span>
             {notifications.filter((item) => !item.is_read).length > 0 && (
               <b>
                 {Math.min(
@@ -1443,7 +1902,7 @@ export default function BuyerDashboard() {
             }}
           >
             <Heart size={18} />
-            <span>Saved</span>
+            <span>{t("saved")}</span>
             <b>{favourites.length}</b>
           </button>
 
@@ -1451,7 +1910,7 @@ export default function BuyerDashboard() {
             onClick={() => goTab("requirements")}
           >
             <SlidersHorizontal size={18} />
-            <span>Requirement Wall</span>
+            <span>{t("requirementWall")}</span>
           </button>
 
           <button
@@ -1465,7 +1924,7 @@ export default function BuyerDashboard() {
             }}
           >
             <span className="buyer-nav-emoji">🌍</span>
-            <span>Imported Wood Bulk Suppliers</span>
+            <span>{t("importedSuppliers")}</span>
           </button>
 
           <button
@@ -1479,19 +1938,19 @@ export default function BuyerDashboard() {
             }}
           >
             <span className="buyer-nav-emoji">🌳</span>
-            <span>Indian Patta Teak Supplier</span>
+            <span>{t("pattaSupplier")}</span>
           </button>
 
           <div className="buyer-sidebar-divider" />
 
           <button onClick={() => goTab("profile")}>
             <User size={18} />
-            <span>My Profile</span>
+            <span>{t("myProfile")}</span>
           </button>
 
           <button onClick={() => goTab("settings")}>
             <Settings size={18} />
-            <span>Settings</span>
+            <span>{t("settings")}</span>
           </button>
 
         </nav>
@@ -1501,8 +1960,8 @@ export default function BuyerDashboard() {
           <div className="buyer-sidebar-trust">
             <ShieldCheck size={18} />
             <div>
-              <strong>Direct Contact</strong>
-              <small>We Connect. You Deal Directly.</small>
+              <strong>{t("directContact")}</strong>
+              <small>{t("directContactNote")}</small>
             </div>
           </div>
 
@@ -1511,7 +1970,7 @@ export default function BuyerDashboard() {
             onClick={logout}
           >
             <LogOut size={18} />
-            Logout
+            {t("logout")}
           </button>
 
         </div>
@@ -1529,27 +1988,24 @@ export default function BuyerDashboard() {
           <div className="buyer-hero-content">
 
             <span className="buyer-role-badge">
-              🏠 Buyer / Homeowner
+              🏠 {t("buyerHomeowner")}
             </span>
 
             <h1>
-              Buy Quality Timber
+              {t("buyQuality")}
               <br />
-              <span>Directly from Sellers.</span>
+              <span>{t("directlyFrom")}</span>
             </h1>
 
-            <p>
-              Find timber, logs, planks and wood products from
-              nearby sellers on TimberMart.
-            </p>
+            <p>{t("heroText")}</p>
 
             <div className="buyer-location-row">
               <div className={`buyer-location-pill ${hasLocation ? "ready" : "needs-location"}`}>
                 <MapPin size={17} />
                 <span>
-                  {profile?.location || "Location needed for 40 KM alerts"}
+                  {profile?.location || t("locationNeeded")}
                 </span>
-                <b>{hasLocation ? "GPS ON" : "GPS OFF"}</b>
+                <b>{hasLocation ? t("gpsOn") : t("gpsOff")}</b>
               </div>
 
               <button
@@ -1558,7 +2014,7 @@ export default function BuyerDashboard() {
                 disabled={locationSaving}
               >
                 <MapPin size={16} />
-                {locationSaving ? "Saving..." : hasLocation ? "Update Location" : "Enable Location"}
+                {locationSaving ? t("saving") : hasLocation ? t("updateLocation") : t("enableLocation")}
               </button>
             </div>
 
@@ -1574,7 +2030,7 @@ export default function BuyerDashboard() {
             <div className="buyer-wood-circle">
               🪵
             </div>
-            <span>Quality Timber</span>
+            <span>{t("qualityTimber")}</span>
           </div>
 
         </section>
@@ -1588,7 +2044,7 @@ export default function BuyerDashboard() {
 
             <input
               type="text"
-              placeholder="Search timber, seller or location..."
+              placeholder={t("searchPlaceholder")}
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
@@ -1608,7 +2064,7 @@ export default function BuyerDashboard() {
             onClick={() => setShowFilters((v) => !v)}
           >
             <SlidersHorizontal size={18} />
-            Filters
+            {t("filters")}
           </button>
 
         </section>
@@ -1619,17 +2075,19 @@ export default function BuyerDashboard() {
 
           <div className="buyer-section-heading">
             <div>
-              <span className="buyer-eyebrow">EXPLORE</span>
-              <h2>Shop by Category</h2>
+              <span className="buyer-eyebrow">{t("explore")}</span>
+              <h2>{t("shopByCategory")}</h2>
             </div>
 
             <button
               onClick={() => {
                 setCategory("All");
                 setWoodType("All Types");
+                setTeakType("");
+                setFirewoodType("");
               }}
             >
-              View All
+              {t("viewAll")}
               <ChevronRight size={16} />
             </button>
           </div>
@@ -1669,7 +2127,7 @@ export default function BuyerDashboard() {
                     ? "🏠"
                     : "🛠️"}
                 </span>
-                <small>{item}</small>
+                <small>{labelFor(item)}</small>
               </button>
             ))}
 
@@ -1684,24 +2142,57 @@ export default function BuyerDashboard() {
 
             <div className="buyer-filter-field">
 
-              <label>Wood Type</label>
+              <label>{t("woodType")}</label>
 
               <select
                 value={woodType}
-                onChange={(e) => setWoodType(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setWoodType(value);
+                  setTeakType("");
+                  setFirewoodType("");
+                }}
               >
                 {WOOD_TYPES.map((wood) => (
                   <option key={wood} value={wood}>
-                    {wood}
+                    {labelFor(wood)}
                   </option>
                 ))}
               </select>
 
             </div>
 
+            {woodType === "Teak" && (
+              <div className="buyer-filter-field buyer-dependent-filter">
+                <label>{t("teakType")}</label>
+                <select value={teakType} onChange={(e) => setTeakType(e.target.value)}>
+                  <option value="">{t("teakType")}</option>
+                  {TEAK_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {labelFor(type)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {woodType === "Fire Wood" && (
+              <div className="buyer-filter-field buyer-dependent-filter">
+                <label>{t("fireWoodType")}</label>
+                <select value={firewoodType} onChange={(e) => setFirewoodType(e.target.value)}>
+                  <option value="">{t("fireWoodType")}</option>
+                  {FIREWOOD_TYPES.map((type) => (
+                    <option key={type} value={type}>
+                      {labelFor(type)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="buyer-filter-field">
 
-              <label>Location</label>
+              <label>{t("location")}</label>
 
               <input
                 value={locationFilter}
@@ -1715,13 +2206,13 @@ export default function BuyerDashboard() {
 
             <div className="buyer-filter-field">
 
-              <label>Maximum Price</label>
+              <label>{t("maxPrice")}</label>
 
               <input
                 type="number"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
-                placeholder="₹ Maximum"
+                placeholder={`₹ ${t("maxPrice")}`}
               />
 
             </div>
@@ -1734,7 +2225,7 @@ export default function BuyerDashboard() {
                 setMaxPrice("");
               }}
             >
-              Clear Filters
+              {t("clearFilters")}
             </button>
 
           </section>
@@ -1747,8 +2238,8 @@ export default function BuyerDashboard() {
           <div className="buyer-section-heading">
 
             <div>
-              <span className="buyer-eyebrow">TIMBER MARKET</span>
-              <h2>Product Listings</h2>
+              <span className="buyer-eyebrow">{t("timberMarket")}</span>
+              <h2>{t("productListings")}</h2>
             </div>
 
             <span className="buyer-result-count">
@@ -1763,11 +2254,10 @@ export default function BuyerDashboard() {
 
               <div className="buyer-empty-icon">🪵</div>
 
-              <h3>No timber listings found</h3>
+              <h3>{t("noListings")}</h3>
 
               <p>
-                Sellers have not posted matching listings yet.
-                Try another category or search.
+                {t("noListingsText")}
               </p>
 
               <button
@@ -1779,7 +2269,7 @@ export default function BuyerDashboard() {
                   setMaxPrice("");
                 }}
               >
-                Clear Search
+                {t("clearSearch")}
               </button>
 
             </div>
@@ -1801,17 +2291,8 @@ export default function BuyerDashboard() {
                   >
 
                     <div
-                      className="buyer-product-image buyer-product-image-clickable"
+                      className="buyer-product-image"
                       onClick={() => openProduct(listing)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          openProduct(listing);
-                        }
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View details for ${listing.title || "timber listing"}`}
                     >
 
                       {image ? (
@@ -1866,12 +2347,12 @@ export default function BuyerDashboard() {
                       <h3>{listing.title}</h3>
 
                       <p className="buyer-seller-line">
-                        Seller
+                        {t("seller")}
                       </p>
 
                       <p className="buyer-location-line">
                         <MapPin size={13} />
-                        {listing.location || "Location not added"}
+                        {listing.location || t("locationNotAdded")}
                       </p>
 
                       <div className="buyer-product-bottom">
@@ -1879,12 +2360,12 @@ export default function BuyerDashboard() {
                         <strong>
                           {listing.price
                             ? `₹ ${listing.price}`
-                            : "Price on contact"}
+                            : t("priceOnContact")}
                         </strong>
 
                         {listing.quantity && (
                           <span>
-                            Available: {listing.quantity}
+                            {t("available")}: {listing.quantity}
                           </span>
                         )}
 
@@ -1894,7 +2375,7 @@ export default function BuyerDashboard() {
                         className="buyer-view-product"
                         onClick={() => openProduct(listing)}
                       >
-                        View Details
+                        {t("viewDetails")}
                         <ChevronRight size={16} />
                       </button>
 
@@ -1915,7 +2396,7 @@ export default function BuyerDashboard() {
           <section className="buyer-supplier-section">
             <div className="buyer-section-heading">
               <div>
-                <span className="buyer-eyebrow">SUPPLIER NETWORK</span>
+                <span className="buyer-eyebrow">{t("supplierNetwork")}</span>
                 <h2>
                   {supplierMode === "imported"
                     ? "Imported Wood Bulk Suppliers"
@@ -1927,13 +2408,13 @@ export default function BuyerDashboard() {
                     : "Listings tagged with Patta Teak / Indian Teak from sellers on TimberMart."}
                 </p>
               </div>
-              <button onClick={() => setSupplierMode(null)}>Close</button>
+              <button onClick={() => setSupplierMode(null)}>{t("close")}</button>
             </div>
 
             {supplierListings.length === 0 ? (
               <div className="buyer-supplier-empty">
                 <div>🪵</div>
-                <h3>No matching supplier listings yet</h3>
+                <h3>{t("noSupplier")}</h3>
                 <p>
                   When a seller posts a matching imported/bulk or Patta Teak listing,
                   it will automatically appear here.
@@ -1944,7 +2425,7 @@ export default function BuyerDashboard() {
                     document.querySelector(".buyer-listings-section")?.scrollIntoView({ behavior: "smooth" });
                   }}
                 >
-                  Browse All Listings
+                  {t("browseAll")}
                 </button>
               </div>
             ) : (
@@ -1956,10 +2437,10 @@ export default function BuyerDashboard() {
                       <span>{listing.wood_type || listing.product_type || "Timber"}</span>
                       <h3>{listing.title || "Timber Supplier Listing"}</h3>
                       <p>
-                        <MapPin size={13} /> {listing.location || "Location not added"}
+                        <MapPin size={13} /> {listing.location || t("locationNotAdded")}
                       </p>
                       <strong>
-                        {listing.price ? `₹ ${listing.price}` : "Price on contact"}
+                        {listing.price ? `₹ ${listing.price}` : t("priceOnContact")}
                       </strong>
                     </div>
                     <button onClick={() => openProduct(listing)}>
@@ -1981,8 +2462,8 @@ export default function BuyerDashboard() {
             <div className="buyer-section-heading">
 
               <div>
-                <span className="buyer-eyebrow">SAVED</span>
-                <h2>Saved Listings</h2>
+                <span className="buyer-eyebrow">{t("saved")}</span>
+                <h2>{t("savedListings")}</h2>
               </div>
 
             </div>
@@ -2029,8 +2510,8 @@ export default function BuyerDashboard() {
           <div className="buyer-section-heading">
 
             <div>
-              <span className="buyer-eyebrow">DIRECT DEALS</span>
-              <h2>My Orders</h2>
+              <span className="buyer-eyebrow">{t("directDeals")}</span>
+              <h2>{t("myOrders")}</h2>
             </div>
 
             <span className="buyer-result-count">
@@ -2046,9 +2527,9 @@ export default function BuyerDashboard() {
               <Package size={30} />
 
               <div>
-                <strong>No orders yet</strong>
+                <strong>{t("noOrders")}</strong>
                 <p>
-                  Your direct deal requests will appear here.
+                  {t("orderText")}
                 </p>
               </div>
 
@@ -2416,262 +2897,232 @@ export default function BuyerDashboard() {
       {selectedListing && (
         <div
           className="buyer-modal-backdrop buyer-product-detail-backdrop"
-          onClick={() => setSelectedListing(null)}
+          onClick={() => {
+            setSelectedListing(null);
+            setSelectedDetailImage("");
+          }}
         >
           <div
-            className="buyer-product-modal buyer-product-detail-modal"
+            className="buyer-product-detail-modal"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               className="buyer-modal-close"
-              onClick={() => setSelectedListing(null)}
+              onClick={() => {
+                setSelectedListing(null);
+                setSelectedDetailImage("");
+              }}
               aria-label="Close product details"
             >
               <X size={21} />
             </button>
 
-            {(() => {
-              const detailImages = getListingImages(selectedListing);
-              const activeImage =
-                selectedDetailImage || detailImages[0] || "";
-
-              return (
-                <div className="buyer-detail-layout">
-                  {/* ================= ALL PRODUCT PHOTOS ================= */}
-                  <div className="buyer-detail-gallery">
-                    <div className="buyer-detail-main-image">
-                      {activeImage ? (
-                        <img
-                          src={activeImage}
-                          alt={selectedListing.title || "Timber listing"}
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                          }}
-                        />
-                      ) : (
-                        <div className="buyer-detail-no-image">
-                          <span>🪵</span>
-                          <small>No photos available</small>
-                        </div>
-                      )}
-
-                      {detailImages.length > 0 && (
-                        <span className="buyer-detail-photo-count">
-                          {detailImages.length} photo{detailImages.length !== 1 ? "s" : ""}
-                        </span>
-                      )}
+            <div className="buyer-detail-layout">
+              <section className="buyer-detail-gallery">
+                <div className="buyer-detail-main-image">
+                  {selectedDetailImage ? (
+                    <img
+                      src={selectedDetailImage}
+                      alt={selectedListing.title || "Timber"}
+                    />
+                  ) : (
+                    <div className="buyer-detail-no-image">
+                      <span>🪵</span>
+                      <small>{t("noListings")}</small>
                     </div>
+                  )}
 
-                    {detailImages.length > 0 && (
-                      <div className="buyer-detail-thumbnails">
-                        {detailImages.map((imageUrl, index) => (
-                          <button
-                            type="button"
-                            key={`${imageUrl}-${index}`}
-                            className={
-                              activeImage === imageUrl
-                                ? "buyer-detail-thumb active"
-                                : "buyer-detail-thumb"
-                            }
-                            onClick={() => setSelectedDetailImage(imageUrl)}
-                            aria-label={`View photo ${index + 1}`}
-                          >
-                            <img
-                              src={imageUrl}
-                              alt={`${selectedListing.title || "Timber"} ${index + 1}`}
-                            />
-                            <span>{index + 1}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* ================= COMPLETE DETAILS ================= */}
-                  <div className="buyer-detail-body">
-                    <span className="buyer-detail-tag">
-                      {selectedListing.wood_type ||
-                        selectedListing.product_type ||
-                        selectedListing.category ||
-                        "Timber"}
+                  {getListingImages(selectedListing).length > 0 && (
+                    <span className="buyer-detail-photo-count">
+                      {getListingImages(selectedListing).length} photos
                     </span>
-
-                    <h2>{selectedListing.title || "Timber Listing"}</h2>
-
-                    <div className="buyer-detail-price">
-                      {selectedListing.price
-                        ? `₹ ${selectedListing.price}`
-                        : "Price on contact"}
-                    </div>
-
-                    <div className="buyer-detail-quick">
-                      <span>
-                        <Package size={16} />
-                        {selectedListing.quantity ||
-                          "Available quantity not specified"}
-                      </span>
-
-                      <span>
-                        <MapPin size={16} />
-                        {selectedListing.location ||
-                          "Location not specified"}
-                      </span>
-                    </div>
-
-                    <div className="buyer-detail-info">
-                      <h3>Complete Product Information</h3>
-
-                      <div>
-                        <span>Listing Title</span>
-                        <strong>{selectedListing.title || "—"}</strong>
-                      </div>
-
-                      <div>
-                        <span>Wood Type</span>
-                        <strong>
-                          {selectedListing.wood_type || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Product Type</span>
-                        <strong>
-                          {selectedListing.product_type || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Category</span>
-                        <strong>
-                          {selectedListing.category || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Service Type</span>
-                        <strong>
-                          {selectedListing.service_type || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Quantity / Stock</span>
-                        <strong>
-                          {selectedListing.quantity || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Price</span>
-                        <strong>
-                          {selectedListing.price
-                            ? `₹ ${selectedListing.price}`
-                            : "Price on contact"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Location</span>
-                        <strong>
-                          {selectedListing.location || "Not specified"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Posted On</span>
-                        <strong>
-                          {formatDate(selectedListing.created_at) || "—"}
-                        </strong>
-                      </div>
-
-                      <div>
-                        <span>Photos</span>
-                        <strong>
-                          {detailImages.length} uploaded
-                        </strong>
-                      </div>
-                    </div>
-
-                    <div className="buyer-description">
-                      <h3>Description</h3>
-                      <p>
-                        {selectedListing.description ||
-                          "The seller has not added a description for this listing."}
-                      </p>
-                    </div>
-
-                    <div className="buyer-seller-preview">
-                      <div className="buyer-seller-preview-avatar">
-                        👤
-                      </div>
-
-                      <div>
-                        <span>Seller</span>
-                        <strong>View seller profile</strong>
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          openSellerProfile(selectedListing.user_id)
-                        }
-                        aria-label="View seller profile"
-                      >
-                        <ExternalLink size={16} />
-                      </button>
-                    </div>
-
-                    {/* ================= CALL / WHATSAPP / CHAT ================= */}
-                    <div className="buyer-contact-actions">
-                      <button
-                        className="buyer-call-btn"
-                        onClick={() =>
-                          callUser(selectedListing.user_id)
-                        }
-                      >
-                        <Phone size={18} />
-                        Call Seller
-                      </button>
-
-                      <button
-                        className="buyer-whatsapp-btn"
-                        onClick={() =>
-                          whatsappUser(
-                            selectedListing.user_id,
-                            "",
-                            selectedListing.title || "Timber"
-                          )
-                        }
-                      >
-                        WhatsApp
-                      </button>
-
-                      <button
-                        className="buyer-chat-btn"
-                        onClick={async () => {
-                          const { data } = await supabase
-                            .from("profiles")
-                            .select("*")
-                            .eq("id", selectedListing.user_id)
-                            .maybeSingle();
-
-                          if (data) {
-                            setSelectedListing(null);
-                            openChat(data);
-                          } else {
-                            alert("Seller profile could not be loaded.");
-                          }
-                        }}
-                      >
-                        <MessageCircle size={18} />
-                        Chat Now
-                      </button>
-                    </div>
-
-                    
-                  </div>
+                  )}
                 </div>
-              );
-            })()}
+
+                {getListingImages(selectedListing).length > 0 && (
+                  <div className="buyer-detail-thumbnails">
+                    {getListingImages(selectedListing).map((image, index) => (
+                      <button
+                        type="button"
+                        key={`${image}-${index}`}
+                        className={`buyer-detail-thumb ${
+                          selectedDetailImage === image ? "active" : ""
+                        }`}
+                        onClick={() => setSelectedDetailImage(image)}
+                        aria-label={`View photo ${index + 1}`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${selectedListing.title || "Timber"} ${index + 1}`}
+                        />
+                        <span>{index + 1}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              <section className="buyer-detail-body">
+                <span className="buyer-detail-tag">
+                  {selectedListing.wood_type ||
+                    selectedListing.product_type ||
+                    t("timberMarket")}
+                </span>
+
+                <h2>{selectedListing.title || t("timberOrder")}</h2>
+
+                <div className="buyer-detail-price">
+                  {selectedListing.price
+                    ? `₹ ${selectedListing.price}`
+                    : t("priceOnContact")}
+                </div>
+
+                <div className="buyer-detail-quick">
+                  <span>
+                    <Package size={16} />
+                    {selectedListing.quantity || t("quantity")}
+                  </span>
+                  <span>
+                    <MapPin size={16} />
+                    {selectedListing.location || t("locationNotAdded")}
+                  </span>
+                </div>
+
+                <div className="buyer-detail-info">
+                  <h3>{t("productInformation")}</h3>
+
+                  {selectedListing.wood_type && (
+                    <div>
+                      <span>{t("woodType")}</span>
+                      <strong>{selectedListing.wood_type}</strong>
+                    </div>
+                  )}
+
+                  {(selectedListing.teak_type ||
+                    selectedListing.teakType ||
+                    selectedListing.wood_subtype) && (
+                    <div>
+                      <span>{t("teakType")}</span>
+                      <strong>
+                        {selectedListing.teak_type ||
+                          selectedListing.teakType ||
+                          selectedListing.wood_subtype}
+                      </strong>
+                    </div>
+                  )}
+
+                  {(selectedListing.firewood_type ||
+                    selectedListing.fire_wood_type) && (
+                    <div>
+                      <span>{t("fireWoodType")}</span>
+                      <strong>
+                        {selectedListing.firewood_type ||
+                          selectedListing.fire_wood_type}
+                      </strong>
+                    </div>
+                  )}
+
+                  {selectedListing.product_type && (
+                    <div>
+                      <span>{t("productType")}</span>
+                      <strong>{selectedListing.product_type}</strong>
+                    </div>
+                  )}
+
+                  {selectedListing.category && (
+                    <div>
+                      <span>{t("shopByCategory")}</span>
+                      <strong>{selectedListing.category}</strong>
+                    </div>
+                  )}
+
+                  {selectedListing.service_type && (
+                    <div>
+                      <span>{t("serviceType")}</span>
+                      <strong>{selectedListing.service_type}</strong>
+                    </div>
+                  )}
+
+                  {selectedListing.quantity && (
+                    <div>
+                      <span>{t("quantity")}</span>
+                      <strong>{selectedListing.quantity}</strong>
+                    </div>
+                  )}
+
+                  {selectedListing.location && (
+                    <div>
+                      <span>{t("location")}</span>
+                      <strong>{selectedListing.location}</strong>
+                    </div>
+                  )}
+
+                  {selectedListing.created_at && (
+                    <div>
+                      <span>{t("postedOn")}</span>
+                      <strong>{formatDate(selectedListing.created_at)}</strong>
+                    </div>
+                  )}
+                </div>
+
+                {selectedListing.description && (
+                  <div className="buyer-description">
+                    <h3>{t("description")}</h3>
+                    <p>{selectedListing.description}</p>
+                  </div>
+                )}
+
+                <div className="buyer-seller-preview">
+                  <div className="buyer-seller-preview-avatar">👤</div>
+                  <div>
+                    <span>{t("seller")}</span>
+                    <strong>{t("viewSeller")}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => openSellerProfile(selectedListing.user_id)}
+                    aria-label={t("viewSeller")}
+                  >
+                    <ExternalLink size={16} />
+                  </button>
+                </div>
+
+                <div className="buyer-contact-actions">
+                  <button
+                    className="buyer-call-btn"
+                    onClick={() => callUser(selectedListing.user_id)}
+                  >
+                    <Phone size={18} />
+                    {t("callSeller")}
+                  </button>
+
+                  <button
+                    className="buyer-whatsapp-btn"
+                    onClick={() => whatsappUser(selectedListing.user_id)}
+                  >
+                    {t("whatsapp")}
+                  </button>
+
+                  <button
+                    className="buyer-chat-btn"
+                    onClick={async () => {
+                      const { data } = await supabase
+                        .from("profiles")
+                        .select("*")
+                        .eq("id", selectedListing.user_id)
+                        .maybeSingle();
+
+                      if (data) {
+                        openChat(data);
+                      }
+                    }}
+                  >
+                    <MessageCircle size={18} />
+                    {t("chatNow")}
+                  </button>
+                </div>
+              </section>
+            </div>
           </div>
         </div>
       )}
