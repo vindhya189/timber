@@ -1478,3 +1478,432 @@ a{text-decoration:none;color:inherit}
     grid-template-columns:38% minmax(0,62%);
   }
 }
+
+
+/* =========================================================
+   FINAL MOBILE + WATERMARK + PHOTO NAVIGATION POLISH
+   ========================================================= */
+
+/* Keep every page from creating horizontal overflow. */
+html, body, #root, .buyer-app, .buyer-main {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.buyer-main,
+.buyer-content,
+.buyer-listings-section,
+.buyer-supplier-section,
+.buyer-favourites-section,
+.buyer-orders-section {
+  min-width: 0;
+}
+
+/* -------- Listing/detail photo watermark --------
+   Visual watermark does not change stored image URLs or Supabase data.
+*/
+.buyer-product-image,
+.buyer-product-image-clickable,
+.buyer-detail-main-image,
+.buyer-detail-thumb,
+.buyer-notification-image-wrap,
+.buyer-admin-post-hero,
+.buyer-saved-card {
+  position: relative;
+}
+
+.buyer-product-image::after,
+.buyer-detail-main-image::after,
+.buyer-detail-thumb::after,
+.buyer-notification-image-wrap::after,
+.buyer-admin-post-hero::after {
+  content: "TimberMart";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 3;
+  color: rgba(255,255,255,.28);
+  font-size: clamp(17px, 2.5vw, 30px);
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  transform: rotate(-18deg);
+  text-shadow: 0 1px 5px rgba(0,0,0,.18);
+  background:
+    repeating-linear-gradient(
+      -18deg,
+      transparent 0 92px,
+      rgba(255,255,255,.03) 92px 94px
+    );
+}
+
+.buyer-product-image::before,
+.buyer-detail-main-image::before,
+.buyer-notification-image-wrap::before,
+.buyer-admin-post-hero::before {
+  content: "🌳 TimberMart";
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  z-index: 4;
+  pointer-events: none;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(8, 70, 55, .42);
+  color: rgba(255,255,255,.86);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  backdrop-filter: blur(4px);
+}
+
+/* -------- Main listing image nav -------- */
+.buyer-detail-main-image {
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.buyer-detail-main-image > img {
+  position: relative;
+  z-index: 1;
+}
+
+.buyer-detail-image-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+  transform: translateY(-50%);
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 48, 37, .55);
+  color: #fff;
+  box-shadow: 0 7px 20px rgba(0,0,0,.18);
+  backdrop-filter: blur(5px);
+}
+
+.buyer-detail-image-nav:hover {
+  background: rgba(7, 93, 73, .82);
+}
+
+.buyer-detail-image-nav-left { left: 9px; }
+.buyer-detail-image-nav-right { right: 9px; }
+
+/* -------- Thumbnail row with side arrows -------- */
+.buyer-detail-thumbnails-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 10px;
+}
+
+.buyer-detail-thumbnails {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 1px 5px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+}
+
+.buyer-detail-thumbnails::-webkit-scrollbar {
+  display: none;
+}
+
+.buyer-detail-thumb {
+  position: relative;
+  flex: 0 0 78px;
+  width: 78px;
+  height: 66px;
+  min-width: 78px;
+  padding: 0;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: #edf5f2;
+  cursor: pointer;
+}
+
+.buyer-detail-thumb img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.buyer-detail-thumb::after {
+  font-size: 10px;
+  color: rgba(255,255,255,.31);
+}
+
+.buyer-detail-thumb span {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  z-index: 5;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 40, 31, .76);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 900;
+}
+
+.buyer-detail-thumb.active {
+  border-color: #0b785f;
+  box-shadow: 0 0 0 2px rgba(11,120,95,.12);
+}
+
+.buyer-detail-thumbnails-arrow {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #ccdfd8;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #fff;
+  color: #28584d;
+  box-shadow: 0 5px 14px rgba(18,58,48,.09);
+}
+
+.buyer-detail-thumbnails-arrow:hover {
+  background: #edf8f4;
+  border-color: #98c9ba;
+}
+
+/* -------- Contact buttons -------- */
+.buyer-contact-actions {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0,1fr));
+  gap: 10px !important;
+  width: 100%;
+}
+
+.buyer-contact-actions button {
+  min-width: 0;
+  min-height: 48px;
+  border: 1px solid #d1e2dc !important;
+  border-radius: 12px !important;
+  padding: 10px 12px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  transition: .18s ease;
+}
+
+.buyer-contact-actions button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(18,65,53,.10);
+}
+
+.buyer-call-btn {
+  background: #f4fbf6 !important;
+  color: #237149 !important;
+}
+
+.buyer-whatsapp-btn {
+  background: #effbf4 !important;
+  color: #16824d !important;
+}
+
+.buyer-chat-btn {
+  background: #f2f7fb !important;
+  color: #2b6087 !important;
+}
+
+/* -------- Mobile overall -------- */
+@media (max-width: 820px) {
+  .buyer-sidebar-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .buyer-sidebar-bottom {
+    flex: 0 0 auto;
+    padding-bottom: calc(14px + env(safe-area-inset-bottom));
+  }
+
+  .buyer-hero,
+  .buyer-search-box,
+  .buyer-category-section,
+  .buyer-listings-section,
+  .buyer-supplier-section,
+  .buyer-favourites-section,
+  .buyer-orders-section,
+  .buyer-trust-footer {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .buyer-hero {
+    padding: 22px 18px;
+    min-height: 0;
+    display: block;
+  }
+
+  .buyer-hero-content {
+    max-width: none;
+  }
+
+  .buyer-hero h1 {
+    font-size: clamp(29px, 8vw, 40px);
+  }
+
+  .buyer-hero p {
+    font-size: 13px;
+  }
+
+  .buyer-hero-visual {
+    display: none;
+  }
+
+  .buyer-search-box {
+    padding: 9px;
+    flex-direction: column;
+  }
+
+  .buyer-filter-toggle {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .buyer-category-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .buyer-product-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .buyer-product-image {
+    height: min(66vw, 320px);
+    min-height: 220px;
+  }
+
+  .buyer-supplier-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .buyer-trust-footer {
+    display: block;
+  }
+
+  .buyer-trust-items {
+    margin-top: 14px;
+    justify-content: flex-start;
+  }
+
+  .buyer-saved-row {
+    padding-bottom: 7px;
+  }
+}
+
+/* -------- Mobile detail view -------- */
+@media (max-width: 620px) {
+  .buyer-detail-main-image {
+    height: min(68vw, 330px) !important;
+    min-height: 230px !important;
+    max-height: 330px;
+    border-radius: 13px;
+    background: #edf4f1;
+  }
+
+  .buyer-detail-main-image > img {
+    object-fit: contain !important;
+    object-position: center !important;
+    background: #edf4f1;
+  }
+
+  .buyer-detail-image-nav {
+    width: 34px;
+    height: 34px;
+  }
+
+  .buyer-detail-image-nav-left { left: 7px; }
+  .buyer-detail-image-nav-right { right: 7px; }
+
+  .buyer-detail-thumbnails-wrap {
+    gap: 5px;
+  }
+
+  .buyer-detail-thumb {
+    flex-basis: 68px;
+    width: 68px;
+    min-width: 68px;
+    height: 58px;
+    border-radius: 8px;
+  }
+
+  .buyer-detail-thumbnails-arrow {
+    flex-basis: 30px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .buyer-contact-actions {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  .buyer-contact-actions button {
+    width: 100%;
+    min-height: 47px;
+  }
+
+  .buyer-product-image::after,
+  .buyer-detail-main-image::after {
+    font-size: 17px;
+  }
+
+  .buyer-product-image::before,
+  .buyer-detail-main-image::before {
+    right: 8px;
+    bottom: 8px;
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .buyer-detail-main-image {
+    min-height: 215px !important;
+  }
+
+  .buyer-detail-thumb {
+    flex-basis: 62px;
+    width: 62px;
+    min-width: 62px;
+    height: 54px;
+  }
+
+  .buyer-detail-body {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  .buyer-contact-actions button {
+    font-size: 11px !important;
+  }
+}

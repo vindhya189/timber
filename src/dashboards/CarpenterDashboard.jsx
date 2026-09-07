@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { watermarkImage } from "../watermarkImage";
 import "./CarpenterDashboard.css";
 import TreeLoader from "../components/TreeLoader";
 
@@ -158,6 +159,7 @@ export default function CarpenterDashboard() {
   const [locationUpdatedAt, setLocationUpdatedAt] = useState(null);
   const [selectedListing, setSelectedListing] = useState(null);
   const [showListing, setShowListing] = useState(false);
+  const [listingPhotoIndex, setListingPhotoIndex] = useState(0);
   const [showTimberForm, setShowTimberForm] = useState(false);
   const [timberSaving, setTimberSaving] = useState(false);
   const [timberError, setTimberError] = useState("");
@@ -381,8 +383,7 @@ export default function CarpenterDashboard() {
           id,
           image_url,
           storage_path,
-          sort_order,
-          display_order
+          sort_order
         ),
         profiles (
           id,
@@ -414,8 +415,7 @@ export default function CarpenterDashboard() {
           .slice()
           .sort(
             (a, b) =>
-              Number(a.display_order ?? a.sort_order ?? 0) -
-              Number(b.display_order ?? b.sort_order ?? 0)
+              Number(a.sort_order ?? 0) - Number(b.sort_order ?? 0)
           )
           .map((image) => image?.image_url)
           .filter(Boolean)
@@ -453,14 +453,44 @@ export default function CarpenterDashboard() {
     setShowTimberForm(true);
   }
 
-  function handleTimberPhotos(event) {
+  async function handleTimberPhotos(event) {
     const files = Array.from(event.target.files || []);
-    const valid = files.filter((file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024);
-    if (files.length !== valid.length) setTimberError("Only image files up to 5 MB each are allowed.");
-    const next = [...timberPhotos, ...valid].slice(0, 8);
-    setTimberPhotos(next);
-    setTimberPhotoPreviews(next.map((file) => URL.createObjectURL(file)));
-    event.target.value = "";
+    const valid = files.filter(
+      (file) =>
+        file.type.startsWith("image/") &&
+        file.size <= 5 * 1024 * 1024
+    );
+
+    if (files.length !== valid.length) {
+      setTimberError("Only image files up to 5 MB each are allowed.");
+    } else {
+      setTimberError("");
+    }
+
+    try {
+      const watermarked = await Promise.all(
+        valid.map(async (file) => {
+          try {
+            return await watermarkImage(file, {
+              watermark: "TimberMart",
+              bottomText: "🌳 TimberMart",
+            });
+          } catch (error) {
+            console.error("Watermark error:", error);
+            return file;
+          }
+        })
+      );
+
+      const next = [...timberPhotos, ...watermarked].slice(0, 8);
+      setTimberPhotos(next);
+      setTimberPhotoPreviews(next.map((file) => URL.createObjectURL(file)));
+    } catch (error) {
+      console.error("Photo processing error:", error);
+      setTimberError("Unable to process photos. Please try again.");
+    } finally {
+      event.target.value = "";
+    }
   }
 
   function removeTimberPhoto(index) {
@@ -491,11 +521,27 @@ export default function CarpenterDashboard() {
       }).select("*").single();
       if (listingError) throw listingError;
       let uploaded = 0;
-      for (let i=0; i<timberPhotos.length; i++) {
+      for (let i = 0; i < timberPhotos.length; i++) {
         const file = timberPhotos[i];
-        const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
-        const path = `${userId}/${listing.id}/${Date.now()}-${i}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("listing-photos").upload(path, file, { cacheControl:"3600", upsert:false, contentType:file.type });
+        let uploadFile = file;
+
+        try {
+          uploadFile = await watermarkImage(file, {
+            watermark: "TimberMart",
+            bottomText: "🌳 TimberMart",
+          });
+        } catch (error) {
+          console.error("Watermark before upload failed:", error);
+        }
+
+        const path = `${userId}/${listing.id}/${Date.now()}-${i}.webp`;
+        const { error: uploadError } = await supabase.storage
+          .from("listing-photos")
+          .upload(path, uploadFile, {
+            cacheControl: "31536000",
+            upsert: false,
+            contentType: "image/webp",
+          });
         if (uploadError) { console.error(uploadError); continue; }
         const { data: urlData } = supabase.storage.from("listing-photos").getPublicUrl(path);
         const imageUrl = urlData?.publicUrl;
@@ -594,8 +640,7 @@ export default function CarpenterDashboard() {
             id,
             image_url,
             storage_path,
-            sort_order,
-            display_order
+            sort_order
           ),
           profiles (
             id,
@@ -611,6 +656,7 @@ export default function CarpenterDashboard() {
 
       if (!error && data) {
         setSelectedListing(data);
+        setListingPhotoIndex(0);
         setShowListing(true);
         setShowNotifications(false);
       }
@@ -1144,6 +1190,23 @@ export default function CarpenterDashboard() {
     navigate("/login", {
       replace: true,
     });
+  }
+
+  function openListing(listing, index = 0) {
+    const images = getAllImages(listing);
+    setSelectedListing(listing);
+    setListingPhotoIndex(
+      images.length ? Math.min(Math.max(index, 0), images.length - 1) : 0
+    );
+    setShowListing(true);
+  }
+
+  function changeListingPhoto(step) {
+    const images = getAllImages(selectedListing);
+    if (!images.length) return;
+    setListingPhotoIndex(
+      (current) => (current + step + images.length) % images.length
+    );
   }
 
   const filteredRequirements = useMemo(() => {
@@ -2077,8 +2140,7 @@ export default function CarpenterDashboard() {
                         type="button"
                         className="carpenter-listing-photo-button"
                         onClick={() => {
-                          setSelectedListing(listing);
-                          setShowListing(true);
+                          openListing(listing, 0);
                         }}
                       >
                         {images.length > 0 ? (
@@ -2147,8 +2209,7 @@ export default function CarpenterDashboard() {
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedListing(listing);
-                              setShowListing(true);
+                              openListing(listing, 0);
                             }}
                           >
                             View <Eye size={15} />
@@ -3700,14 +3761,83 @@ export default function CarpenterDashboard() {
 
             <div className="carpenter-listing-detail-body">
               {getAllImages(selectedListing).length > 0 ? (
-                <div className="carpenter-detail-image-gallery">
-                  {getAllImages(selectedListing).map((image, index) => (
+                <div className="carpenter-detail-gallery">
+                  <div className="carpenter-detail-gallery-main">
                     <img
-                      key={`${selectedListing.id}-full-${index}`}
-                      src={image}
-                      alt={`${selectedListing.title || "Timber"} ${index + 1}`}
+                      src={getAllImages(selectedListing)[listingPhotoIndex]}
+                      alt={`${selectedListing.title || "Timber"} ${listingPhotoIndex + 1}`}
                     />
-                  ))}
+
+                    {getAllImages(selectedListing).length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="carpenter-gallery-nav left"
+                          aria-label="Previous photo"
+                          onClick={() => changeListingPhoto(-1)}
+                        >
+                          <ChevronRight size={20} style={{ transform: "rotate(180deg)" }} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="carpenter-gallery-nav right"
+                          aria-label="Next photo"
+                          onClick={() => changeListingPhoto(1)}
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+
+                        <span className="carpenter-gallery-counter">
+                          {listingPhotoIndex + 1} / {getAllImages(selectedListing).length}
+                        </span>
+                      </>
+                    )}
+                  </div>
+
+                  {getAllImages(selectedListing).length > 1 && (
+                    <div className="carpenter-detail-thumbs-wrap">
+                      <button
+                        type="button"
+                        className="carpenter-detail-thumbs-arrow"
+                        aria-label="Scroll photos left"
+                        onClick={(event) => {
+                          const el = event.currentTarget.nextElementSibling;
+                          el?.scrollBy({ left: -220, behavior: "smooth" });
+                        }}
+                      >
+                        <ChevronRight size={17} style={{ transform: "rotate(180deg)" }} />
+                      </button>
+
+                      <div className="carpenter-detail-thumbs">
+                        {getAllImages(selectedListing).map((image, index) => (
+                          <button
+                            key={`${selectedListing.id}-thumb-${index}`}
+                            type="button"
+                            className={index === listingPhotoIndex ? "active" : ""}
+                            onClick={() => setListingPhotoIndex(index)}
+                          >
+                            <img
+                              src={image}
+                              alt={`${selectedListing.title || "Timber"} thumbnail ${index + 1}`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="carpenter-detail-thumbs-arrow"
+                        aria-label="Scroll photos right"
+                        onClick={(event) => {
+                          const el = event.currentTarget.previousElementSibling;
+                          el?.scrollBy({ left: 220, behavior: "smooth" });
+                        }}
+                      >
+                        <ChevronRight size={17} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="carpenter-listing-detail-placeholder">
@@ -3766,6 +3896,33 @@ export default function CarpenterDashboard() {
                   <span>{selectedListing.profiles?.role || "Seller"}</span>
                 </div>
               </div>
+              {selectedListing.user_id !== session?.user?.id && (
+                <div className="carpenter-contact-actions carpenter-listing-contact-actions">
+                  <button
+                    type="button"
+                    onClick={() => callUser(selectedListing.profiles?.phone)}
+                  >
+                    <Phone size={18} />
+                    Call
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => whatsappUser(selectedListing.profiles?.phone)}
+                  >
+                    <MessageCircle size={18} />
+                    WhatsApp
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => startChat(selectedListing.user_id)}
+                  >
+                    <MessageCircle size={18} />
+                    Chat
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>

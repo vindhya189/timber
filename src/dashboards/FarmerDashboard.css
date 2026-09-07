@@ -6,70 +6,6 @@
   box-sizing: border-box;
 }
 
-
-/* =========================================================
-   MULTI-LANGUAGE SELECTOR
-========================================================= */
-
-.farmer-language-switcher {
-  min-height: 40px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 9px;
-  border: 1px solid #e2e9e3;
-  border-radius: 11px;
-  background: #fff;
-  color: #4f6256;
-  transition: .2s ease;
-}
-
-.farmer-language-switcher:hover {
-  border-color: #b8d0bc;
-  background: #f8fbf8;
-}
-
-.farmer-language-icon {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  display: grid;
-  place-items: center;
-  background: #eaf6ed;
-  color: #247a3c;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.farmer-language-switcher select {
-  min-width: 76px;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  color: #405449;
-  font: inherit;
-  font-size: 11px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-@media (max-width: 720px) {
-  .farmer-language-switcher {
-    min-height: 38px;
-    padding: 0 7px;
-  }
-
-  .farmer-language-switcher select {
-    min-width: 62px;
-    font-size: 10px;
-  }
-
-  .farmer-language-icon {
-    display: none;
-  }
-}
-
-
 .farmer-dashboard {
   min-height: 100vh;
   background: #f5f8f5;
@@ -3380,4 +3316,436 @@ body.timber-dark-body .farmer-listing-status.rejected {
   .farmer-alert-secondary {
     width: 100%;
   }
+}
+
+
+/* =========================================================
+   FARMER LISTING GALLERY + CONTACT UI — FINAL MOBILE FIX
+   ========================================================= */
+.farmer-listing-modal{
+  width:min(760px,100%);
+  padding:0;
+  overflow:hidden;
+}
+
+.farmer-listing-modal-header{
+  padding:22px 56px 18px 22px;
+  border-bottom:1px solid #edf1ee;
+}
+
+.farmer-listing-modal-header h2{
+  margin-bottom:10px;
+  overflow-wrap:anywhere;
+}
+
+.farmer-gallery{
+  padding:16px;
+  background:#f8faf8;
+}
+
+.farmer-gallery-main{
+  position:relative;
+  width:100%;
+  height:min(52vh,500px);
+  min-height:300px;
+  border-radius:18px;
+  overflow:hidden;
+  background:#101812;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 12px 34px rgba(18,50,29,.12);
+}
+
+.farmer-gallery-main img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+  background:#101812;
+  cursor:zoom-in;
+}
+
+.farmer-gallery-nav{
+  position:absolute;
+  top:50%;
+  transform:translateY(-50%);
+  width:42px;
+  height:42px;
+  min-width:42px;
+  border:1px solid rgba(255,255,255,.35);
+  border-radius:50%;
+  background:rgba(15,42,24,.62);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  z-index:3;
+  cursor:pointer;
+  box-shadow:0 8px 20px rgba(0,0,0,.2);
+}
+
+.farmer-gallery-nav.left{left:10px}
+.farmer-gallery-nav.right{right:10px}
+.farmer-gallery-nav:hover{background:rgba(24,84,42,.86)}
+
+.farmer-gallery-counter{
+  position:absolute;
+  top:12px;
+  right:12px;
+  z-index:3;
+  min-width:50px;
+  padding:6px 9px;
+  border-radius:999px;
+  background:rgba(6,24,14,.68);
+  color:#fff;
+  text-align:center;
+  font-size:10px;
+  font-weight:800;
+  backdrop-filter:blur(5px);
+}
+
+.farmer-gallery-view-hint{
+  position:absolute;
+  left:12px;
+  bottom:12px;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:7px 9px;
+  border-radius:999px;
+  background:rgba(6,24,14,.60);
+  color:#fff;
+  font-size:10px;
+  font-weight:700;
+  backdrop-filter:blur(5px);
+}
+
+.farmer-gallery-thumbs-wrap{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:10px;
+  min-width:0;
+}
+
+.farmer-gallery-thumbs{
+  flex:1;
+  min-width:0;
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:2px 1px 5px;
+  scrollbar-width:thin;
+}
+
+.farmer-gallery-thumbs button{
+  flex:0 0 78px;
+  width:78px;
+  height:62px;
+  padding:0;
+  border:2px solid transparent;
+  border-radius:10px;
+  overflow:hidden;
+  background:#e9f0ea;
+  cursor:pointer;
+}
+
+.farmer-gallery-thumbs button.active{
+  border-color:#24803f;
+  box-shadow:0 0 0 2px rgba(36,128,63,.12);
+}
+
+.farmer-gallery-thumbs img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.farmer-gallery-thumbs-arrow{
+  width:32px;
+  height:32px;
+  min-width:32px;
+  border:1px solid #d8e3da;
+  border-radius:50%;
+  background:#fff;
+  color:#2a6038;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  box-shadow:0 5px 14px rgba(28,65,39,.08);
+}
+
+.farmer-gallery-empty{
+  margin:16px;
+  min-height:230px;
+  border:1px dashed #d8e3da;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:9px;
+  color:#708177;
+  background:#f7faf8;
+}
+
+.farmer-contact-actions{
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin:16px 16px 18px;
+}
+
+.farmer-contact-actions button{
+  min-height:48px;
+  border-radius:13px;
+  border:1px solid #d9e5dc;
+  font-size:12px;
+  font-weight:800;
+  box-shadow:0 6px 16px rgba(23,67,37,.05);
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.farmer-contact-actions button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 10px 22px rgba(23,67,37,.10);
+}
+
+.farmer-contact-actions .contact-call{background:#f7fcf8;color:#236239}
+.farmer-contact-actions .contact-whatsapp{background:#effaf2;color:#16803e}
+.farmer-contact-actions .contact-chat{background:#f2f7ff;color:#2c5e92}
+.farmer-contact-actions button:disabled{opacity:.42;box-shadow:none;transform:none}
+
+/* Listing cards: make action row readable on touch devices */
+.farmer-listing-card .farmer-card-actions{
+  grid-template-columns:1fr 1fr 1fr 1fr;
+  gap:0;
+}
+
+.farmer-listing-card .farmer-card-actions button{
+  min-height:45px;
+  padding:8px 6px;
+  font-size:10px;
+}
+
+.farmer-listing-card .farmer-card-actions button:first-child{
+  color:#1f6634;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+@media (max-width:760px){
+  .farmer-modal-backdrop{
+    padding:0;
+    align-items:stretch;
+    overflow:hidden;
+  }
+
+  .farmer-listing-modal{
+    width:100%;
+    max-width:none;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .farmer-listing-modal-header{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:14px 54px 12px 14px;
+    background:rgba(255,255,255,.97);
+    backdrop-filter:blur(10px);
+  }
+
+  .farmer-listing-modal-header h2{
+    font-size:18px;
+    margin:5px 0 8px;
+    line-height:1.22;
+  }
+
+  .farmer-gallery{
+    padding:10px;
+  }
+
+  .farmer-gallery-main{
+    height:min(51vh,420px);
+    min-height:250px;
+    border-radius:14px;
+  }
+
+  .farmer-gallery-nav{
+    width:36px;
+    height:36px;
+    min-width:36px;
+  }
+
+  .farmer-gallery-nav.left{left:7px}
+  .farmer-gallery-nav.right{right:7px}
+
+  .farmer-gallery-thumbs-wrap{
+    gap:5px;
+    margin-top:8px;
+  }
+
+  .farmer-gallery-thumbs{
+    gap:6px;
+  }
+
+  .farmer-gallery-thumbs button{
+    flex-basis:66px;
+    width:66px;
+    min-width:66px;
+    height:54px;
+    border-radius:8px;
+  }
+
+  .farmer-gallery-thumbs-arrow{
+    width:30px;
+    height:30px;
+    min-width:30px;
+  }
+
+  .farmer-gallery-view-hint{
+    font-size:9px;
+    padding:6px 8px;
+  }
+
+  .farmer-modal-details{
+    margin:0 12px;
+  }
+
+  .farmer-detail-row{
+    align-items:flex-start;
+    gap:10px;
+  }
+
+  .farmer-detail-row span{
+    flex:0 0 42%;
+  }
+
+  .farmer-detail-row strong{
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+
+  .farmer-modal-owner{
+    margin:12px;
+  }
+
+  .farmer-contact-actions{
+    margin:12px;
+    gap:7px;
+  }
+
+  .farmer-contact-actions button{
+    min-height:50px;
+    padding:8px 5px;
+    gap:5px;
+    font-size:10px;
+  }
+
+  .farmer-contact-actions button svg{
+    width:17px;
+    height:17px;
+  }
+}
+
+@media (max-width:420px){
+  .farmer-gallery-main{
+    height:min(47vh,340px);
+    min-height:225px;
+  }
+
+  .farmer-gallery-thumbs button{
+    flex-basis:60px;
+    width:60px;
+    min-width:60px;
+    height:50px;
+  }
+
+  .farmer-contact-actions button span{
+    white-space:nowrap;
+  }
+}
+
+/* =========================================================
+   IMAGE LIGHTBOX — MOBILE FRIENDLY
+   ========================================================= */
+.farmer-image-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:10000;
+  background:rgba(5,15,9,.94);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+}
+
+.farmer-image-lightbox > img{
+  max-width:94vw;
+  max-height:88vh;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:12px;
+  box-shadow:0 25px 70px rgba(0,0,0,.35);
+}
+
+.farmer-lightbox-close,
+.farmer-lightbox-nav{
+  position:fixed;
+  z-index:2;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(15,40,24,.72);
+  color:#fff;
+  display:grid;
+  place-items:center;
+  cursor:pointer;
+  backdrop-filter:blur(7px);
+}
+
+.farmer-lightbox-close{
+  top:16px;
+  right:16px;
+  width:42px;
+  height:42px;
+  border-radius:50%;
+}
+
+.farmer-lightbox-nav{
+  top:50%;
+  transform:translateY(-50%);
+  width:44px;
+  height:44px;
+  border-radius:50%;
+}
+
+.farmer-lightbox-nav.left{left:16px}
+.farmer-lightbox-nav.right{right:16px}
+
+.farmer-lightbox-caption{
+  position:fixed;
+  left:50%;
+  bottom:15px;
+  transform:translateX(-50%);
+  width:max-content;
+  max-width:calc(100vw - 30px);
+  text-align:center;
+  color:rgba(255,255,255,.78);
+  font-size:10px;
+  white-space:nowrap;
+}
+
+@media(max-width:600px){
+  .farmer-image-lightbox{padding:10px}
+  .farmer-image-lightbox > img{max-width:100vw;max-height:80vh;border-radius:8px}
+  .farmer-lightbox-nav{width:38px;height:38px}
+  .farmer-lightbox-nav.left{left:8px}
+  .farmer-lightbox-nav.right{right:8px}
+  .farmer-lightbox-close{top:10px;right:10px;width:38px;height:38px}
+  .farmer-lightbox-caption{bottom:9px;font-size:9px}
 }

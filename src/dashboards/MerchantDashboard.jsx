@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Search,
@@ -34,6 +34,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { watermarkImage } from "../watermarkImage";
 import "./MerchantDashboard.css";
 import TreeLoader from "../components/TreeLoader";
 
@@ -581,6 +582,7 @@ export default function MerchantDashboard() {
   const [locationBusy, setLocationBusy] = useState(false);
   const [locationMessage, setLocationMessage] = useState("");
   const [listingViewer, setListingViewer] = useState({ open: false, index: 0 });
+  const listingThumbsRef = useRef(null);
 
 
   /* =====================================================
@@ -1105,11 +1107,16 @@ export default function MerchantDashboard() {
      PHOTO SELECT
   ===================================================== */
 
-  function handlePhotoSelect(event) {
+  async function handlePhotoSelect(event) {
     const files = Array.from(event.target.files || []);
+    event.target.value = "";
+
     if (!files.length) return;
 
-    const validFiles = files.filter((file) => {
+    const remaining = Math.max(0, 10 - sellPhotos.length);
+    const selectedFiles = files.slice(0, remaining);
+
+    const validFiles = selectedFiles.filter((file) => {
       if (!file.type.startsWith("image/")) return false;
       if (file.size > 5 * 1024 * 1024) {
         alert(`${file.name} is larger than 5 MB.`);
@@ -1118,9 +1125,30 @@ export default function MerchantDashboard() {
       return true;
     });
 
-    const remaining = Math.max(0, 10 - sellPhotos.length);
-    setSellPhotos((current) => [...current, ...validFiles.slice(0, remaining)]);
-    event.target.value = "";
+    if (!validFiles.length) return;
+
+    try {
+      const watermarkedFiles = [];
+
+      for (const file of validFiles) {
+        const processed = await watermarkImage(file, {
+          watermark: "TimberMart",
+          bottomText: "🌳 TimberMart",
+          maxWidth: 1800,
+          maxHeight: 1800,
+          quality: 0.82,
+        });
+        watermarkedFiles.push(processed);
+      }
+
+      setSellPhotos((current) => [
+        ...current,
+        ...watermarkedFiles.slice(0, remaining),
+      ]);
+    } catch (error) {
+      console.error("Watermark processing failed:", error);
+      alert("Could not process one or more photos. Please try again.");
+    }
   }
 
   function removeSellPhoto(index) {
@@ -1192,17 +1220,18 @@ export default function MerchantDashboard() {
     for (let i = 0; i < sellPhotos.length; i++) {
       const file = sellPhotos[i];
 
-      const safeName = file.name
+      const safeName = `${Date.now()}-${i}-timbermart-${file.name
         .replace(/[^a-zA-Z0-9.-]/g, "-")
-        .toLowerCase();
+        .toLowerCase()}`;
 
-      const path = `${session.user.id}/${listing.id}/${Date.now()}-${i}-${safeName}`;
+      const path = `${session.user.id}/${listing.id}/${safeName}`;
 
       const { error: uploadError } =
         await supabase.storage
           .from("listing-photos")
           .upload(path, file, {
-            cacheControl: "3600",
+            cacheControl: "31536000",
+            contentType: file.type || "image/webp",
             upsert: false,
           });
 
@@ -3886,12 +3915,49 @@ export default function MerchantDashboard() {
                     {detailImages.length > 0 && <span className="merchant-gallery-counter">{activeIndex + 1} / {detailImages.length}</span>}
                   </div>
                   {detailImages.length > 0 && (
-                    <div className="merchant-detail-thumbs">
-                      {detailImages.map((url, index) => (
-                        <button key={`${url}-${index}`} className={index === activeIndex ? "active" : ""} onClick={() => setListingViewer({ open: true, index })}>
-                          <img src={url} alt="" />
-                        </button>
-                      ))}
+                    <div className="merchant-detail-thumbs-wrap">
+                      <button
+                        type="button"
+                        className="merchant-detail-thumbs-arrow"
+                        aria-label="Previous photos"
+                        onClick={() =>
+                          listingThumbsRef.current?.scrollBy({
+                            left: -180,
+                            behavior: "smooth",
+                          })
+                        }
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+
+                      <div className="merchant-detail-thumbs" ref={listingThumbsRef}>
+                        {detailImages.map((url, index) => (
+                          <button
+                            type="button"
+                            key={`${url}-${index}`}
+                            className={index === activeIndex ? "active" : ""}
+                            onClick={() =>
+                              setListingViewer({ open: true, index })
+                            }
+                          >
+                            <img src={url} alt="" />
+                          </button>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        className="merchant-detail-thumbs-arrow"
+                        aria-label="Next photos"
+                        onClick={() =>
+                          listingThumbsRef.current?.scrollBy({
+                            left: 180,
+                            behavior: "smooth",
+                          })
+                        }
+                      >
+                        <ChevronRight size={16} />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -4064,12 +4130,16 @@ export default function MerchantDashboard() {
                   />{tx("Chat")}</button>
 
                 <button
+                  className="merchant-contact-whatsapp"
                   onClick={() =>
                     whatsappUser(
                       selectedListing.user_id
                     )
                   }
-                >{tx("WhatsApp")}</button>
+                >
+                  <MessageCircle size={17} />
+                  {tx("WhatsApp")}
+                </button>
 
               </div>
 

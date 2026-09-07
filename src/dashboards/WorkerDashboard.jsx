@@ -27,6 +27,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 import "./WorkerDashboard.css";
 import TreeLoader from "../components/TreeLoader";
+import { watermarkImage } from "../watermarkImage";
 
 const WORKER_SKILLS = [
   "Sawmill Machine Operator",
@@ -46,6 +47,735 @@ const WORK_TYPES = [
   "Project Based",
 ];
 
+const LANGUAGES = [
+  { id: "en", label: "English" },
+  { id: "te", label: "తెలుగు" },
+  { id: "hi", label: "हिन्दी" },
+  { id: "ta", label: "தமிழ்" },
+  { id: "kn", label: "ಕನ್ನಡ" },
+];
+
+const TRANSLATIONS = {
+  en: {
+    Dashboard: "Dashboard",
+    "Create / Edit Profile": "Create / Edit Profile",
+    "My Profile": "My Profile",
+    "Find Jobs": "Find Jobs",
+    "My Applications": "My Applications",
+    Settings: "Settings",
+    Logout: "Logout",
+    "We Connect. You Deal Directly.": "We Connect. You Deal Directly.",
+    WORKER: "WORKER",
+    "Hello, {name}!": "Hello, {name}!",
+    "Find suitable timber jobs, build your career and connect directly with employers.": "Find suitable timber jobs, build your career and connect directly with employers.",
+    "Add your location": "Add your location",
+    "Edit Profile": "Edit Profile",
+    "Create Profile": "Create Profile",
+    "Worker Tools": "Worker Tools",
+    "Find jobs and manage your worker profile.": "Find jobs and manage your worker profile.",
+    "Register your skills": "Register your skills",
+    "Search suitable jobs": "Search suitable jobs",
+    "View applications": "View applications",
+    "View your public profile": "View your public profile",
+    "Complete your worker profile": "Complete your worker profile",
+    "Employers can find you based on your skills, experience and location.": "Employers can find you based on your skills, experience and location.",
+    "Complete Now": "Complete Now",
+    "Jobs posted by timber businesses and employers.": "Jobs posted by timber businesses and employers.",
+    Jobs: "Jobs",
+    "Search jobs, company, location...": "Search jobs, company, location...",
+    "No jobs found": "No jobs found",
+    "Jobs posted by employers will appear here.": "Jobs posted by employers will appear here.",
+    "Timber Business": "Timber Business",
+    "Timber Job": "Timber Job",
+    "No job description added.": "No job description added.",
+    "Work Type not added": "Work Type not added",
+    "Experience not specified": "Experience not specified",
+    "Salary not specified": "Salary not specified",
+    "Applied": "Applied",
+    "Job Application": "Job Application",
+    "Profile Details": "Profile Details",
+    "Basic Info": "Basic Info",
+    Details: "Details",
+    Skills: "Skills",
+    Work: "Work",
+    Review: "Review",
+    "Upload Photo": "Upload Photo",
+    "Change Photo": "Change Photo",
+    "Personal details": "Personal details",
+    "Age": "Age",
+    "Gender": "Gender",
+    "Select gender": "Select gender",
+    "Male": "Male",
+    "Female": "Female",
+    "Other": "Other",
+    "Location": "Location",
+    "City, District, State": "City, District, State",
+    "Professional details": "Professional details",
+    "Experience": "Experience",
+    "Select experience": "Select experience",
+    "No experience": "No experience",
+    "Less than 1 year": "Less than 1 year",
+    "1-3 years": "1-3 years",
+    "3-5 years": "3-5 years",
+    "5+ years": "5+ years",
+    "Experience Details": "Experience Details",
+    "Describe your previous work experience...": "Describe your previous work experience...",
+    "Select at least one skill.": "Select at least one skill.",
+    "Work & Salary": "Work & Salary",
+    "Tell employers your preferred work and salary.": "Tell employers your preferred work and salary.",
+    "Work Type": "Work Type",
+    "Expected Salary / Wage": "Expected Salary / Wage",
+    "Example: ₹18,000 - ₹22,000 / Month": "Example: ₹18,000 - ₹22,000 / Month",
+    Availability: "Availability",
+    "Review Profile": "Review Profile",
+    "Check your details before registering your profile.": "Check your details before registering your profile.",
+    "Not specified": "Not specified",
+    "Registering...": "Registering...",
+    "Register Profile": "Register Profile",
+    "JOB DETAILS": "JOB DETAILS",
+    "Timber Employer": "Timber Employer",
+    "Profile": "Profile",
+    "Job Description": "Job Description",
+    "No description provided.": "No description provided.",
+    "Location not specified": "Location not specified",
+    Call: "Call",
+    WhatsApp: "WhatsApp",
+    Chat: "Chat",
+    "Already Applied": "Already Applied",
+    "Apply for Job": "Apply for Job",
+    Employer: "Employer",
+    "Employer profile": "Employer profile",
+    "Edit Worker Profile": "Edit Worker Profile",
+    "Start Conversation": "Start Conversation",
+    "Send a message to": "Send a message to",
+    "Type a message...": "Type a message...",
+    Worker: "Worker",
+    "Worker Profile": "Worker Profile",
+    "Location not added": "Location not added",
+    "Please enter your location.": "Please enter your location.",
+    "Please select your experience.": "Please select your experience.",
+    "Please select at least one skill.": "Please select at least one skill.",
+    "Please select work type.": "Please select work type.",
+    "✅ Worker profile registered successfully.": "✅ Worker profile registered successfully.",
+    "Unable to save worker profile.": "Unable to save worker profile.",
+    "You already applied for this job.": "You already applied for this job.",
+    "✅ Application submitted.": "✅ Application submitted.",
+    "Phone number is not available.": "Phone number is not available.",
+    "WhatsApp number is not available.": "WhatsApp number is not available.",
+    "You cannot chat with yourself.": "You cannot chat with yourself.",
+    "Growing your requirements...": "Growing your requirements...",
+    "Back": "Back",
+    "Next": "Next",
+    "Review": "Review",
+    "Previous": "Previous",
+    "Save": "Save",
+    "Available Now": "Available Now",
+    "Available Soon": "Available Soon",
+    "Not Available": "Not Available",
+    "Full Time": "Full Time",
+    "Part Time": "Part Time",
+    "Project Based": "Project Based",
+    "Sawmill Machine Operator": "Sawmill Machine Operator",
+    "Log Cutting": "Log Cutting",
+    "Timber Measurement": "Timber Measurement",
+    "Log Sorting": "Log Sorting",
+    "Machine Maintenance": "Machine Maintenance",
+    "Loading / Unloading": "Loading / Unloading",
+    "Carpenter Helper": "Carpenter Helper",
+    "Forklift Operator": "Forklift Operator",
+  },
+  te: {
+    Dashboard: "డాష్‌బోర్డ్",
+    "Create / Edit Profile": "ప్రొఫైల్ సృష్టించు / మార్చు",
+    "My Profile": "నా ప్రొఫైల్",
+    "Find Jobs": "ఉద్యోగాలు చూడండి",
+    "My Applications": "నా అప్లికేషన్లు",
+    Settings: "సెట్టింగ్స్",
+    Logout: "లాగ్‌అవుట్",
+    "We Connect. You Deal Directly.": "మేము కలుపుతాం. మీరు నేరుగా వ్యవహరించండి.",
+    WORKER: "వర్కర్",
+    "Hello, {name}!": "హలో, {name}!",
+    "Find suitable timber jobs, build your career and connect directly with employers.": "మీకు సరైన టింబర్ ఉద్యోగాలను కనుగొని, కెరీర్‌ను అభివృద్ధి చేసుకుని, యజమానులతో నేరుగా కనెక్ట్ అవ్వండి.",
+    "Add your location": "మీ లొకేషన్ జోడించండి",
+    "Edit Profile": "ప్రొఫైల్ మార్చు",
+    "Create Profile": "ప్రొఫైల్ సృష్టించు",
+    "Worker Tools": "వర్కర్ టూల్స్",
+    "Find jobs and manage your worker profile.": "ఉద్యోగాలు కనుగొని మీ వర్కర్ ప్రొఫైల్‌ను నిర్వహించండి.",
+    "Register your skills": "మీ నైపుణ్యాలను నమోదు చేయండి",
+    "Search suitable jobs": "సరైన ఉద్యోగాలను శోధించండి",
+    "View applications": "అప్లికేషన్లు చూడండి",
+    "View your public profile": "మీ పబ్లిక్ ప్రొఫైల్ చూడండి",
+    "Complete your worker profile": "మీ వర్కర్ ప్రొఫైల్ పూర్తి చేయండి",
+    "Employers can find you based on your skills, experience and location.": "మీ నైపుణ్యాలు, అనుభవం, లొకేషన్ ఆధారంగా యజమానులు మిమ్మల్ని కనుగొనగలరు.",
+    "Complete Now": "ఇప్పుడే పూర్తి చేయండి",
+    "Jobs posted by timber businesses and employers.": "టింబర్ వ్యాపారాలు మరియు యజమానులు పోస్ట్ చేసిన ఉద్యోగాలు.",
+    Jobs: "ఉద్యోగాలు",
+    "Search jobs, company, location...": "ఉద్యోగం, కంపెనీ, లొకేషన్ శోధించండి...",
+    "No jobs found": "ఉద్యోగాలు కనిపించలేదు",
+    "Jobs posted by employers will appear here.": "యజమానులు పోస్ట్ చేసిన ఉద్యోగాలు ఇక్కడ కనిపిస్తాయి.",
+    "Timber Business": "టింబర్ బిజినెస్",
+    "Timber Job": "టింబర్ ఉద్యోగం",
+    "No job description added.": "ఉద్యోగ వివరణ లేదు.",
+    "Work Type not added": "వర్క్ టైప్ జోడించలేదు",
+    "Experience not specified": "అనుభవం ఇవ్వలేదు",
+    "Salary not specified": "జీతం ఇవ్వలేదు",
+    "Applied": "అప్లై చేశారు",
+    "Job Application": "జాబ్ అప్లికేషన్",
+    "Profile Details": "ప్రొఫైల్ వివరాలు",
+    "Basic Info": "ప్రాథమిక సమాచారం",
+    Details: "వివరాలు",
+    Skills: "నైపుణ్యాలు",
+    Work: "పని",
+    Review: "సమీక్ష",
+    "Upload Photo": "ఫోటో అప్లోడ్ చేయండి",
+    "Change Photo": "ఫోటో మార్చండి",
+    "Personal details": "వ్యక్తిగత వివరాలు",
+    Age: "వయస్సు",
+    Gender: "లింగం",
+    "Select gender": "లింగం ఎంచుకోండి",
+    Male: "పురుషుడు",
+    Female: "మహిళ",
+    Other: "ఇతర",
+    Location: "లొకేషన్",
+    "City, District, State": "నగరం, జిల్లా, రాష్ట్రం",
+    "Professional details": "వృత్తి వివరాలు",
+    Experience: "అనుభవం",
+    "Select experience": "అనుభవం ఎంచుకోండి",
+    "No experience": "అనుభవం లేదు",
+    "Less than 1 year": "1 సంవత్సరం కంటే తక్కువ",
+    "1-3 years": "1-3 సంవత్సరాలు",
+    "3-5 years": "3-5 సంవత్సరాలు",
+    "5+ years": "5+ సంవత్సరాలు",
+    "Experience Details": "అనుభవ వివరాలు",
+    "Describe your previous work experience...": "మీ గత పని అనుభవాన్ని వివరించండి...",
+    "Select at least one skill.": "కనీసం ఒక నైపుణ్యాన్ని ఎంచుకోండి.",
+    "Work & Salary": "పని & జీతం",
+    "Tell employers your preferred work and salary.": "మీకు నచ్చిన పని మరియు జీతాన్ని యజమానులకు తెలియజేయండి.",
+    "Work Type": "పని రకం",
+    "Expected Salary / Wage": "ఆశించిన జీతం / వేతనం",
+    "Example: ₹18,000 - ₹22,000 / Month": "ఉదాహరణ: ₹18,000 - ₹22,000 / నెల",
+    Availability: "అందుబాటు",
+    "Review Profile": "ప్రొఫైల్ సమీక్ష",
+    "Check your details before registering your profile.": "ప్రొఫైల్ నమోదు చేసే ముందు వివరాలు తనిఖీ చేయండి.",
+    "Not specified": "ఇవ్వలేదు",
+    "Registering...": "నమోదు చేస్తున్నాం...",
+    "Register Profile": "ప్రొఫైల్ నమోదు చేయండి",
+    "JOB DETAILS": "ఉద్యోగ వివరాలు",
+    "Timber Employer": "టింబర్ యజమాని",
+    Profile: "ప్రొఫైల్",
+    "Job Description": "ఉద్యోగ వివరణ",
+    "No description provided.": "వివరణ ఇవ్వలేదు.",
+    "Location not specified": "లొకేషన్ ఇవ్వలేదు",
+    Call: "కాల్",
+    WhatsApp: "వాట్సాప్",
+    Chat: "చాట్",
+    "Already Applied": "ఇప్పటికే అప్లై చేశారు",
+    "Apply for Job": "ఉద్యోగానికి అప్లై చేయండి",
+    Employer: "యజమాని",
+    "Edit Worker Profile": "వర్కర్ ప్రొఫైల్ మార్చు",
+    "Start Conversation": "సంభాషణ ప్రారంభించండి",
+    "Send a message to": "మెసేజ్ పంపండి",
+    "Type a message...": "మెసేజ్ టైప్ చేయండి...",
+    Worker: "వర్కర్",
+    "Worker Profile": "వర్కర్ ప్రొఫైల్",
+    "Location not added": "లొకేషన్ జోడించలేదు",
+    "Please enter your location.": "దయచేసి లొకేషన్ నమోదు చేయండి.",
+    "Please select your experience.": "దయచేసి అనుభవం ఎంచుకోండి.",
+    "Please select at least one skill.": "దయచేసి కనీసం ఒక నైపుణ్యాన్ని ఎంచుకోండి.",
+    "Please select work type.": "దయచేసి పని రకం ఎంచుకోండి.",
+    "✅ Worker profile registered successfully.": "✅ వర్కర్ ప్రొఫైల్ విజయవంతంగా నమోదు అయింది.",
+    "Unable to save worker profile.": "వర్కర్ ప్రొఫైల్ సేవ్ చేయలేకపోయాం.",
+    "You already applied for this job.": "మీరు ఇప్పటికే ఈ ఉద్యోగానికి అప్లై చేశారు.",
+    "✅ Application submitted.": "✅ అప్లికేషన్ సమర్పించబడింది.",
+    "Phone number is not available.": "ఫోన్ నంబర్ అందుబాటులో లేదు.",
+    "WhatsApp number is not available.": "వాట్సాప్ నంబర్ అందుబాటులో లేదు.",
+    "You cannot chat with yourself.": "మీతో మీరు చాట్ చేయలేరు.",
+    "Growing your requirements...": "మీ ఉద్యోగ అవకాశాలను సిద్ధం చేస్తున్నాం...",
+    Back: "వెనుకకు",
+    Next: "తర్వాత",
+    Previous: "మునుపటి",
+    Save: "సేవ్",
+    "Available Now": "ఇప్పుడే అందుబాటులో ఉంది",
+    "Available Soon": "త్వరలో అందుబాటులో ఉంటుంది",
+    "Not Available": "అందుబాటులో లేదు",
+    "Full Time": "పూర్తి సమయం",
+    "Part Time": "పార్ట్ టైమ్",
+    "Project Based": "ప్రాజెక్ట్ ఆధారితం",
+    "Sawmill Machine Operator": "సా మిల్ మెషిన్ ఆపరేటర్",
+    "Log Cutting": "లాగ్ కట్టింగ్",
+    "Timber Measurement": "టింబర్ కొలత",
+    "Log Sorting": "లాగ్ సార్టింగ్",
+    "Machine Maintenance": "మెషిన్ నిర్వహణ",
+    "Loading / Unloading": "లోడింగ్ / అన్‌లోడింగ్",
+    "Carpenter Helper": "కార్పెంటర్ హెల్పర్",
+    "Forklift Operator": "ఫోర్క్‌లిఫ్ట్ ఆపరేటర్",
+  },
+  hi: {
+    Dashboard: "डैशबोर्ड",
+    "Create / Edit Profile": "प्रोफ़ाइल बनाएं / बदलें",
+    "My Profile": "मेरी प्रोफ़ाइल",
+    "Find Jobs": "नौकरियां खोजें",
+    "My Applications": "मेरे आवेदन",
+    Settings: "सेटिंग्स",
+    Logout: "लॉगआउट",
+    "We Connect. You Deal Directly.": "हम जोड़ते हैं। आप सीधे व्यवहार करें।",
+    WORKER: "वर्कर",
+    "Hello, {name}!": "नमस्ते, {name}!",
+    "Find suitable timber jobs, build your career and connect directly with employers.": "उपयुक्त टिम्बर नौकरियां खोजें, करियर बनाएं और नियोक्ताओं से सीधे जुड़ें।",
+    "Add your location": "अपना स्थान जोड़ें",
+    "Edit Profile": "प्रोफ़ाइल बदलें",
+    "Create Profile": "प्रोफ़ाइल बनाएं",
+    "Worker Tools": "वर्कर टूल्स",
+    "Find jobs and manage your worker profile.": "नौकरियां खोजें और अपनी वर्कर प्रोफ़ाइल संभालें।",
+    "Register your skills": "अपने कौशल दर्ज करें",
+    "Search suitable jobs": "उपयुक्त नौकरियां खोजें",
+    "View applications": "आवेदन देखें",
+    "View your public profile": "अपनी सार्वजनिक प्रोफ़ाइल देखें",
+    "Complete your worker profile": "अपनी वर्कर प्रोफ़ाइल पूरी करें",
+    "Employers can find you based on your skills, experience and location.": "नियोक्ता आपके कौशल, अनुभव और स्थान के आधार पर आपको खोज सकते हैं।",
+    "Complete Now": "अभी पूरा करें",
+    "Jobs posted by timber businesses and employers.": "टिम्बर व्यवसायों और नियोक्ताओं द्वारा पोस्ट की गई नौकरियां।",
+    Jobs: "नौकरियां",
+    "Search jobs, company, location...": "नौकरी, कंपनी, स्थान खोजें...",
+    "No jobs found": "कोई नौकरी नहीं मिली",
+    "Jobs posted by employers will appear here.": "नियोक्ताओं द्वारा पोस्ट की गई नौकरियां यहां दिखाई देंगी।",
+    "Timber Business": "टिम्बर व्यवसाय",
+    "Timber Job": "टिम्बर नौकरी",
+    "No job description added.": "नौकरी का विवरण नहीं है।",
+    "Work Type not added": "कार्य प्रकार नहीं दिया गया",
+    "Experience not specified": "अनुभव नहीं दिया गया",
+    "Salary not specified": "वेतन नहीं दिया गया",
+    "Applied": "आवेदन किया",
+    "Job Application": "जॉब आवेदन",
+    "Profile Details": "प्रोफ़ाइल विवरण",
+    "Basic Info": "मूल जानकारी",
+    Details: "विवरण",
+    Skills: "कौशल",
+    Work: "कार्य",
+    Review: "समीक्षा",
+    "Upload Photo": "फोटो अपलोड करें",
+    "Change Photo": "फोटो बदलें",
+    "Personal details": "व्यक्तिगत विवरण",
+    Age: "उम्र",
+    Gender: "लिंग",
+    "Select gender": "लिंग चुनें",
+    Male: "पुरुष",
+    Female: "महिला",
+    Other: "अन्य",
+    Location: "स्थान",
+    "City, District, State": "शहर, जिला, राज्य",
+    "Professional details": "पेशेवर विवरण",
+    Experience: "अनुभव",
+    "Select experience": "अनुभव चुनें",
+    "No experience": "अनुभव नहीं",
+    "Less than 1 year": "1 साल से कम",
+    "1-3 years": "1-3 साल",
+    "3-5 years": "3-5 साल",
+    "5+ years": "5+ साल",
+    "Experience Details": "अनुभव विवरण",
+    "Describe your previous work experience...": "अपने पिछले काम के अनुभव का वर्णन करें...",
+    "Select at least one skill.": "कम से कम एक कौशल चुनें।",
+    "Work & Salary": "काम और वेतन",
+    "Tell employers your preferred work and salary.": "नियोक्ताओं को अपना पसंदीदा काम और वेतन बताएं।",
+    "Work Type": "काम का प्रकार",
+    "Expected Salary / Wage": "अपेक्षित वेतन / मजदूरी",
+    Availability: "उपलब्धता",
+    "Review Profile": "प्रोफ़ाइल समीक्षा",
+    "Check your details before registering your profile.": "प्रोफ़ाइल पंजीकृत करने से पहले अपने विवरण जांचें।",
+    "Not specified": "निर्दिष्ट नहीं",
+    "Registering...": "पंजीकरण हो रहा है...",
+    "Register Profile": "प्रोफ़ाइल पंजीकृत करें",
+    "JOB DETAILS": "नौकरी विवरण",
+    "Timber Employer": "टिम्बर नियोक्ता",
+    Profile: "प्रोफ़ाइल",
+    "Job Description": "नौकरी विवरण",
+    "No description provided.": "विवरण नहीं दिया गया।",
+    "Location not specified": "स्थान निर्दिष्ट नहीं",
+    Call: "कॉल",
+    WhatsApp: "व्हाट्सऐप",
+    Chat: "चैट",
+    "Already Applied": "पहले ही आवेदन किया",
+    "Apply for Job": "नौकरी के लिए आवेदन करें",
+    Employer: "नियोक्ता",
+    "Edit Worker Profile": "वर्कर प्रोफ़ाइल बदलें",
+    "Start Conversation": "बातचीत शुरू करें",
+    "Send a message to": "को संदेश भेजें",
+    "Type a message...": "संदेश लिखें...",
+    Worker: "वर्कर",
+    "Worker Profile": "वर्कर प्रोफ़ाइल",
+    "Location not added": "स्थान नहीं जोड़ा गया",
+    "Please enter your location.": "कृपया अपना स्थान दर्ज करें।",
+    "Please select your experience.": "कृपया अपना अनुभव चुनें।",
+    "Please select at least one skill.": "कृपया कम से कम एक कौशल चुनें।",
+    "Please select work type.": "कृपया काम का प्रकार चुनें।",
+    "✅ Worker profile registered successfully.": "✅ वर्कर प्रोफ़ाइल सफलतापूर्वक पंजीकृत हुई।",
+    "Unable to save worker profile.": "वर्कर प्रोफ़ाइल सेव नहीं हो सकी।",
+    "You already applied for this job.": "आपने पहले ही इस नौकरी के लिए आवेदन किया है।",
+    "✅ Application submitted.": "✅ आवेदन जमा किया गया।",
+    "Phone number is not available.": "फोन नंबर उपलब्ध नहीं है।",
+    "WhatsApp number is not available.": "व्हाट्सऐप नंबर उपलब्ध नहीं है।",
+    "You cannot chat with yourself.": "आप खुद से चैट नहीं कर सकते।",
+    "Growing your requirements...": "आपके अवसर तैयार किए जा रहे हैं...",
+    Back: "पीछे",
+    Next: "आगे",
+    Previous: "पिछला",
+    Save: "सेव",
+    "Available Now": "अभी उपलब्ध",
+    "Available Soon": "जल्द उपलब्ध",
+    "Not Available": "उपलब्ध नहीं",
+    "Full Time": "फुल टाइम",
+    "Part Time": "पार्ट टाइम",
+    "Project Based": "प्रोजेक्ट आधारित",
+    "Sawmill Machine Operator": "सॉमिल मशीन ऑपरेटर",
+    "Log Cutting": "लॉग कटिंग",
+    "Timber Measurement": "टिम्बर माप",
+    "Log Sorting": "लॉग सॉर्टिंग",
+    "Machine Maintenance": "मशीन मेंटेनेंस",
+    "Loading / Unloading": "लोडिंग / अनलोडिंग",
+    "Carpenter Helper": "कारपेंटर हेल्पर",
+    "Forklift Operator": "फोर्कलिफ्ट ऑपरेटर",
+  },
+  ta: {
+    Dashboard: "டாஷ்போர்டு",
+    "Create / Edit Profile": "சுயவிவரம் உருவாக்கு / திருத்து",
+    "My Profile": "என் சுயவிவரம்",
+    "Find Jobs": "வேலைகளை தேடு",
+    "My Applications": "என் விண்ணப்பங்கள்",
+    Settings: "அமைப்புகள்",
+    Logout: "வெளியேறு",
+    "We Connect. You Deal Directly.": "நாங்கள் இணைக்கிறோம். நீங்கள் நேரடியாக தொடர்புகொள்ளுங்கள்.",
+    WORKER: "வேலை தேடுபவர்",
+    "Hello, {name}!": "வணக்கம், {name}!",
+    "Find suitable timber jobs, build your career and connect directly with employers.": "பொருத்தமான மர வேலைகளை கண்டுபிடித்து, உங்கள் திறனை வளர்த்து, முதலாளிகளுடன் நேரடியாக இணைக.",
+    "Add your location": "இருப்பிடத்தைச் சேர்க்கவும்",
+    "Edit Profile": "சுயவிவரத்தைத் திருத்து",
+    "Create Profile": "சுயவிவரத்தை உருவாக்கு",
+    "Worker Tools": "பணி கருவிகள்",
+    "Find jobs and manage your worker profile.": "வேலைகளைத் தேடி உங்கள் சுயவிவரத்தை நிர்வகிக்கவும்.",
+    "Register your skills": "உங்கள் திறன்களை பதிவு செய்யவும்",
+    "Search suitable jobs": "பொருத்தமான வேலைகளை தேடவும்",
+    "View applications": "விண்ணப்பங்களை பார்க்கவும்",
+    "View your public profile": "பொது சுயவிவரத்தை பார்க்கவும்",
+    "Complete your worker profile": "உங்கள் சுயவிவரத்தை முடிக்கவும்",
+    "Employers can find you based on your skills, experience and location.": "உங்கள் திறன், அனுபவம், இருப்பிடத்தின் அடிப்படையில் முதலாளிகள் உங்களை கண்டுபிடிக்கலாம்.",
+    "Complete Now": "இப்போது முடிக்கவும்",
+    "Jobs posted by timber businesses and employers.": "மர வணிகங்கள் மற்றும் முதலாளிகள் வெளியிட்ட வேலைகள்.",
+    Jobs: "வேலைகள்",
+    "Search jobs, company, location...": "வேலை, நிறுவனம், இருப்பிடம் தேடவும்...",
+    "No jobs found": "வேலைகள் கிடைக்கவில்லை",
+    "Jobs posted by employers will appear here.": "முதலாளிகள் வெளியிடும் வேலைகள் இங்கே தோன்றும்.",
+    "Timber Business": "மர வணிகம்",
+    "Timber Job": "மர வேலை",
+    "No job description added.": "வேலை விவரம் இல்லை.",
+    "Work Type not added": "வேலை வகை இல்லை",
+    "Experience not specified": "அனுபவம் குறிப்பிடப்படவில்லை",
+    "Salary not specified": "சம்பளம் குறிப்பிடப்படவில்லை",
+    "Applied": "விண்ணப்பித்தது",
+    "Job Application": "வேலை விண்ணப்பம்",
+    "Profile Details": "சுயவிவர விவரங்கள்",
+    "Basic Info": "அடிப்படை தகவல்",
+    Details: "விவரங்கள்",
+    Skills: "திறன்கள்",
+    Work: "பணி",
+    Review: "மதிப்பாய்வு",
+    "Upload Photo": "புகைப்படம் பதிவேற்றவும்",
+    "Change Photo": "புகைப்படத்தை மாற்றவும்",
+    "Personal details": "தனிப்பட்ட விவரங்கள்",
+    Age: "வயது",
+    Gender: "பாலினம்",
+    "Select gender": "பாலினத்தை தேர்வு செய்யவும்",
+    Male: "ஆண்",
+    Female: "பெண்",
+    Other: "மற்றவை",
+    Location: "இருப்பிடம்",
+    "City, District, State": "நகரம், மாவட்டம், மாநிலம்",
+    "Professional details": "தொழில்முறை விவரங்கள்",
+    Experience: "அனுபவம்",
+    "Select experience": "அனுபவத்தை தேர்வு செய்யவும்",
+    "No experience": "அனுபவம் இல்லை",
+    "Less than 1 year": "1 ஆண்டுக்கு குறைவாக",
+    "1-3 years": "1-3 ஆண்டுகள்",
+    "3-5 years": "3-5 ஆண்டுகள்",
+    "5+ years": "5+ ஆண்டுகள்",
+    "Experience Details": "அனுபவ விவரங்கள்",
+    "Describe your previous work experience...": "உங்கள் முந்தைய வேலை அனுபவத்தை விவரிக்கவும்...",
+    "Select at least one skill.": "குறைந்தது ஒரு திறனை தேர்வு செய்யவும்.",
+    "Work & Salary": "பணி & சம்பளம்",
+    "Tell employers your preferred work and salary.": "உங்கள் விருப்பமான பணி மற்றும் சம்பளத்தை முதலாளிகளுக்கு தெரிவிக்கவும்.",
+    "Work Type": "பணி வகை",
+    "Expected Salary / Wage": "எதிர்பார்க்கும் சம்பளம் / கூலி",
+    Availability: "கிடைக்கும் நிலை",
+    "Review Profile": "சுயவிவர மதிப்பாய்வு",
+    "Check your details before registering your profile.": "பதிவு செய்வதற்கு முன் உங்கள் விவரங்களை சரிபார்க்கவும்.",
+    "Not specified": "குறிப்பிடப்படவில்லை",
+    "Registering...": "பதிவு செய்கிறது...",
+    "Register Profile": "சுயவிவரத்தை பதிவு செய்யவும்",
+    "JOB DETAILS": "வேலை விவரங்கள்",
+    "Timber Employer": "மர வணிக முதலாளி",
+    Profile: "சுயவிவரம்",
+    "Job Description": "வேலை விவரம்",
+    "No description provided.": "விவரம் இல்லை.",
+    "Location not specified": "இருப்பிடம் குறிப்பிடப்படவில்லை",
+    Call: "அழைப்பு",
+    WhatsApp: "வாட்ஸ்அப்",
+    Chat: "அரட்டை",
+    "Already Applied": "ஏற்கனவே விண்ணப்பித்துவிட்டீர்கள்",
+    "Apply for Job": "வேலைக்கு விண்ணப்பிக்கவும்",
+    Employer: "முதலாளி",
+    "Edit Worker Profile": "வொர்க்கர் சுயவிவரத்தைத் திருத்து",
+    "Start Conversation": "உரையாடலை தொடங்கு",
+    "Send a message to": "செய்தி அனுப்பவும்",
+    "Type a message...": "செய்தியை தட்டச்சு செய்யவும்...",
+    Worker: "வொர்க்கர்",
+    "Worker Profile": "வொர்க்கர் சுயவிவரம்",
+    "Location not added": "இருப்பிடம் சேர்க்கப்படவில்லை",
+    "Please enter your location.": "உங்கள் இருப்பிடத்தை உள்ளிடவும்.",
+    "Please select your experience.": "உங்கள் அனுபவத்தைத் தேர்வு செய்யவும்.",
+    "Please select at least one skill.": "குறைந்தது ஒரு திறனைத் தேர்வு செய்யவும்.",
+    "Please select work type.": "பணி வகையைத் தேர்வு செய்யவும்.",
+    "✅ Worker profile registered successfully.": "✅ வொர்க்கர் சுயவிவரம் வெற்றிகரமாக பதிவு செய்யப்பட்டது.",
+    "Unable to save worker profile.": "வொர்க்கர் சுயவிவரத்தை சேமிக்க முடியவில்லை.",
+    "You already applied for this job.": "இந்த வேலைக்கு ஏற்கனவே விண்ணப்பித்துவிட்டீர்கள்.",
+    "✅ Application submitted.": "✅ விண்ணப்பம் சமர்ப்பிக்கப்பட்டது.",
+    "Phone number is not available.": "தொலைபேசி எண் இல்லை.",
+    "WhatsApp number is not available.": "வாட்ஸ்அப் எண் இல்லை.",
+    "You cannot chat with yourself.": "உங்களுடன் நீங்களே அரட்டை செய்ய முடியாது.",
+    "Growing your requirements...": "உங்கள் வாய்ப்புகளைத் தயாரிக்கிறோம்...",
+    Back: "பின்",
+    Next: "அடுத்து",
+    Previous: "முந்தைய",
+    Save: "சேமி",
+    "Available Now": "இப்போது கிடைக்கும்",
+    "Available Soon": "விரைவில் கிடைக்கும்",
+    "Not Available": "கிடைக்கவில்லை",
+    "Full Time": "முழுநேரம்",
+    "Part Time": "பகுதி நேரம்",
+    "Project Based": "திட்ட அடிப்படை",
+    "Sawmill Machine Operator": "சாமில் இயந்திர இயக்குநர்",
+    "Log Cutting": "மரக்கட்டை வெட்டுதல்",
+    "Timber Measurement": "மர அளவீடு",
+    "Log Sorting": "மரக்கட்டை வகைப்படுத்துதல்",
+    "Machine Maintenance": "இயந்திர பராமரிப்பு",
+    "Loading / Unloading": "ஏற்றுதல் / இறக்குதல்",
+    "Carpenter Helper": "தச்சர் உதவியாளர்",
+    "Forklift Operator": "ஃபோர்க்லிஃப்ட் இயக்குநர்",
+  },
+  kn: {
+    Dashboard: "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "Create / Edit Profile": "ಪ್ರೊಫೈಲ್ ರಚಿಸಿ / ಬದಲಿಸಿ",
+    "My Profile": "ನನ್ನ ಪ್ರೊಫೈಲ್",
+    "Find Jobs": "ಕೆಲಸ ಹುಡುಕಿ",
+    "My Applications": "ನನ್ನ ಅರ್ಜಿಗಳು",
+    Settings: "ಸೆಟ್ಟಿಂಗ್ಸ್",
+    Logout: "ಲಾಗ್ ಔಟ್",
+    "We Connect. You Deal Directly.": "ನಾವು ಸಂಪರ್ಕಿಸುತ್ತೇವೆ. ನೀವು ನೇರವಾಗಿ ವ್ಯವಹರಿಸಿ.",
+    WORKER: "ಕಾರ್ಮಿಕ",
+    "Hello, {name}!": "ನಮಸ್ಕಾರ, {name}!",
+    "Find suitable timber jobs, build your career and connect directly with employers.": "ಸೂಕ್ತವಾದ ಮರದ ಕೆಲಸಗಳನ್ನು ಹುಡುಕಿ, ವೃತ್ತಿ ಬೆಳೆಸಿ ಮತ್ತು ಉದ್ಯೋಗದಾತರೊಂದಿಗೆ ನೇರವಾಗಿ ಸಂಪರ್ಕಿಸಿ.",
+    "Add your location": "ನಿಮ್ಮ ಸ್ಥಳ ಸೇರಿಸಿ",
+    "Edit Profile": "ಪ್ರೊಫೈಲ್ ಬದಲಿಸಿ",
+    "Create Profile": "ಪ್ರೊಫೈಲ್ ರಚಿಸಿ",
+    "Worker Tools": "ಕಾರ್ಮಿಕ ಸಾಧನಗಳು",
+    "Find jobs and manage your worker profile.": "ಕೆಲಸಗಳನ್ನು ಹುಡುಕಿ ಮತ್ತು ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ನಿರ್ವಹಿಸಿ.",
+    "Register your skills": "ನಿಮ್ಮ ಕೌಶಲ್ಯಗಳನ್ನು ನೋಂದಣಿ ಮಾಡಿ",
+    "Search suitable jobs": "ಸೂಕ್ತ ಕೆಲಸಗಳನ್ನು ಹುಡುಕಿ",
+    "View applications": "ಅರ್ಜಿಗಳನ್ನು ನೋಡಿ",
+    "View your public profile": "ಸಾರ್ವಜನಿಕ ಪ್ರೊಫೈಲ್ ನೋಡಿ",
+    "Complete your worker profile": "ನಿಮ್ಮ ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಳಿಸಿ",
+    "Employers can find you based on your skills, experience and location.": "ನಿಮ್ಮ ಕೌಶಲ್ಯ, ಅನುಭವ ಮತ್ತು ಸ್ಥಳದ ಆಧಾರದಲ್ಲಿ ಉದ್ಯೋಗದಾತರು ನಿಮ್ಮನ್ನು ಕಂಡುಕೊಳ್ಳಬಹುದು.",
+    "Complete Now": "ಈಗ ಪೂರ್ಣಗೊಳಿಸಿ",
+    "Jobs posted by timber businesses and employers.": "ಮರದ ವ್ಯವಹಾರಗಳು ಮತ್ತು ಉದ್ಯೋಗದಾತರು ಪೋಸ್ಟ್ ಮಾಡಿದ ಕೆಲಸಗಳು.",
+    Jobs: "ಕೆಲಸಗಳು",
+    "Search jobs, company, location...": "ಕೆಲಸ, ಕಂಪನಿ, ಸ್ಥಳ ಹುಡುಕಿ...",
+    "No jobs found": "ಕೆಲಸಗಳು ಕಂಡುಬಂದಿಲ್ಲ",
+    "Jobs posted by employers will appear here.": "ಉದ್ಯೋಗದಾತರು ಪೋಸ್ಟ್ ಮಾಡುವ ಕೆಲಸಗಳು ಇಲ್ಲಿ ಕಾಣಿಸುತ್ತವೆ.",
+    "Timber Business": "ಮರದ ವ್ಯವಹಾರ",
+    "Timber Job": "ಮರದ ಕೆಲಸ",
+    "No job description added.": "ಕೆಲಸದ ವಿವರಣೆ ಇಲ್ಲ.",
+    "Work Type not added": "ಕೆಲಸದ ಪ್ರಕಾರ ಇಲ್ಲ",
+    "Experience not specified": "ಅನುಭವ ನೀಡಿಲ್ಲ",
+    "Salary not specified": "ವೇತನ ನೀಡಿಲ್ಲ",
+    "Applied": "ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ",
+    "Job Application": "ಉದ್ಯೋಗ ಅರ್ಜಿ",
+    "Profile Details": "ಪ್ರೊಫೈಲ್ ವಿವರಗಳು",
+    "Basic Info": "ಮೂಲ ಮಾಹಿತಿ",
+    Details: "ವಿವರಗಳು",
+    Skills: "ಕೌಶಲ್ಯಗಳು",
+    Work: "ಕೆಲಸ",
+    Review: "ಪರಿಶೀಲನೆ",
+    "Upload Photo": "ಫೋಟೋ ಅಪ್ಲೋಡ್ ಮಾಡಿ",
+    "Change Photo": "ಫೋಟೋ ಬದಲಿಸಿ",
+    "Personal details": "ವೈಯಕ್ತಿಕ ವಿವರಗಳು",
+    Age: "ವಯಸ್ಸು",
+    Gender: "ಲಿಂಗ",
+    "Select gender": "ಲಿಂಗ ಆಯ್ಕೆಮಾಡಿ",
+    Male: "ಪುರುಷ",
+    Female: "ಮಹಿಳೆ",
+    Other: "ಇತರೆ",
+    Location: "ಸ್ಥಳ",
+    "City, District, State": "ನಗರ, ಜಿಲ್ಲೆ, ರಾಜ್ಯ",
+    "Professional details": "ವೃತ್ತಿಪರ ವಿವರಗಳು",
+    Experience: "ಅನುಭವ",
+    "Select experience": "ಅನುಭವ ಆಯ್ಕೆಮಾಡಿ",
+    "No experience": "ಅನುಭವ ಇಲ್ಲ",
+    "Less than 1 year": "1 ವರ್ಷಕ್ಕಿಂತ ಕಡಿಮೆ",
+    "1-3 years": "1-3 ವರ್ಷ",
+    "3-5 years": "3-5 ವರ್ಷ",
+    "5+ years": "5+ ವರ್ಷ",
+    "Experience Details": "ಅನುಭವದ ವಿವರಗಳು",
+    "Describe your previous work experience...": "ನಿಮ್ಮ ಹಿಂದಿನ ಕೆಲಸದ ಅನುಭವವನ್ನು ವಿವರಿಸಿ...",
+    "Select at least one skill.": "ಕನಿಷ್ಠ ಒಂದು ಕೌಶಲ್ಯ ಆಯ್ಕೆಮಾಡಿ.",
+    "Work & Salary": "ಕೆಲಸ ಮತ್ತು ವೇತನ",
+    "Tell employers your preferred work and salary.": "ನಿಮ್ಮ ಇಷ್ಟದ ಕೆಲಸ ಮತ್ತು ವೇತನವನ್ನು ಉದ್ಯೋಗದಾತರಿಗೆ ತಿಳಿಸಿ.",
+    "Work Type": "ಕೆಲಸದ ಪ್ರಕಾರ",
+    "Expected Salary / Wage": "ನಿರೀಕ್ಷಿತ ವೇತನ / ಕೂಲಿ",
+    Availability: "ಲಭ್ಯತೆ",
+    "Review Profile": "ಪ್ರೊಫೈಲ್ ಪರಿಶೀಲನೆ",
+    "Check your details before registering your profile.": "ನೋಂದಣಿ ಮಾಡುವ ಮೊದಲು ವಿವರಗಳನ್ನು ಪರಿಶೀಲಿಸಿ.",
+    "Not specified": "ನಿರ್ದಿಷ್ಟಪಡಿಸಿಲ್ಲ",
+    "Registering...": "ನೋಂದಣಿ ಆಗುತ್ತಿದೆ...",
+    "Register Profile": "ಪ್ರೊಫೈಲ್ ನೋಂದಣಿ ಮಾಡಿ",
+    "JOB DETAILS": "ಕೆಲಸದ ವಿವರಗಳು",
+    "Timber Employer": "ಮರದ ಉದ್ಯೋಗದಾತ",
+    Profile: "ಪ್ರೊಫೈಲ್",
+    "Job Description": "ಕೆಲಸದ ವಿವರಣೆ",
+    "No description provided.": "ವಿವರಣೆ ನೀಡಿಲ್ಲ.",
+    "Location not specified": "ಸ್ಥಳ ನೀಡಿಲ್ಲ",
+    Call: "ಕಾಲ್",
+    WhatsApp: "ವಾಟ್ಸ್ಆಪ್",
+    Chat: "ಚಾಟ್",
+    "Already Applied": "ಈಗಾಗಲೇ ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ",
+    "Apply for Job": "ಕೆಲಸಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ",
+    Employer: "ಉದ್ಯೋಗದಾತ",
+    "Edit Worker Profile": "ಕಾರ್ಮಿಕ ಪ್ರೊಫೈಲ್ ಬದಲಿಸಿ",
+    "Start Conversation": "ಸಂಭಾಷಣೆ ಪ್ರಾರಂಭಿಸಿ",
+    "Send a message to": "ಸಂದೇಶ ಕಳುಹಿಸಿ",
+    "Type a message...": "ಸಂದೇಶ ಟೈಪ್ ಮಾಡಿ...",
+    Worker: "ಕಾರ್ಮಿಕ",
+    "Worker Profile": "ಕಾರ್ಮಿಕ ಪ್ರೊಫೈಲ್",
+    "Location not added": "ಸ್ಥಳ ಸೇರಿಸಿಲ್ಲ",
+    "Please enter your location.": "ದಯವಿಟ್ಟು ಸ್ಥಳ ನಮೂದಿಸಿ.",
+    "Please select your experience.": "ದಯವಿಟ್ಟು ಅನುಭವ ಆಯ್ಕೆಮಾಡಿ.",
+    "Please select at least one skill.": "ದಯವಿಟ್ಟು ಕನಿಷ್ಠ ಒಂದು ಕೌಶಲ್ಯ ಆಯ್ಕೆಮಾಡಿ.",
+    "Please select work type.": "ದಯವಿಟ್ಟು ಕೆಲಸದ ಪ್ರಕಾರ ಆಯ್ಕೆಮಾಡಿ.",
+    "✅ Worker profile registered successfully.": "✅ ಕಾರ್ಮಿಕ ಪ್ರೊಫೈಲ್ ಯಶಸ್ವಿಯಾಗಿ ನೋಂದಾಯಿಸಲಾಗಿದೆ.",
+    "Unable to save worker profile.": "ಕಾರ್ಮಿಕ ಪ್ರೊಫೈಲ್ ಉಳಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ.",
+    "You already applied for this job.": "ನೀವು ಈಗಾಗಲೇ ಈ ಕೆಲಸಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿದ್ದೀರಿ.",
+    "✅ Application submitted.": "✅ ಅರ್ಜಿ ಸಲ್ಲಿಸಲಾಗಿದೆ.",
+    "Phone number is not available.": "ಫೋನ್ ಸಂಖ್ಯೆ ಲಭ್ಯವಿಲ್ಲ.",
+    "WhatsApp number is not available.": "ವಾಟ್ಸ್ಆಪ್ ಸಂಖ್ಯೆ ಲಭ್ಯವಿಲ್ಲ.",
+    "You cannot chat with yourself.": "ನೀವು ನಿಮ್ಮೊಂದಿಗೆ ಚಾಟ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ.",
+    "Growing your requirements...": "ನಿಮ್ಮ ಅವಕಾಶಗಳನ್ನು ಸಿದ್ಧಪಡಿಸುತ್ತಿದ್ದೇವೆ...",
+    Back: "ಹಿಂದೆ",
+    Next: "ಮುಂದೆ",
+    Previous: "ಹಿಂದಿನ",
+    Save: "ಉಳಿಸಿ",
+    "Available Now": "ಈಗ ಲಭ್ಯ",
+    "Available Soon": "ಶೀಘ್ರದಲ್ಲೇ ಲಭ್ಯ",
+    "Not Available": "ಲಭ್ಯವಿಲ್ಲ",
+    "Full Time": "ಪೂರ್ಣಕಾಲಿಕ",
+    "Part Time": "ಅರೆಕಾಲಿಕ",
+    "Project Based": "ಯೋಜನೆ ಆಧಾರಿತ",
+    "Sawmill Machine Operator": "ಸಾಮಿಲ್ ಯಂತ್ರ ಆಪರೇಟರ್",
+    "Log Cutting": "ಲಾಗ್ ಕಟಿಂಗ್",
+    "Timber Measurement": "ಮರದ ಅಳತೆ",
+    "Log Sorting": "ಲಾಗ್ ವಿಂಗಡಣೆ",
+    "Machine Maintenance": "ಯಂತ್ರ ನಿರ್ವಹಣೆ",
+    "Loading / Unloading": "ಲೋಡಿಂಗ್ / ಅನ್‌ಲೋಡಿಂಗ್",
+    "Carpenter Helper": "ಬಡಗಿ ಸಹಾಯಕ",
+    "Forklift Operator": "ಫೋರ್ಕ್‌ಲಿಫ್ಟ್ ಆಪರೇಟರ್",
+  },
+};
+
+
+const EXTRA_TRANSLATIONS = {
+  en: {
+    "Worker Tools": "Worker Tools",
+    "Search suitable jobs": "Search suitable jobs",
+    "View applications": "View applications",
+    "View your public profile": "View your public profile",
+    "Profile Complete": "Profile Complete",
+    "Profile Incomplete": "Profile Incomplete",
+    "No applications yet": "No applications yet",
+    "Track jobs you have applied for.": "Track jobs you have applied for.",
+    "Apply for a job and your application will appear here.": "Apply for a job and your application will appear here.",
+    "View": "View",
+    "position(s)": "position(s)",
+    "TimberMart only connects users.": "TimberMart only connects users.",
+    "We do not provide jobs directly.": "We do not provide jobs directly.",
+    "Personal details": "Personal details",
+    "Photo": "Photo",
+  },
+  te: {
+    "Worker Tools": "వర్కర్ టూల్స్",
+    "Search suitable jobs": "సరైన ఉద్యోగాలను శోధించండి",
+    "View applications": "అప్లికేషన్లు చూడండి",
+    "View your public profile": "మీ పబ్లిక్ ప్రొఫైల్ చూడండి",
+    "Profile Complete": "ప్రొఫైల్ పూర్తయింది",
+    "Profile Incomplete": "ప్రొఫైల్ పూర్తి కాలేదు",
+    "No applications yet": "ఇంకా అప్లికేషన్లు లేవు",
+    "Track jobs you have applied for.": "మీరు అప్లై చేసిన ఉద్యోగాలను ట్రాక్ చేయండి.",
+    "Apply for a job and your application will appear here.": "ఉద్యోగానికి అప్లై చేస్తే మీ అప్లికేషన్ ఇక్కడ కనిపిస్తుంది.",
+    "View": "చూడండి",
+    "position(s)": "పొజిషన్‌లు",
+    "TimberMart only connects users.": "TimberMart వినియోగదారులను మాత్రమే కనెక్ట్ చేస్తుంది.",
+    "We do not provide jobs directly.": "మేము నేరుగా ఉద్యోగాలు అందించము.",
+    "Personal details": "వ్యక్తిగత వివరాలు",
+    "Photo": "ఫోటో",
+  },
+  hi: {
+    "Worker Tools": "वर्कर टूल्स",
+    "Search suitable jobs": "उपयुक्त नौकरियां खोजें",
+    "View applications": "आवेदन देखें",
+    "View your public profile": "अपनी सार्वजनिक प्रोफ़ाइल देखें",
+    "Profile Complete": "प्रोफ़ाइल पूरी है",
+    "Profile Incomplete": "प्रोफ़ाइल अधूरी है",
+    "No applications yet": "अभी कोई आवेदन नहीं",
+    "Track jobs you have applied for.": "आपने जिन नौकरियों के लिए आवेदन किया है उन्हें ट्रैक करें।",
+    "Apply for a job and your application will appear here.": "नौकरी के लिए आवेदन करें और आपका आवेदन यहां दिखाई देगा।",
+    "View": "देखें",
+    "position(s)": "पद",
+    "TimberMart only connects users.": "TimberMart केवल उपयोगकर्ताओं को जोड़ता है।",
+    "We do not provide jobs directly.": "हम सीधे नौकरी प्रदान नहीं करते।",
+    "Personal details": "व्यक्तिगत विवरण",
+    "Photo": "फोटो",
+  },
+  ta: {
+    "Worker Tools": "பணி கருவிகள்",
+    "Search suitable jobs": "பொருத்தமான வேலைகளை தேடவும்",
+    "View applications": "விண்ணப்பங்களை பார்க்கவும்",
+    "View your public profile": "பொது சுயவிவரத்தை பார்க்கவும்",
+    "Profile Complete": "சுயவிவரம் முடிந்தது",
+    "Profile Incomplete": "சுயவிவரம் முழுமையில்லை",
+    "No applications yet": "இன்னும் விண்ணப்பங்கள் இல்லை",
+    "Track jobs you have applied for.": "நீங்கள் விண்ணப்பித்த வேலைகளை கண்காணிக்கவும்.",
+    "Apply for a job and your application will appear here.": "வேலைக்கு விண்ணப்பித்தால் உங்கள் விண்ணப்பம் இங்கே தோன்றும்.",
+    "View": "பார்க்கவும்",
+    "position(s)": "பதவிகள்",
+    "TimberMart only connects users.": "TimberMart பயனர்களை இணைக்கிறது.",
+    "We do not provide jobs directly.": "நாங்கள் நேரடியாக வேலை வழங்கவில்லை.",
+    "Personal details": "தனிப்பட்ட விவரங்கள்",
+    "Photo": "புகைப்படம்",
+  },
+  kn: {
+    "Worker Tools": "ಕಾರ್ಮಿಕ ಸಾಧನಗಳು",
+    "Search suitable jobs": "ಸೂಕ್ತ ಕೆಲಸಗಳನ್ನು ಹುಡುಕಿ",
+    "View applications": "ಅರ್ಜಿಗಳನ್ನು ನೋಡಿ",
+    "View your public profile": "ಸಾರ್ವಜನಿಕ ಪ್ರೊಫೈಲ್ ನೋಡಿ",
+    "Profile Complete": "ಪ್ರೊಫೈಲ್ ಪೂರ್ಣಗೊಂಡಿದೆ",
+    "Profile Incomplete": "ಪ್ರೊಫೈಲ್ ಅಪೂರ್ಣವಾಗಿದೆ",
+    "No applications yet": "ಇನ್ನೂ ಅರ್ಜಿಗಳಿಲ್ಲ",
+    "Track jobs you have applied for.": "ನೀವು ಅರ್ಜಿ ಸಲ್ಲಿಸಿದ ಕೆಲಸಗಳನ್ನು ಟ್ರ್ಯಾಕ್ ಮಾಡಿ.",
+    "Apply for a job and your application will appear here.": "ಕೆಲಸಕ್ಕೆ ಅರ್ಜಿ ಸಲ್ಲಿಸಿದರೆ ನಿಮ್ಮ ಅರ್ಜಿ ಇಲ್ಲಿ ಕಾಣುತ್ತದೆ.",
+    "View": "ನೋಡಿ",
+    "position(s)": "ಹುದ್ದೆಗಳು",
+    "TimberMart only connects users.": "TimberMart ಬಳಕೆದಾರರನ್ನು ಸಂಪರ್ಕಿಸುತ್ತದೆ.",
+    "We do not provide jobs directly.": "ನಾವು ನೇರವಾಗಿ ಕೆಲಸ ನೀಡುವುದಿಲ್ಲ.",
+    "Personal details": "ವೈಯಕ್ತಿಕ ವಿವರಗಳು",
+    "Photo": "ಫೋಟೋ",
+  },
+};
+
 export default function WorkerDashboard() {
   const navigate = useNavigate();
 
@@ -60,6 +790,21 @@ export default function WorkerDashboard() {
   const [saving, setSaving] = useState(false);
 
   const [mobileMenu, setMobileMenu] = useState(false);
+  const [language, setLanguage] = useState(() => localStorage.getItem("timbermart_worker_language") || "en");
+
+  function t(key) {
+    return (
+      EXTRA_TRANSLATIONS[language]?.[key] ||
+      TRANSLATIONS[language]?.[key] ||
+      EXTRA_TRANSLATIONS.en[key] ||
+      TRANSLATIONS.en[key] ||
+      key
+    );
+  }
+
+  useEffect(() => {
+    localStorage.setItem("timbermart_worker_language", language);
+  }, [language]);
 
   const [search, setSearch] = useState("");
 
@@ -262,13 +1007,27 @@ export default function WorkerDashboard() {
     }));
   }
 
-  function selectPhoto(event) {
+  async function selectPhoto(event) {
     const file = event.target.files?.[0];
 
     if (!file) return;
 
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
+    try {
+      const watermarkedFile = await watermarkImage(file, {
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.84,
+        centerText: "TimberMart",
+        bottomTitle: "🌳 TimberMart",
+        bottomSubtitle: "Timber Marketplace",
+      });
+
+      setPhotoFile(watermarkedFile);
+      setPhotoPreview(URL.createObjectURL(watermarkedFile));
+    } catch (error) {
+      console.error("Watermark photo error:", error);
+      alert(error.message || "Unable to process the photo.");
+    }
   }
 
   async function uploadWorkerPhoto() {
@@ -276,18 +1035,15 @@ export default function WorkerDashboard() {
       return profile?.photo_url || "";
     }
 
-    const extension =
-      photoFile.name.split(".").pop()?.toLowerCase() ||
-      "jpg";
-
     const path =
-      `${session.user.id}/worker-${Date.now()}.${extension}`;
+      `${session.user.id}/worker-${Date.now()}.webp`;
 
     const { error: uploadError } =
       await supabase.storage
         .from("worker-photos")
         .upload(path, photoFile, {
-          cacheControl: "3600",
+          cacheControl: "31536000",
+          contentType: "image/webp",
           upsert: false,
         });
 
@@ -309,25 +1065,25 @@ export default function WorkerDashboard() {
     if (!session?.user?.id) return;
 
     if (!form.location.trim()) {
-      alert("Please enter your location.");
+      alert(t("Please enter your location."));
       setWizardStep(2);
       return;
     }
 
     if (!form.experience) {
-      alert("Please select your experience.");
+      alert(t("Please select your experience."));
       setWizardStep(2);
       return;
     }
 
     if (form.skills.length === 0) {
-      alert("Please select at least one skill.");
+      alert(t("Please select at least one skill."));
       setWizardStep(3);
       return;
     }
 
     if (!form.work_type) {
-      alert("Please select work type.");
+      alert(t("Please select work type."));
       setWizardStep(4);
       return;
     }
@@ -394,7 +1150,7 @@ export default function WorkerDashboard() {
       setShowWizard(false);
       setWizardStep(1);
 
-      alert("✅ Worker profile registered successfully.");
+      alert(t("✅ Worker profile registered successfully."));
 
       await loadWorkerProfile(session.user.id);
     } catch (error) {
@@ -441,7 +1197,7 @@ export default function WorkerDashboard() {
     );
 
     if (alreadyApplied) {
-      alert("You already applied for this job.");
+      alert(t("You already applied for this job."));
       return;
     }
 
@@ -462,14 +1218,14 @@ export default function WorkerDashboard() {
 
     setApplications((old) => [data, ...old]);
 
-    alert("✅ Application submitted.");
+    alert(t("✅ Application submitted."));
 
     setShowJob(false);
   }
 
   function callUser(phone) {
     if (!phone) {
-      alert("Phone number is not available.");
+      alert(t("Phone number is not available."));
       return;
     }
 
@@ -478,7 +1234,7 @@ export default function WorkerDashboard() {
 
   function whatsappUser(phone) {
     if (!phone) {
-      alert("WhatsApp number is not available.");
+      alert(t("WhatsApp number is not available."));
       return;
     }
 
@@ -495,7 +1251,7 @@ export default function WorkerDashboard() {
     if (!userId) return;
 
     if (userId === session.user.id) {
-      alert("You cannot chat with yourself.");
+      alert(t("You cannot chat with yourself."));
       return;
     }
 
@@ -659,7 +1415,7 @@ export default function WorkerDashboard() {
 
   if (loading) {
   return (
-    <TreeLoader text="Growing your requirements..." />
+    <TreeLoader text={t("Growing your requirements...")} />
   );
 }
 
@@ -694,6 +1450,21 @@ export default function WorkerDashboard() {
 
         <div className="worker-header-right">
 
+          <label className="worker-language-picker" title="Language">
+            <span>文</span>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              aria-label="Language"
+            >
+              {LANGUAGES.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </label>
+
           <button className="worker-notification">
             <Bell size={20} />
           </button>
@@ -721,7 +1492,7 @@ export default function WorkerDashboard() {
             </span>
 
             <span>
-              {profile?.name || "Worker"}
+              {profile?.name || t("Worker")}
             </span>
 
           </button>
@@ -773,7 +1544,7 @@ export default function WorkerDashboard() {
             <div>
 
               <strong>
-                {profile?.name || "Worker"}
+                {profile?.name || t("Worker")}
               </strong>
 
               <span>
@@ -829,13 +1600,14 @@ export default function WorkerDashboard() {
 
 
             <button
-              onClick={() =>
+              onClick={() => {
+                setMobileMenu(false);
                 document
                   .getElementById("jobs")
                   ?.scrollIntoView({
                     behavior: "smooth",
-                  })
-              }
+                  });
+              }}
             >
               <Briefcase size={18} />
               Find Jobs
@@ -843,13 +1615,14 @@ export default function WorkerDashboard() {
 
 
             <button
-              onClick={() =>
+              onClick={() => {
+                setMobileMenu(false);
                 document
                   .getElementById("applications")
                   ?.scrollIntoView({
                     behavior: "smooth",
-                  })
-              }
+                  });
+              }}
             >
               <Check size={18} />
               My Applications
@@ -857,9 +1630,10 @@ export default function WorkerDashboard() {
 
 
             <button
-              onClick={() =>
-                navigate("/settings")
-              }
+              onClick={() => {
+                setMobileMenu(false);
+                navigate("/settings");
+              }}
             >
               <Settings size={18} />
               Settings
@@ -873,7 +1647,7 @@ export default function WorkerDashboard() {
         <div className="worker-sidebar-bottom">
 
           <div className="worker-direct-note">
-            🤝 We Connect. You Deal Directly.
+            🤝 {t("We Connect. You Deal Directly.")}
           </div>
 
           <button
@@ -916,17 +1690,15 @@ export default function WorkerDashboard() {
             <div className="worker-hero-content">
 
               <span className="worker-kicker">
-                👷 WORKER
+                👷 {t("WORKER")}
               </span>
 
               <h1>
-                Hello, {profile?.name || "Worker"}!
+                {t("Hello, {name}!").replace("{name}", profile?.name || t("Worker"))}
               </h1>
 
               <p>
-                Find suitable timber jobs,
-                build your career and connect
-                directly with employers.
+                {t("Find suitable timber jobs, build your career and connect directly with employers.")}
               </p>
 
 
@@ -953,8 +1725,8 @@ export default function WorkerDashboard() {
                   <Edit3 size={17} />
 
                   {profileCompleted
-                    ? "Edit Profile"
-                    : "Create Profile"}
+                    ? t("Edit Profile")
+                    : t("Create Profile")}
 
                 </button>
 
@@ -970,7 +1742,7 @@ export default function WorkerDashboard() {
                   }
                 >
                   <Briefcase size={17} />
-                  Find Jobs
+                  {t("Find Jobs")}
                 </button>
 
               </div>
@@ -1017,12 +1789,12 @@ export default function WorkerDashboard() {
               <div>
 
                 <strong>
-                  {profile?.name || "Worker"}
+                  {profile?.name || t("Worker")}
                 </strong>
 
                 <span>
                   {workerProfile?.skills?.[0] ||
-                    "Worker Profile"}
+                    t("Worker Profile")}
                 </span>
 
               </div>
@@ -1040,12 +1812,12 @@ export default function WorkerDashboard() {
               {profileCompleted ? (
                 <>
                   <Check size={15} />
-                  Profile Complete
+                  {t("Profile Complete")}
                 </>
               ) : (
                 <>
                   <Edit3 size={15} />
-                  Profile Incomplete
+                  {t("Profile Incomplete")}
                 </>
               )}
             </div>
@@ -1065,7 +1837,7 @@ export default function WorkerDashboard() {
                 <h2>Worker Tools</h2>
 
                 <p>
-                  Find jobs and manage your worker profile.
+                  {t("Find jobs and manage your worker profile.")}
                 </p>
               </div>
 
@@ -1087,7 +1859,7 @@ export default function WorkerDashboard() {
                 </strong>
 
                 <small>
-                  Register your skills
+                  {t("Register your skills")}
                 </small>
               </button>
 
@@ -1104,11 +1876,11 @@ export default function WorkerDashboard() {
                 <span>🔎</span>
 
                 <strong>
-                  Find Jobs
+                  {t("Find Jobs")}
                 </strong>
 
                 <small>
-                  Search suitable jobs
+                  {t("Search suitable jobs")}
                 </small>
               </button>
 
@@ -1125,7 +1897,7 @@ export default function WorkerDashboard() {
                 <span>📄</span>
 
                 <strong>
-                  My Jobs
+                  {t("My Jobs")}
                 </strong>
 
                 <small>
@@ -1143,7 +1915,7 @@ export default function WorkerDashboard() {
                 <span>👤</span>
 
                 <strong>
-                  My Profile
+                  {t("My Profile")}
                 </strong>
 
                 <small>
@@ -1171,12 +1943,11 @@ export default function WorkerDashboard() {
               <div>
 
                 <strong>
-                  Complete your worker profile
+                  {t("Complete your worker profile")}
                 </strong>
 
                 <p>
-                  Employers can find you based on
-                  your skills, experience and location.
+                  {t("Employers can find you based on your skills, experience and location.")}
                 </p>
 
               </div>
@@ -1187,7 +1958,7 @@ export default function WorkerDashboard() {
                   setShowWizard(true);
                 }}
               >
-                Complete Now
+                {t("Complete Now")}
                 <ChevronRight size={16} />
               </button>
 
@@ -1210,18 +1981,17 @@ export default function WorkerDashboard() {
               <div>
 
                 <h2>
-                  Find Jobs
+                  {t("Find Jobs")}
                 </h2>
 
                 <p>
-                  Jobs posted by timber businesses
-                  and employers.
+                  {t("Jobs posted by timber businesses and employers.")}
                 </p>
 
               </div>
 
               <span className="worker-job-count">
-                {filteredJobs.length} Jobs
+                {filteredJobs.length} {t("Jobs")}
               </span>
 
             </div>
@@ -1236,7 +2006,7 @@ export default function WorkerDashboard() {
                 onChange={(e) =>
                   setSearch(e.target.value)
                 }
-                placeholder="Search jobs, company, location..."
+                placeholder={t("Search jobs, company, location...")}
               />
 
             </div>
@@ -1249,12 +2019,11 @@ export default function WorkerDashboard() {
                 <div>🔎</div>
 
                 <h3>
-                  No jobs found
+                  {t("No jobs found")}
                 </h3>
 
                 <p>
-                  Jobs posted by employers will
-                  appear here.
+                  {t("Jobs posted by employers will appear here.")}
                 </p>
 
               </div>
@@ -1296,13 +2065,13 @@ export default function WorkerDashboard() {
 
                           <strong>
                             {job.profiles?.name ||
-                              "Timber Business"}
+                              t("Timber Business")}
                           </strong>
 
                           <span>
                             {job.location ||
                               job.profiles?.location ||
-                              "Location not added"}
+                              t("Location not added")}
                           </span>
 
                         </div>
@@ -1312,7 +2081,7 @@ export default function WorkerDashboard() {
 
                       <div className="worker-job-badge">
                         {job.category ||
-                          "Timber Job"}
+                          t("Timber Job")}
                       </div>
 
 
@@ -1323,7 +2092,7 @@ export default function WorkerDashboard() {
 
                       <p>
                         {job.description ||
-                          "No job description added."}
+                          t("No job description added.")}
                       </p>
 
 
@@ -1332,19 +2101,19 @@ export default function WorkerDashboard() {
                         <span>
                           <Briefcase size={14} />
                           {job.job_type ||
-                            "Work Type not added"}
+                            t("Work Type not added")}
                         </span>
 
                         <span>
                           <Clock3 size={14} />
                           {job.experience ||
-                            "Experience not specified"}
+                            t("Experience not specified")}
                         </span>
 
                         <span>
                           💰
                           {job.salary ||
-                            "Salary not specified"}
+                            t("Salary not specified")}
                         </span>
 
                       </div>
@@ -1354,7 +2123,7 @@ export default function WorkerDashboard() {
 
                         <small>
                           {job.positions
-                            ? `${job.positions} position(s)`
+                            ? `${job.positions} ${t("position(s)")}`
                             : ""}
                         </small>
 
@@ -1365,7 +2134,7 @@ export default function WorkerDashboard() {
                           }
                         >
                           <Eye size={16} />
-                          View
+                          {t("View")}
                         </button>
 
                       </div>
@@ -1374,7 +2143,7 @@ export default function WorkerDashboard() {
                       {applied && (
                         <div className="worker-applied">
                           <Check size={14} />
-                          Applied
+                          {t("Applied")}
                         </div>
                       )}
 
@@ -1403,11 +2172,11 @@ export default function WorkerDashboard() {
               <div>
 
                 <h2>
-                  My Applications
+                  {t("My Applications")}
                 </h2>
 
                 <p>
-                  Track jobs you have applied for.
+                  {t("Track jobs you have applied for.")}
                 </p>
 
               </div>
@@ -1422,12 +2191,11 @@ export default function WorkerDashboard() {
                 <div>📄</div>
 
                 <h3>
-                  No applications yet
+                  {t("No applications yet")}
                 </h3>
 
                 <p>
-                  Apply for a job and your
-                  application will appear here.
+                  {t("Apply for a job and your application will appear here.")}
                 </p>
 
               </div>
@@ -1462,7 +2230,7 @@ export default function WorkerDashboard() {
                         </strong>
 
                         <span>
-                          Applied on{" "}
+                          {t("Applied")} on{" "}
                           {new Date(
                             application.created_at
                           ).toLocaleDateString()}
@@ -1500,11 +2268,11 @@ export default function WorkerDashboard() {
             <div className="worker-footer-note">
 
               <strong>
-                🌳 TimberMart only connects users.
+                🌳 {t("TimberMart only connects users.")}
               </strong>
 
               <span>
-                We do not provide jobs directly.
+                {t("We do not provide jobs directly.")}
               </span>
 
             </div>
@@ -1666,7 +2434,7 @@ export default function WorkerDashboard() {
                 <div className="worker-wizard-step">
 
                   <h3>
-                    Create Profile
+                    {t("Create Profile")}
                   </h3>
 
                   <p>
@@ -1704,7 +2472,7 @@ export default function WorkerDashboard() {
                     </strong>
 
                     <span>
-                      Profile photo
+                      {t("Profile")} photo
                     </span>
 
                     <input
@@ -1811,7 +2579,7 @@ export default function WorkerDashboard() {
                 <div className="worker-wizard-step">
 
                   <h3>
-                    Profile Details
+                    {t("Profile Details")}
                   </h3>
 
                   <p>
@@ -1836,7 +2604,7 @@ export default function WorkerDashboard() {
                           e.target.value
                         )
                       }
-                      placeholder="City, District, State"
+                      placeholder={t("City, District, State")}
                     />
 
                   </div>
@@ -1889,7 +2657,7 @@ export default function WorkerDashboard() {
 
 
                   <label>
-                    Work Experience Details
+                    {t("Work")} Experience Details
                   </label>
 
                   <textarea
@@ -1905,7 +2673,7 @@ export default function WorkerDashboard() {
                         e.target.value
                       )
                     }
-                    placeholder="Describe your previous work experience..."
+                    placeholder={t("Describe your previous work experience...")}
                   />
 
 
@@ -2054,7 +2822,7 @@ export default function WorkerDashboard() {
                 <div className="worker-wizard-step">
 
                   <h3>
-                    Work & Salary
+                    {t("Work")} & Salary
                   </h3>
 
                   <p>
@@ -2064,7 +2832,7 @@ export default function WorkerDashboard() {
 
 
                   <label>
-                    Work Type *
+                    {t("Work")} Type *
                   </label>
 
                   <select
@@ -2092,7 +2860,7 @@ export default function WorkerDashboard() {
 
 
                   <label>
-                    Expected Salary / Wage
+                    {t("Expected Salary / Wage")}
                   </label>
 
                   <input
@@ -2106,7 +2874,7 @@ export default function WorkerDashboard() {
                         e.target.value
                       )
                     }
-                    placeholder="Example: ₹18,000 - ₹22,000 / Month"
+                    placeholder={t("Example: ₹18,000 - ₹22,000 / Month")}
                   />
 
 
@@ -2153,7 +2921,7 @@ export default function WorkerDashboard() {
                       }
                     />
 
-                    {form.availability}
+                    {t(form.availability)}
 
                   </div>
 
@@ -2175,7 +2943,7 @@ export default function WorkerDashboard() {
                         setWizardStep(5)
                       }
                     >
-                      Review
+                      {t("Review")}
                       <ChevronRight size={17} />
                     </button>
 
@@ -2195,7 +2963,7 @@ export default function WorkerDashboard() {
                 <div className="worker-wizard-step">
 
                   <h3>
-                    Review Profile
+                    {t("Review")} Profile
                   </h3>
 
                   <p>
@@ -2236,7 +3004,7 @@ export default function WorkerDashboard() {
 
                     <div className="worker-review-row">
                       <span>
-                        Location
+                        {t("Location")}
                       </span>
 
                       <strong>
@@ -2248,7 +3016,7 @@ export default function WorkerDashboard() {
 
                     <div className="worker-review-row">
                       <span>
-                        Experience
+                        {t("Experience")}
                       </span>
 
                       <strong>
@@ -2260,7 +3028,7 @@ export default function WorkerDashboard() {
 
                     <div className="worker-review-row">
                       <span>
-                        Work Type
+                        {t("Work")} Type
                       </span>
 
                       <strong>
@@ -2284,11 +3052,11 @@ export default function WorkerDashboard() {
 
                     <div className="worker-review-row">
                       <span>
-                        Availability
+                        {t("Availability")}
                       </span>
 
                       <strong>
-                        {form.availability}
+                        {t(form.availability)}
                       </strong>
                     </div>
 
@@ -2327,8 +3095,8 @@ export default function WorkerDashboard() {
                       disabled={saving}
                     >
                       {saving
-                        ? "Registering..."
-                        : "Register Profile"}
+                        ? t("Registering...")
+                        : t("Register Profile")}
                     </button>
 
                   </div>
@@ -2380,7 +3148,7 @@ export default function WorkerDashboard() {
 
                 <p>
                   {selectedJob.profiles?.name ||
-                    "Timber Employer"}
+                    t("Timber Employer")}
                 </p>
 
               </div>
@@ -2454,7 +3222,7 @@ export default function WorkerDashboard() {
 
                 <div>
                   <span>
-                    Work Type
+                    {t("Work")} Type
                   </span>
 
                   <strong>
@@ -2541,7 +3309,7 @@ export default function WorkerDashboard() {
                   }
                 >
                   <Phone size={18} />
-                  Call
+                  {t("Call")}
                 </button>
 
 
@@ -2553,7 +3321,7 @@ export default function WorkerDashboard() {
                   }
                 >
                   <MessageCircle size={18} />
-                  WhatsApp
+                  {t("WhatsApp")}
                 </button>
 
 
@@ -2565,7 +3333,7 @@ export default function WorkerDashboard() {
                   }
                 >
                   <MessageCircle size={18} />
-                  Chat
+                  {t("Chat")}
                 </button>
 
               </div>
@@ -2586,12 +3354,12 @@ export default function WorkerDashboard() {
                 ) ? (
                   <>
                     <Check size={18} />
-                    Already Applied
+                    {t("Already Applied")}
                   </>
                 ) : (
                   <>
                     <Send size={18} />
-                    Apply for Job
+                    {t("Apply for Job")}
                   </>
                 )}
 
@@ -2668,9 +3436,9 @@ export default function WorkerDashboard() {
               <span className="worker-user-role">
                 {selectedEmployer.id ===
                 session.user.id
-                  ? "Worker"
+                  ? t("Worker")
                   : selectedEmployer.role ||
-                    "Employer"}
+                    t("Employer")}
               </span>
 
 
@@ -2705,7 +3473,7 @@ export default function WorkerDashboard() {
                   }}
                 >
                   <Edit3 size={17} />
-                  Edit Worker Profile
+                  {t("Edit Worker Profile")}
                 </button>
 
               ) : (
@@ -2720,7 +3488,7 @@ export default function WorkerDashboard() {
                     }
                   >
                     <Phone size={18} />
-                    Call
+                    {t("Call")}
                   </button>
 
 
@@ -2732,7 +3500,7 @@ export default function WorkerDashboard() {
                     }
                   >
                     <MessageCircle size={18} />
-                    WhatsApp
+                    {t("WhatsApp")}
                   </button>
 
 
@@ -2744,7 +3512,7 @@ export default function WorkerDashboard() {
                     }
                   >
                     <MessageCircle size={18} />
-                    Chat
+                    {t("Chat")}
                   </button>
 
                 </div>
@@ -2809,7 +3577,7 @@ export default function WorkerDashboard() {
 
                   <span>
                     {selectedEmployer.role ||
-                      "Employer"}
+                      t("Employer")}
                   </span>
 
                 </div>
@@ -2837,13 +3605,13 @@ export default function WorkerDashboard() {
                   <MessageCircle size={35} />
 
                   <h3>
-                    Start Conversation
+                    {t("Start Conversation")}
                   </h3>
 
                   <p>
                     Send a message to{" "}
                     {selectedEmployer.name ||
-                      "this employer"}.
+                      t("Employer")}.
                   </p>
 
                 </div>
@@ -2888,7 +3656,7 @@ export default function WorkerDashboard() {
                     e.target.value
                   )
                 }
-                placeholder="Type a message..."
+                placeholder={t("Type a message...")}
               />
 
               <button type="submit">

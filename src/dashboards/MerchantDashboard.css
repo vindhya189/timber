@@ -569,3 +569,573 @@ body { overflow-x: hidden; }
   letter-spacing: 0;
   line-height: 1.35;
 }
+
+
+/* =========================================================
+   TIMBERMART FINAL MOBILE + GALLERY + CONTACT POLISH
+   Existing functionality preserved
+   ========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
+
+.merchant-app,
+.merchant-main,
+.merchant-content,
+.merchant-section,
+.merchant-buy-section,
+.merchant-special-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.merchant-product-card,
+.merchant-special-card,
+.merchant-my-card,
+.merchant-requirement-card,
+.merchant-job-card,
+.merchant-worker-card {
+  min-width: 0;
+}
+
+.merchant-detail-modal {
+  overscroll-behavior: contain;
+}
+
+.merchant-detail-gallery {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.merchant-detail-image-large {
+  position: relative;
+  width: 100%;
+  min-height: 0;
+  height: min(540px, 58vh);
+  background: #0d1710;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.merchant-detail-image-large img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
+  background: #0d1710;
+}
+
+.merchant-gallery-nav {
+  z-index: 3;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border: 1px solid rgba(255,255,255,.32) !important;
+  background: rgba(9,27,16,.62) !important;
+  color: #fff !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,.22);
+  cursor: pointer;
+}
+
+.merchant-gallery-nav:hover {
+  background: rgba(16,62,32,.88) !important;
+  transform: translateY(-50%) scale(1.04);
+}
+
+.merchant-gallery-counter {
+  z-index: 4;
+  backdrop-filter: blur(6px);
+}
+
+.merchant-detail-thumbs-wrap {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 10px 12px;
+  background: #edf4ef;
+}
+
+.merchant-detail-thumbs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 1px 4px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  overscroll-behavior-x: contain;
+}
+
+.merchant-detail-thumbs::-webkit-scrollbar {
+  height: 5px;
+}
+
+.merchant-detail-thumbs::-webkit-scrollbar-track {
+  background: #dfeae2;
+  border-radius: 999px;
+}
+
+.merchant-detail-thumbs::-webkit-scrollbar-thumb {
+  background: #a9c0ae;
+  border-radius: 999px;
+}
+
+.merchant-detail-thumbs button {
+  flex: 0 0 76px;
+  width: 76px;
+  height: 58px;
+  min-width: 76px;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #e9f1eb;
+  cursor: pointer;
+}
+
+.merchant-detail-thumbs button.active {
+  border-color: var(--mg);
+  box-shadow: 0 0 0 2px rgba(11,122,67,.12);
+}
+
+.merchant-detail-thumbs img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.merchant-detail-thumbs-arrow {
+  flex: 0 0 31px;
+  width: 31px !important;
+  height: 31px !important;
+  min-width: 31px !important;
+  padding: 0 !important;
+  border: 1px solid #ccdacf !important;
+  border-radius: 50% !important;
+  background: #fff !important;
+  color: #275136 !important;
+  display: grid !important;
+  place-items: center;
+  box-shadow: 0 4px 12px rgba(22,60,36,.08);
+  cursor: pointer;
+}
+
+.merchant-detail-thumbs-arrow:hover {
+  background: #edf7ef !important;
+  border-color: #96b5a0 !important;
+}
+
+.merchant-detail-body {
+  min-width: 0;
+}
+
+.merchant-detail-body h2,
+.merchant-detail-info strong,
+.merchant-detail-description p {
+  overflow-wrap: anywhere;
+}
+
+.merchant-contact-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 9px !important;
+}
+
+.merchant-contact-grid button {
+  min-width: 0;
+  min-height: 46px !important;
+  padding: 10px 12px !important;
+  border: 1px solid #cbded0 !important;
+  border-radius: 12px !important;
+  background: linear-gradient(180deg,#fff,#f7fbf8) !important;
+  color: #27563a !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-size: 11px !important;
+  font-weight: 900 !important;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(20,61,34,.05);
+  transition: .18s ease;
+}
+
+.merchant-contact-grid button:hover {
+  transform: translateY(-1px);
+  background: #edf7ef !important;
+  border-color: #95b89f !important;
+  box-shadow: 0 8px 18px rgba(20,61,34,.10);
+}
+
+.merchant-contact-grid button:nth-child(2) {
+  color: #315a84 !important;
+}
+
+.merchant-contact-grid .merchant-contact-whatsapp {
+  color: #118344 !important;
+}
+
+.merchant-contact-grid button svg {
+  flex: 0 0 auto;
+}
+
+.merchant-product-photo,
+.merchant-special-photo,
+.merchant-my-photo-stack {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .merchant-topbar {
+    padding: 0 12px;
+  }
+
+  .merchant-content {
+    padding: 14px 12px 86px;
+  }
+
+  .merchant-hero {
+    min-height: 0;
+    padding: 24px;
+  }
+
+  .merchant-detail-modal {
+    width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    grid-template-columns: 1fr !important;
+    overflow-y: auto;
+    border-radius: 18px !important;
+  }
+
+  .merchant-detail-image-large {
+    height: min(430px, 50vh);
+  }
+
+  .merchant-detail-body {
+    overflow: visible;
+    padding: 20px 18px 22px;
+  }
+}
+
+@media (max-width: 650px) {
+  .merchant-sidebar {
+    width: min(286px, 88vw) !important;
+  }
+
+  .merchant-content {
+    padding: 10px 9px 90px;
+  }
+
+  .merchant-topbar {
+    height: 60px;
+    padding: 0 8px;
+  }
+
+  .merchant-main {
+    padding-top: 60px;
+  }
+
+  .merchant-logo {
+    font-size: 15px;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .merchant-top-right {
+    gap: 6px;
+  }
+
+  .merchant-dashboard-language {
+    padding: 4px 6px;
+  }
+
+  .merchant-dashboard-language select {
+    min-width: 56px;
+    max-width: 74px;
+    font-size: 10px;
+  }
+
+  .merchant-mini-profile {
+    max-width: 108px;
+    padding: 4px 6px;
+  }
+
+  .merchant-mini-profile strong {
+    max-width: 58px;
+    font-size: 10px;
+  }
+
+  .merchant-hero {
+    padding: 20px 17px;
+    border-radius: 16px;
+  }
+
+  .merchant-hero h1 {
+    font-size: 29px;
+    line-height: 1.08;
+  }
+
+  .merchant-hero p {
+    font-size: 11px;
+    line-height: 1.55;
+  }
+
+  .merchant-hero-wood {
+    display: none;
+  }
+
+  .merchant-stats {
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+    gap: 8px;
+  }
+
+  .merchant-stats > div {
+    min-height: 72px;
+    padding: 10px;
+  }
+
+  .merchant-stats > div > span {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+  }
+
+  .merchant-stats strong {
+    font-size: 17px;
+  }
+
+  .merchant-section-title {
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .merchant-section-title h2,
+  .merchant-special-header h2 {
+    font-size: 20px;
+  }
+
+  .merchant-action-grid {
+    grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+    gap: 8px;
+  }
+
+  .merchant-action-grid > button {
+    min-height: 104px;
+    padding: 12px;
+  }
+
+  .merchant-product-grid,
+  .merchant-special-grid,
+  .merchant-my-list-grid,
+  .merchant-worker-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .merchant-product-photo {
+    height: 225px;
+  }
+
+  .merchant-special-card {
+    grid-template-columns: 90px minmax(0,1fr);
+  }
+
+  .merchant-detail-modal {
+    width: 100vw !important;
+    max-height: 100dvh !important;
+    height: 100dvh;
+    border-radius: 0 !important;
+    margin: 0;
+  }
+
+  .merchant-detail-gallery {
+    background: #0d1710;
+  }
+
+  .merchant-detail-image-large {
+    width: calc(100% - 16px);
+    margin: 8px;
+    height: min(54vh, 420px);
+    min-height: 250px;
+    border-radius: 13px;
+  }
+
+  .merchant-detail-image-large img {
+    object-fit: contain;
+  }
+
+  .merchant-gallery-nav {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  .merchant-gallery-nav.prev { left: 6px !important; }
+  .merchant-gallery-nav.next { right: 6px !important; }
+
+  .merchant-gallery-counter {
+    right: 9px !important;
+    bottom: 9px !important;
+  }
+
+  .merchant-detail-thumbs-wrap {
+    padding: 8px 8px 11px;
+    background: #edf4ef;
+  }
+
+  .merchant-detail-thumbs {
+    gap: 6px;
+  }
+
+  .merchant-detail-thumbs button {
+    flex-basis: 64px;
+    width: 64px;
+    min-width: 64px;
+    height: 50px;
+    border-radius: 8px;
+  }
+
+  .merchant-detail-thumbs-arrow {
+    flex-basis: 30px;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+  }
+
+  .merchant-detail-body {
+    padding: 16px 12px 22px !important;
+  }
+
+  .merchant-detail-body h2 {
+    font-size: 22px;
+    padding-right: 30px;
+  }
+
+  .merchant-detail-price {
+    font-size: 18px;
+  }
+
+  .merchant-detail-pills {
+    gap: 6px;
+  }
+
+  .merchant-detail-pills span {
+    min-height: 34px;
+  }
+
+  .merchant-detail-info > div {
+    align-items: flex-start;
+  }
+
+  .merchant-detail-info strong {
+    max-width: 58%;
+  }
+
+  .merchant-detail-seller {
+    margin-top: 14px;
+  }
+
+  .merchant-contact-grid {
+    grid-template-columns: repeat(3,minmax(0,1fr)) !important;
+    gap: 6px !important;
+    margin-top: 10px !important;
+  }
+
+  .merchant-contact-grid button {
+    min-height: 48px !important;
+    padding: 9px 5px !important;
+    border-radius: 11px !important;
+    font-size: 10px !important;
+    gap: 5px;
+  }
+
+  .merchant-contact-grid button svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .merchant-content {
+    padding-left: 7px;
+    padding-right: 7px;
+  }
+
+  .merchant-top-right .merchant-mini-profile {
+    max-width: 92px;
+  }
+
+  .merchant-action-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .merchant-product-photo {
+    height: 205px;
+  }
+
+  .merchant-detail-image-large {
+    height: 280px;
+    min-height: 230px;
+  }
+
+  .merchant-contact-grid button {
+    font-size: 9px !important;
+    min-height: 46px !important;
+    padding-inline: 3px !important;
+  }
+
+  .merchant-contact-grid button svg {
+    width: 15px;
+    height: 15px;
+  }
+}
+
+/* Sell form remains fully usable on narrow screens */
+@media (max-width: 680px) {
+  .merchant-sell-tree-modal {
+    width: 100% !important;
+    max-height: 100dvh;
+    border-radius: 0 !important;
+  }
+
+  .merchant-sell-head {
+    padding: 13px 12px 10px !important;
+  }
+
+  .merchant-sell-head-actions {
+    gap: 5px;
+  }
+
+  .merchant-language-select {
+    min-width: 96px;
+  }
+
+  .merchant-form {
+    padding: 0 12px 18px;
+  }
+
+  .merchant-photo-grid {
+    grid-template-columns: repeat(3,minmax(0,1fr));
+  }
+
+  .merchant-upload-box {
+    min-height: 100px;
+  }
+}

@@ -2277,3 +2277,1276 @@ textarea.sawmill-input{height:auto;padding:11px 12px;resize:vertical}
   .sell-tree-header{padding:12px}
   .sell-tree-brand-icon{width:38px;height:38px}
 }
+
+/* =========================================================
+   FINAL RESPONSIVE + MOBILE UI FIXES
+   ========================================================= */
+
+html,
+body,
+#root{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  overflow-x:hidden;
+}
+
+.sawmill-app{
+  width:100%;
+  min-width:0;
+  overflow-x:hidden;
+}
+
+button,
+input,
+select,
+textarea{
+  -webkit-tap-highlight-color:transparent;
+}
+
+.sawmill-nav button,
+.sawmill-primary,
+.sawmill-secondary,
+.sawmill-primary-small,
+.sawmill-outline-small,
+.sawmill-chip,
+.sawmill-marketplace-actions button,
+.sawmill-timber-card-footer button,
+.sawmill-view-gallery-btn,
+.sawmill-empty button,
+.sawmill-modal-buttons button,
+.sawmill-upload-btn,
+.sell-tree-footer button,
+.sawmill-logout{
+  min-height:44px;
+}
+
+.sawmill-main,
+.sawmill-container,
+.sawmill-section,
+.sawmill-hero,
+.sawmill-account,
+.sawmill-stats,
+.sawmill-tools,
+.sawmill-market-grid,
+.sawmill-jobs-grid,
+.sawmill-workers-grid,
+.sawmill-requirements-grid,
+.sawmill-timber-card{
+  min-width:0;
+}
+
+.sawmill-timber-card-body h3,
+.sawmill-market-body h3,
+.sawmill-job-card h3,
+.sawmill-worker-top strong,
+.sawmill-requirement-body h3,
+.sawmill-notification-item p{
+  overflow-wrap:anywhere;
+}
+
+.sawmill-timber-card-footer{
+  flex-wrap:wrap;
+}
+
+@media (max-width:1180px){
+  .sawmill-header{
+    left:0;
+    padding:0 18px;
+  }
+
+  .sawmill-menu-btn{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 auto;
+  }
+
+  .sawmill-logo{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .sawmill-header-right{
+    min-width:0;
+    margin-left:auto;
+  }
+
+  .sawmill-sidebar{
+    width:min(310px,88vw);
+    height:100dvh;
+    max-height:100dvh;
+    overflow:hidden;
+  }
+
+  .sawmill-sidebar > div:first-child{
+    min-height:0;
+    overflow:auto;
+  }
+
+  .sawmill-nav{
+    overflow:visible;
+  }
+
+  .sawmill-main{
+    width:100%;
+    padding-left:20px;
+    padding-right:20px;
+  }
+}
+
+@media (max-width:760px){
+  .sawmill-header{
+    height:64px;
+    padding:0 10px;
+    gap:7px;
+  }
+
+  .sawmill-menu-btn{
+    width:42px;
+    height:42px;
+  }
+
+  .sawmill-logo{
+    flex:1 1 auto;
+    font-size:16px;
+  }
+
+  .sawmill-header-right{
+    gap:5px;
+  }
+
+  .sawmill-language-wrap{
+    display:none;
+  }
+
+  .sawmill-header-profile{
+    width:42px;
+    height:42px;
+    padding:3px;
+    border-radius:50%;
+    justify-content:center;
+  }
+
+  .sawmill-header-profile > span:last-child{
+    display:none;
+  }
+
+  .sawmill-main{
+    width:100%;
+    padding:76px 10px 20px;
+  }
+
+  .sawmill-hero{
+    width:100%;
+    grid-template-columns:1fr;
+    padding:22px 16px;
+    border-radius:18px;
+  }
+
+  .sawmill-hero h1{
+    font-size:28px;
+    line-height:1.08;
+  }
+
+  .sawmill-hero p{
+    font-size:11px;
+    line-height:1.6;
+  }
+
+  .sawmill-hero-art{
+    display:none;
+  }
+
+  .sawmill-hero-actions{
+    display:grid;
+    grid-template-columns:1fr;
+    width:100%;
+  }
+
+  .sawmill-primary,
+  .sawmill-secondary{
+    width:100%;
+    justify-content:center;
+  }
+
+  .sawmill-account{
+    width:100%;
+    align-items:center;
+    padding:11px;
+  }
+
+  .sawmill-account-left{
+    min-width:0;
+    flex:1;
+  }
+
+  .sawmill-account-left strong,
+  .sawmill-account-left span{
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .sawmill-stats{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .sawmill-stats > div{
+    min-width:0;
+    padding:10px;
+    grid-template-columns:38px 1fr;
+  }
+
+  .sawmill-stats strong{
+    font-size:17px;
+  }
+
+  .sawmill-tools{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .sawmill-tools button{
+    min-height:104px;
+    padding:11px;
+  }
+
+  .sawmill-section{
+    padding:13px;
+    border-radius:16px;
+    overflow:hidden;
+  }
+
+  .sawmill-section-heading{
+    width:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:7px;
+  }
+
+  .sawmill-section-heading h2{
+    font-size:19px;
+  }
+
+  .sawmill-section-heading p{
+    font-size:10px;
+    line-height:1.55;
+  }
+
+  .sawmill-marketplace-actions{
+    width:100%;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:7px;
+  }
+
+  .sawmill-marketplace-actions button{
+    width:100%;
+    min-width:0;
+    padding:8px 7px;
+    justify-content:center;
+    white-space:normal;
+    text-align:center;
+  }
+
+  .sawmill-marketplace-actions button.primary{
+    grid-column:1/-1;
+  }
+
+  .sawmill-marketplace-summary{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:6px;
+    font-size:11px;
+    line-height:1.45;
+  }
+
+  .sawmill-market-grid,
+  .sawmill-timber-market-grid,
+  .sawmill-jobs-grid,
+  .sawmill-workers-grid,
+  .sawmill-requirements-grid{
+    grid-template-columns:1fr !important;
+    width:100%;
+  }
+
+  .sawmill-timber-card-image{
+    height:220px;
+  }
+
+  .sawmill-timber-card-body{
+    padding:14px;
+  }
+
+  .sawmill-timber-card-body h3{
+    font-size:18px;
+  }
+
+  .sawmill-timber-details{
+    grid-template-columns:1fr 1fr;
+  }
+
+  .sawmill-timber-card-footer{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .sawmill-timber-card-footer button{
+    width:100%;
+    justify-content:center;
+  }
+
+  .sawmill-footer{
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+
+  .sawmill-footer-note,
+  .sawmill-footer-direct{
+    grid-column:1/-1;
+  }
+
+  .sawmill-footer-direct{
+    justify-content:center;
+  }
+
+  /* Sidebar/mobile menu */
+  .sawmill-sidebar{
+    width:min(310px,88vw);
+    padding:14px 10px 12px;
+  }
+
+  .sawmill-sidebar .sawmill-brand{
+    padding:7px 7px 14px;
+  }
+
+  .sawmill-business-card{
+    margin:11px 1px;
+  }
+
+  .sawmill-nav{
+    gap:3px;
+    padding-bottom:7px;
+  }
+
+  .sawmill-nav button{
+    min-height:44px;
+    padding:10px;
+    font-size:11px;
+  }
+
+  .sawmill-nav button b{
+    flex:0 0 auto;
+  }
+
+  .sawmill-sidebar-bottom{
+    padding-top:7px;
+  }
+
+  .sawmill-connect-note{
+    padding:7px;
+  }
+
+  /* Dashboard modals */
+  .sawmill-modal-overlay,
+  .sawmill-gallery-overlay{
+    padding:0;
+    align-items:stretch;
+  }
+
+  .sawmill-modal,
+  .sawmill-gallery-modal{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+  }
+
+  .sawmill-modal-header,
+  .sawmill-gallery-head{
+    padding:12px;
+  }
+
+  .sawmill-post-body,
+  .sawmill-timber-form{
+    padding:13px 12px 20px;
+  }
+
+  .sawmill-form-grid{
+    grid-template-columns:1fr;
+  }
+
+  .sawmill-upload-preview{
+    grid-template-columns:repeat(3,1fr);
+  }
+
+  .sawmill-gallery-main{
+    min-height:250px;
+    margin:8px;
+  }
+
+  .sawmill-gallery-main img{
+    height:46vh;
+    min-height:220px;
+  }
+
+  .sawmill-gallery-info{
+    grid-template-columns:1fr 1fr;
+  }
+
+  /* Notifications */
+  .sawmill-notification-overlay{
+    padding:0;
+    align-items:stretch;
+  }
+
+  .sawmill-notification-drawer{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+  }
+
+  .sawmill-notification-head{
+    padding:14px 12px;
+  }
+
+  .sawmill-notification-list{
+    padding:7px;
+  }
+
+  .sawmill-notification-item{
+    grid-template-columns:42px minmax(0,1fr);
+    padding:10px;
+  }
+
+  .sawmill-notification-item > img,
+  .sawmill-notification-icon{
+    width:42px;
+    height:42px;
+  }
+
+  /* Sell Timber */
+  .sell-tree-overlay{
+    padding:0 !important;
+    align-items:stretch !important;
+  }
+
+  .sell-tree-modal{
+    width:100%;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+  }
+
+  .sell-tree-header{
+    padding:11px 12px;
+    gap:8px;
+  }
+
+  .sell-tree-brand{
+    min-width:0;
+  }
+
+  .sell-tree-brand strong{
+    font-size:14px;
+  }
+
+  .sell-tree-brand span{
+    font-size:9px;
+  }
+
+  .sell-progress{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:4px;
+    padding:8px 9px;
+  }
+
+  .sell-progress-item{
+    min-width:0;
+    justify-content:center;
+    flex-direction:column;
+    text-align:center;
+    gap:3px;
+    font-size:7px;
+  }
+
+  .sell-step{
+    padding:13px;
+  }
+
+  .sell-step-heading h2{
+    font-size:21px;
+  }
+
+  .sell-step-heading p{
+    font-size:9px;
+  }
+
+  .sell-category-grid,
+  .sell-form-grid{
+    grid-template-columns:1fr !important;
+  }
+
+  .sell-full{
+    grid-column:auto;
+  }
+
+  .sell-category-card{
+    grid-template-columns:44px minmax(0,1fr) auto;
+    padding:11px;
+  }
+
+  .sell-form-grid input,
+  .sell-form-grid select,
+  .sell-form-grid textarea,
+  .sell-dependent-box select,
+  .sell-subtype-block select{
+    min-height:44px;
+    font-size:15px !important;
+  }
+
+  .sell-form-grid textarea{
+    min-height:120px;
+  }
+
+  .sell-photo-upload{
+    min-height:170px;
+    padding:16px;
+  }
+
+  .sell-photo-grid{
+    grid-template-columns:repeat(2,1fr) !important;
+  }
+
+  .sell-review-grid{
+    grid-template-columns:1fr !important;
+  }
+
+  .sell-tree-body{
+    min-height:0;
+    overflow:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .sell-tree-footer{
+    position:sticky;
+    bottom:0;
+    z-index:5;
+    padding:9px 10px;
+    background:#fff;
+  }
+
+  .sell-tree-footer button{
+    min-width:0;
+    flex:1 1 0;
+    justify-content:center;
+  }
+
+  .sell-publish-button{
+    min-width:0;
+  }
+}
+
+@media (max-width:430px){
+  .sawmill-main{
+    padding-left:8px;
+    padding-right:8px;
+  }
+
+  .sawmill-tools{
+    grid-template-columns:1fr;
+  }
+
+  .sawmill-marketplace-actions{
+    grid-template-columns:1fr;
+  }
+
+  .sawmill-marketplace-actions button.primary{
+    grid-column:auto;
+  }
+
+  .sawmill-timber-card-image{
+    height:205px;
+  }
+
+  .sawmill-timber-details{
+    grid-template-columns:1fr;
+  }
+
+  .sawmill-gallery-info{
+    grid-template-columns:1fr;
+  }
+
+  .sell-language{
+    display:none;
+  }
+
+  .sell-tree-brand-icon{
+    width:36px;
+    height:36px;
+  }
+
+  .sell-progress-item{
+    font-size:6px;
+  }
+
+  .sell-progress-item span{
+    width:22px;
+    height:22px;
+  }
+
+  .sell-tree-footer button{
+    font-size:9px;
+    padding:0 7px;
+  }
+}
+
+/* =========================================================
+   LISTING GALLERY + CONTACT BUTTON FINAL UI FIX
+   Mobile-first polish
+   ========================================================= */
+
+.sawmill-gallery-modal,
+.sawmill-gallery-modal *{
+  box-sizing:border-box;
+}
+
+.sawmill-gallery-modal{
+  overflow-x:hidden;
+  overscroll-behavior:contain;
+}
+
+.sawmill-gallery-head>button{
+  flex:0 0 38px;
+  width:38px;
+  height:38px;
+  min-width:38px;
+  border:1px solid #dbe5de;
+  background:#f8fbf9;
+  color:#17351f;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.sawmill-gallery-head>button:hover{
+  background:#edf6ef;
+  transform:scale(1.03);
+}
+
+/* Main photo: always fit inside the modal without cropping */
+.sawmill-gallery-main{
+  position:relative;
+  width:calc(100% - 32px);
+  margin:16px;
+  min-height:0;
+  height:min(58vh,560px);
+  aspect-ratio:16/10;
+  border-radius:18px;
+  overflow:hidden;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#0b1710;
+}
+
+.sawmill-gallery-main img{
+  display:block;
+  width:100%;
+  height:100%;
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  object-position:center;
+  background:#0b1710;
+}
+
+/* Main image arrows */
+.sawmill-gallery-nav{
+  z-index:3;
+  width:40px;
+  height:40px;
+  min-width:40px;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(11,35,20,.58);
+  color:#fff;
+  box-shadow:0 8px 20px rgba(0,0,0,.22);
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.sawmill-gallery-nav:hover{
+  background:rgba(25,72,37,.84);
+  transform:translateY(-50%) scale(1.06);
+}
+
+.sawmill-gallery-counter{
+  z-index:4;
+  right:12px;
+  bottom:12px;
+  padding:6px 10px;
+  font-size:10px;
+  backdrop-filter:blur(5px);
+}
+
+/* Thumbnail strip with small side arrows */
+.sawmill-gallery-thumbs-wrap{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:0 12px 16px;
+}
+
+.sawmill-gallery-thumbs{
+  flex:1 1 auto;
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding:2px 1px 5px;
+  scroll-behavior:smooth;
+  scrollbar-width:thin;
+}
+
+.sawmill-gallery-thumbs::-webkit-scrollbar{
+  height:5px;
+}
+
+.sawmill-gallery-thumbs::-webkit-scrollbar-track{
+  background:#edf3ee;
+  border-radius:999px;
+}
+
+.sawmill-gallery-thumbs::-webkit-scrollbar-thumb{
+  background:#aac1ae;
+  border-radius:999px;
+}
+
+.sawmill-gallery-thumbs button{
+  flex:0 0 78px;
+  width:78px;
+  height:62px;
+  min-width:78px;
+  padding:0;
+  border:2px solid transparent;
+  border-radius:10px;
+  overflow:hidden;
+  background:#eef4ef;
+  cursor:pointer;
+  transition:.2s ease;
+}
+
+.sawmill-gallery-thumbs button:hover{
+  transform:translateY(-1px);
+  border-color:#a6c3ab;
+}
+
+.sawmill-gallery-thumbs button.active{
+  border-color:#168346;
+  box-shadow:0 0 0 2px rgba(22,131,70,.12);
+}
+
+.sawmill-gallery-thumbs img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+
+.sawmill-gallery-thumbs-arrow{
+  flex:0 0 31px;
+  width:31px;
+  height:31px;
+  min-width:31px;
+  border:1px solid #d5e1d8;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  background:#f7faf8;
+  color:#244b2d;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(28,65,39,.08);
+  transition:.2s ease;
+}
+
+.sawmill-gallery-thumbs-arrow:hover{
+  background:#eaf4ec;
+  border-color:#88ae91;
+  transform:scale(1.05);
+}
+
+/* Contact actions in the listing detail */
+.sawmill-contact-buttons{
+  width:calc(100% - 32px);
+  margin:0 16px 16px;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+
+.sawmill-contact-buttons button{
+  min-height:46px;
+  min-width:0;
+  padding:10px 14px;
+  border:1px solid #d6e2d8;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  font:700 12px/1.1 inherit;
+  color:#18341f;
+  background:#f8fbf9;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.sawmill-contact-buttons button:hover{
+  transform:translateY(-1px);
+  background:#edf7ef;
+  border-color:#9cbba2;
+  box-shadow:0 7px 18px rgba(28,68,39,.10);
+}
+
+.sawmill-contact-buttons button:active{
+  transform:translateY(0);
+}
+
+.sawmill-contact-buttons button:first-child{
+  color:#214f2a;
+}
+
+.sawmill-contact-buttons button:nth-child(2){
+  color:#126534;
+}
+
+.sawmill-contact-buttons button:nth-child(3){
+  color:#284d71;
+}
+
+.sawmill-contact-buttons svg{
+  flex:0 0 auto;
+}
+
+/* Existing inline contact rows elsewhere in the dashboard */
+.sawmill-listing-contact-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.sawmill-listing-contact-row button{
+  min-height:40px;
+  padding:9px 13px;
+  border:1px solid #d6e2d8;
+  border-radius:10px;
+  background:#fff;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  font:700 11px/1 inherit;
+  cursor:pointer;
+}
+
+/* Info cards under the photo */
+.sawmill-gallery-info{
+  width:calc(100% - 32px);
+  margin:0 16px 14px;
+  padding:0;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+.sawmill-gallery-info>div{
+  min-width:0;
+  padding:12px;
+  border:1px solid #edf2ee;
+  background:#f7faf8;
+}
+
+.sawmill-gallery-info strong,
+.sawmill-gallery-info small{
+  overflow-wrap:anywhere;
+}
+
+.sawmill-gallery-description{
+  width:calc(100% - 32px);
+  margin:0 16px 20px;
+}
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+@media (max-width:760px){
+  .sawmill-gallery-overlay{
+    padding:0 !important;
+    align-items:stretch;
+    overflow:hidden;
+  }
+
+  .sawmill-gallery-modal{
+    width:100%;
+    max-width:none;
+    height:100dvh;
+    max-height:100dvh;
+    border-radius:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+
+  .sawmill-gallery-head{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:12px;
+    background:rgba(255,255,255,.97);
+    backdrop-filter:blur(10px);
+  }
+
+  .sawmill-gallery-head h2{
+    max-width:calc(100vw - 78px);
+    margin-top:3px;
+    font-size:17px;
+    line-height:1.2;
+    overflow-wrap:anywhere;
+  }
+
+  .sawmill-gallery-head p{
+    max-width:calc(100vw - 78px);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    font-size:10px;
+  }
+
+  .sawmill-gallery-main{
+    width:calc(100% - 20px);
+    margin:10px;
+    height:min(52vh,430px);
+    min-height:250px;
+    aspect-ratio:4/3;
+    border-radius:14px;
+  }
+
+  .sawmill-gallery-main img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+  }
+
+  .sawmill-gallery-nav{
+    width:34px;
+    height:34px;
+    min-width:34px;
+  }
+
+  .sawmill-gallery-nav.left{left:7px}
+  .sawmill-gallery-nav.right{right:7px}
+
+  .sawmill-gallery-thumbs-wrap{
+    gap:5px;
+    padding:0 10px 12px;
+  }
+
+  .sawmill-gallery-thumbs{
+    gap:6px;
+    padding-bottom:4px;
+  }
+
+  .sawmill-gallery-thumbs button{
+    flex-basis:66px;
+    width:66px;
+    min-width:66px;
+    height:54px;
+    border-radius:8px;
+  }
+
+  .sawmill-gallery-thumbs-arrow{
+    width:28px;
+    height:28px;
+    min-width:28px;
+  }
+
+  .sawmill-contact-buttons{
+    width:calc(100% - 20px);
+    margin:0 10px 12px;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:7px;
+  }
+
+  .sawmill-contact-buttons button{
+    min-height:44px;
+    padding:8px 5px;
+    border-radius:10px;
+    gap:5px;
+    font-size:10px;
+    white-space:nowrap;
+  }
+
+  .sawmill-contact-buttons svg{
+    width:16px;
+    height:16px;
+  }
+
+  .sawmill-gallery-info{
+    width:calc(100% - 20px);
+    margin:0 10px 10px;
+    gap:8px;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+
+  .sawmill-gallery-info>div{
+    min-height:56px;
+    padding:10px;
+    border-radius:12px;
+  }
+
+  .sawmill-gallery-info small{
+    font-size:8px;
+  }
+
+  .sawmill-gallery-info strong{
+    font-size:10px;
+    line-height:1.25;
+  }
+
+  .sawmill-gallery-description{
+    width:calc(100% - 20px);
+    margin:0 10px 16px;
+    padding:11px;
+    border-radius:10px;
+  }
+}
+
+@media (max-width:430px){
+  .sawmill-gallery-main{
+    min-height:225px;
+    height:45vh;
+  }
+
+  .sawmill-gallery-thumbs button{
+    flex-basis:60px;
+    width:60px;
+    min-width:60px;
+    height:50px;
+  }
+
+  .sawmill-contact-buttons{
+    gap:5px;
+  }
+
+  .sawmill-contact-buttons button{
+    min-height:42px;
+    padding:7px 3px;
+    font-size:9px;
+  }
+}
+
+@media (max-width:350px){
+  .sawmill-contact-buttons button{
+    gap:3px;
+    font-size:8.5px;
+  }
+
+  .sawmill-contact-buttons svg{
+    width:14px;
+    height:14px;
+  }
+}
+
+
+/* =========================================================
+   FINAL SIDEBAR SCROLL + LOGOUT FIX
+   Keeps existing functionality unchanged
+   ========================================================= */
+
+/* The sidebar itself stays fixed; its upper content becomes
+   the scrollable flex area and the logout section stays visible. */
+.sawmill-sidebar{
+  height:100dvh;
+  min-height:100dvh;
+  overflow:hidden !important;
+  display:flex !important;
+  flex-direction:column !important;
+}
+
+.sawmill-sidebar > div:first-child{
+  min-height:0 !important;
+  flex:1 1 auto !important;
+  display:flex !important;
+  flex-direction:column !important;
+  overflow:hidden !important;
+}
+
+.sawmill-sidebar .sawmill-brand,
+.sawmill-sidebar .sawmill-business-card{
+  flex:0 0 auto;
+}
+
+.sawmill-sidebar .sawmill-nav{
+  min-height:0 !important;
+  flex:1 1 auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  padding-right:4px;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#b9ccbF transparent;
+}
+
+.sawmill-sidebar .sawmill-nav::-webkit-scrollbar{
+  width:5px;
+}
+
+.sawmill-sidebar .sawmill-nav::-webkit-scrollbar-track{
+  background:transparent;
+}
+
+.sawmill-sidebar .sawmill-nav::-webkit-scrollbar-thumb{
+  background:#b9cdbf;
+  border-radius:999px;
+}
+
+.sawmill-sidebar .sawmill-nav::-webkit-scrollbar-thumb:hover{
+  background:#8eab97;
+}
+
+.sawmill-sidebar-bottom{
+  flex:0 0 auto !important;
+  margin-top:0 !important;
+  position:relative;
+  z-index:2;
+  background:#fff;
+  padding:10px 0 0;
+  border-top:1px solid #edf2ee;
+}
+
+.sawmill-sidebar-bottom .sawmill-connect-note{
+  overflow-wrap:anywhere;
+}
+
+.sawmill-sidebar-bottom .sawmill-logout{
+  width:100%;
+  min-height:44px;
+  flex:0 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+/* Prevent long labels from creating horizontal overflow. */
+.sawmill-sidebar .sawmill-nav button{
+  min-width:0;
+}
+
+.sawmill-sidebar .sawmill-nav button > svg{
+  flex:0 0 auto;
+}
+
+.sawmill-sidebar .sawmill-nav button{
+  overflow:hidden;
+}
+
+.sawmill-sidebar .sawmill-nav button b{
+  flex:0 0 auto;
+}
+
+@media (max-width:1180px){
+  .sawmill-sidebar{
+    height:100dvh !important;
+    max-height:100dvh !important;
+    overflow:hidden !important;
+  }
+
+  .sawmill-sidebar > div:first-child{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    overflow:hidden !important;
+  }
+
+  .sawmill-sidebar .sawmill-nav{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+  }
+
+  .sawmill-sidebar-bottom{
+    flex:0 0 auto !important;
+    display:block !important;
+    visibility:visible !important;
+    opacity:1 !important;
+  }
+}
+
+@media (max-width:760px){
+  .sawmill-sidebar{
+    width:min(320px,88vw) !important;
+    height:100dvh !important;
+    max-height:100dvh !important;
+    padding:12px 10px 10px !important;
+    overflow:hidden !important;
+  }
+
+  .sawmill-sidebar > div:first-child{
+    min-height:0 !important;
+    flex:1 1 auto !important;
+    overflow:hidden !important;
+  }
+
+  .sawmill-sidebar .sawmill-nav{
+    flex:1 1 auto !important;
+    min-height:0 !important;
+    overflow-y:auto !important;
+    overflow-x:hidden !important;
+    padding-bottom:8px !important;
+    scrollbar-width:thin;
+  }
+
+  .sawmill-sidebar .sawmill-nav button{
+    min-height:45px;
+    padding:10px 9px;
+    font-size:11px;
+  }
+
+  .sawmill-sidebar-bottom{
+    flex:0 0 auto !important;
+    padding:8px 0 0 !important;
+    background:#fff !important;
+  }
+
+  .sawmill-connect-note{
+    padding:6px 5px !important;
+    line-height:1.4;
+  }
+
+  .sawmill-sidebar-bottom .sawmill-logout{
+    min-height:46px !important;
+    margin-top:2px;
+    border-radius:11px;
+  }
+}
+
+@media (max-width:380px){
+  .sawmill-sidebar{
+    width:92vw !important;
+  }
+
+  .sawmill-sidebar .sawmill-nav button{
+    min-height:44px;
+    font-size:10.5px;
+  }
+
+  .sawmill-connect-note{
+    font-size:9px;
+  }
+}

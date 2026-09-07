@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import { watermarkImage } from "../watermarkImage";
 import "./SawmillDashboard.css";
 import TreeLoader from "../components/TreeLoader";
 
@@ -660,13 +661,40 @@ function SellTreeForm({ user, profile, onClose, onPublished }) {
     setErrorMessage("");
   }
 
-  function handlePhotos(event) {
+  async function handlePhotos(event) {
     const selected = Array.from(event.target.files || []);
+    event.target.value = "";
+
     const valid = selected.filter(
       (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
     );
-    setPhotos((prev) => [...prev, ...valid].slice(0, 10));
-    event.target.value = "";
+
+    if (!valid.length) {
+      setErrorMessage("Please select JPG, PNG or WEBP images up to 5 MB each.");
+      return;
+    }
+
+    try {
+      setErrorMessage("");
+      const remaining = Math.max(0, 10 - photos.length);
+      const filesToProcess = valid.slice(0, remaining);
+
+      const processed = await Promise.all(
+        filesToProcess.map((file) =>
+          watermarkImage(file, {
+            watermark: "TimberMart",
+            bottomText: "🌳 TimberMart",
+          })
+        )
+      );
+
+      setPhotos((prev) => [...prev, ...processed].slice(0, 10));
+    } catch (error) {
+      console.error("Watermark processing error:", error);
+      setErrorMessage(
+        error?.message || "Unable to process the selected image."
+      );
+    }
   }
 
   function removePhoto(index) {
@@ -811,16 +839,27 @@ function SellTreeForm({ user, profile, onClose, onPublished }) {
 
       for (let index = 0; index < photos.length; index++) {
         const file = photos[index];
-        const extension = file.name.split(".").pop() || "jpg";
+
+        const watermarkedFile = file.type === "image/webp"
+          ? file
+          : await watermarkImage(file, {
+              watermark: "TimberMart",
+              bottomText: "🌳 TimberMart",
+            });
+
+        const safeName = (watermarkedFile.name || file.name || `timber-${index}`)
+          .replace(/[^a-zA-Z0-9.-]/g, "-")
+          .toLowerCase();
+
         const storagePath =
-          `${user.id}/${listing.id}/${Date.now()}-${index}.${extension}`;
+          `${user.id}/${listing.id}/${Date.now()}-${index}-${safeName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("listing-photos")
-          .upload(storagePath, file, {
-            cacheControl: "3600",
+          .upload(storagePath, watermarkedFile, {
+            cacheControl: "31536000",
             upsert: false,
-            contentType: file.type,
+            contentType: "image/webp",
           });
 
         if (uploadError) {
@@ -845,7 +884,9 @@ function SellTreeForm({ user, profile, onClose, onPublished }) {
             sort_order: index,
           });
 
-        if (imageError) console.error("Listing image database error:", imageError);
+        if (imageError) {
+          console.error("Listing image database error:", imageError);
+        }
       }
 
       setStep(5);
@@ -2342,17 +2383,27 @@ export default function SawmillDashboard() {
 
       for (let index = 0; index < timberPhotos.length; index += 1) {
         const file = timberPhotos[index];
-        const safeName = file.name
+
+        const watermarkedFile = file.type === "image/webp"
+          ? file
+          : await watermarkImage(file, {
+              watermark: "TimberMart",
+              bottomText: "🌳 TimberMart",
+            });
+
+        const safeName = (watermarkedFile.name || file.name || `timber-${index}`)
           .replace(/[^a-zA-Z0-9.-]/g, "-")
           .toLowerCase();
-        const storagePath = `${session.user.id}/${listing.id}/${Date.now()}-${index}-${safeName}`;
+
+        const storagePath =
+          `${session.user.id}/${listing.id}/${Date.now()}-${index}-${safeName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("listing-photos")
-          .upload(storagePath, file, {
-            cacheControl: "3600",
+          .upload(storagePath, watermarkedFile, {
+            cacheControl: "31536000",
             upsert: false,
-            contentType: file.type,
+            contentType: "image/webp",
           });
 
         if (uploadError) {
@@ -2410,16 +2461,31 @@ export default function SawmillDashboard() {
     }
   }
 
-  function handleTimberPhotoSelect(event) {
+  async function handleTimberPhotoSelect(event) {
     const selected = Array.from(event.target.files || []).filter(
       (file) => file.type.startsWith("image/") && file.size <= 5 * 1024 * 1024
     );
 
-    setTimberPhotos((old) =>
-      [...old, ...selected].slice(0, 10)
-    );
-
     event.target.value = "";
+
+    if (!selected.length) return;
+
+    try {
+      const remaining = Math.max(0, 10 - timberPhotos.length);
+      const processed = await Promise.all(
+        selected.slice(0, remaining).map((file) =>
+          watermarkImage(file, {
+            watermark: "TimberMart",
+            bottomText: "🌳 TimberMart",
+          })
+        )
+      );
+
+      setTimberPhotos((old) => [...old, ...processed].slice(0, 10));
+    } catch (error) {
+      console.error("Watermark processing error:", error);
+      alert(error?.message || "Unable to process the selected image.");
+    }
   }
 
   function removeTimberPhoto(index) {
@@ -4409,7 +4475,7 @@ export default function SawmillDashboard() {
                   const expired = isListingExpired(listing);
                   const daysLeft = getDaysLeft(listing);
                   const expiry = getListingExpiry(listing);
-                  const sellerName = listing.seller?.name || listing.seller?.full_name ||
+                  const sellerName = listing.seller?.name ||
                     (listing.user_id === session?.user?.id ? profile?.name : null) || "TimberMart Seller";
                   const status = String(listing.status || "approved");
 
@@ -6267,16 +6333,54 @@ export default function SawmillDashboard() {
                   </span>
                 </div>
 
-                <div className="sawmill-gallery-thumbs">
-                  {getListingImages(selectedListing).map((image, index) => (
+                <div className="sawmill-gallery-thumbs-wrap">
+                  {getListingImages(selectedListing).length > 4 && (
                     <button
-                      key={`${image}-${index}`}
-                      className={index === galleryIndex ? "active" : ""}
-                      onClick={() => setGalleryIndex(index)}
+                      type="button"
+                      className="sawmill-gallery-thumbs-arrow left"
+                      aria-label="Previous photo"
+                      onClick={() =>
+                        setGalleryIndex((index) =>
+                          index === 0
+                            ? getListingImages(selectedListing).length - 1
+                            : index - 1
+                        )
+                      }
                     >
-                      <img src={image} alt="" />
+                      <ChevronLeft size={16} />
                     </button>
-                  ))}
+                  )}
+
+                  <div className="sawmill-gallery-thumbs">
+                    {getListingImages(selectedListing).map((image, index) => (
+                      <button
+                        type="button"
+                        key={`${image}-${index}`}
+                        className={index === galleryIndex ? "active" : ""}
+                        onClick={() => setGalleryIndex(index)}
+                        aria-label={`Open photo ${index + 1}`}
+                      >
+                        <img src={image} alt="" />
+                      </button>
+                    ))}
+                  </div>
+
+                  {getListingImages(selectedListing).length > 4 && (
+                    <button
+                      type="button"
+                      className="sawmill-gallery-thumbs-arrow right"
+                      aria-label="Next photo"
+                      onClick={() =>
+                        setGalleryIndex((index) =>
+                          index === getListingImages(selectedListing).length - 1
+                            ? 0
+                            : index + 1
+                        )
+                      }
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  )}
                 </div>
               </>
             ) : (

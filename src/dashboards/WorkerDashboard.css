@@ -2547,3 +2547,425 @@ textarea.worker-input {
     font-size: 19px;
   }
 }
+/* =====================================================
+   TIMBERMART IMAGE WATERMARK
+===================================================== */
+
+.worker-photo-circle,
+.worker-header-avatar,
+.worker-account-avatar,
+.worker-status-avatar,
+.worker-company-avatar,
+.worker-big-avatar,
+.worker-chat-avatar,
+.worker-review-avatar {
+  position: relative;
+}
+
+.worker-photo-circle::after,
+.worker-header-avatar::after,
+.worker-account-avatar::after,
+.worker-status-avatar::after,
+.worker-company-avatar::after,
+.worker-big-avatar::after,
+.worker-chat-avatar::after,
+.worker-review-avatar::after {
+  content: "TimberMart";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(-22deg);
+  color: rgba(255,255,255,.68);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: .8px;
+  text-shadow: 0 1px 2px rgba(0,0,0,.28);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.worker-photo-circle::before,
+.worker-header-avatar::before,
+.worker-account-avatar::before,
+.worker-status-avatar::before,
+.worker-company-avatar::before,
+.worker-big-avatar::before,
+.worker-chat-avatar::before,
+.worker-review-avatar::before {
+  content: "🌳 TimberMart";
+  position: absolute;
+  left: 50%;
+  bottom: 2px;
+  transform: translateX(-50%);
+  background: rgba(10,35,20,.58);
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.worker-photo-circle img,
+.worker-header-avatar img,
+.worker-account-avatar img,
+.worker-status-avatar img,
+.worker-company-avatar img,
+.worker-big-avatar img,
+.worker-chat-avatar img,
+.worker-review-avatar img {
+  position: relative;
+  z-index: 1;
+}
+
+/* =====================================================
+   LANGUAGE PICKER
+===================================================== */
+
+.worker-language-picker {
+  height: 41px;
+  min-width: 112px;
+  padding: 0 9px;
+  border: 1px solid #dce7df;
+  border-radius: 10px;
+  background: #fff;
+  color: #173e2a;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.worker-language-picker > span {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.worker-language-picker select {
+  min-width: 0;
+  max-width: 90px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #173e2a;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+@media (max-width: 800px) {
+  .worker-header {
+    padding: 0 11px;
+  }
+
+  .worker-logo {
+    position: static;
+    transform: none;
+    margin-left: 9px;
+  }
+
+  .worker-header-right {
+    gap: 6px;
+  }
+
+  .worker-language-picker {
+    min-width: 42px;
+    width: 42px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .worker-language-picker > span {
+    display: none;
+  }
+
+  .worker-language-picker select {
+    width: 100%;
+    max-width: none;
+    text-align: center;
+    font-size: 10px;
+    padding: 0;
+  }
+
+  .worker-notification {
+    width: 38px;
+    height: 38px;
+  }
+
+  .worker-menu-btn {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 auto;
+  }
+
+  .worker-header-user {
+    max-width: 39px;
+    padding: 2px;
+  }
+
+  .worker-header-avatar {
+    width: 33px;
+    height: 33px;
+  }
+
+  .worker-sidebar {
+    padding: 14px 12px;
+    height: calc(100dvh - 70px);
+    overflow: hidden;
+    display: flex;
+  }
+
+  .worker-sidebar > div:first-child {
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+
+  .worker-nav {
+    padding-bottom: 12px;
+  }
+
+  .worker-sidebar-bottom {
+    flex: 0 0 auto;
+    padding-top: 8px;
+  }
+
+  .worker-main {
+    width: 100%;
+    overflow-x: clip;
+  }
+
+  .worker-container {
+    width: 100%;
+    max-width: 100%;
+    padding: 16px 12px 34px;
+  }
+
+  .worker-hero {
+    min-height: 0;
+    padding: 22px 18px;
+    border-radius: 17px;
+  }
+
+  .worker-hero h1 {
+    font-size: clamp(25px, 7vw, 32px);
+    line-height: 1.1;
+  }
+
+  .worker-hero p {
+    font-size: 12px;
+    line-height: 1.55;
+  }
+
+  .worker-account-status {
+    flex-wrap: wrap;
+    padding: 13px;
+  }
+
+  .worker-status-incomplete,
+  .worker-status-complete {
+    margin-left: auto;
+  }
+
+  .worker-job-search {
+    max-width: none;
+    width: 100%;
+  }
+
+  .worker-job-search input {
+    min-width: 0;
+  }
+
+  .worker-profile-banner {
+    gap: 10px;
+  }
+
+  .worker-modal-overlay {
+    padding: max(7px, env(safe-area-inset-top)) 7px max(7px, env(safe-area-inset-bottom));
+    align-items: flex-start;
+  }
+
+  .worker-modal {
+    max-height: calc(100dvh - 14px);
+    border-radius: 16px;
+    margin-top: 0;
+  }
+
+  .worker-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #fff;
+  }
+
+  .worker-wizard-body {
+    padding-bottom: 18px;
+  }
+
+  .worker-steps {
+    overflow-x: auto;
+    grid-template-columns: repeat(5, minmax(64px, 1fr));
+    scrollbar-width: none;
+  }
+
+  .worker-steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  .worker-job-detail-body {
+    padding: 15px;
+  }
+
+  .worker-job-detail-company {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .worker-job-detail-company > button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .worker-contact-actions button,
+  .worker-apply-button,
+  .worker-edit-profile,
+  .worker-wizard-buttons button {
+    min-height: 46px;
+    font-size: 11px;
+  }
+
+  .worker-chat {
+    width: 100%;
+    max-width: 100%;
+    height: calc(100dvh - 14px);
+    border-radius: 16px;
+  }
+
+  .worker-chat-form {
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 560px) {
+  .worker-logo {
+    font-size: 15px;
+  }
+
+  .worker-logo span {
+    width: 31px;
+    height: 31px;
+  }
+
+  .worker-header-right {
+    gap: 4px;
+  }
+
+  .worker-language-picker {
+    width: 38px;
+    height: 38px;
+  }
+
+  .worker-header-user {
+    width: 38px;
+    max-width: 38px;
+    height: 38px;
+  }
+
+  .worker-hero {
+    padding: 20px 16px;
+  }
+
+  .worker-hero-actions,
+  .worker-wizard-buttons {
+    gap: 7px;
+  }
+
+  .worker-section {
+    margin-top: 25px;
+  }
+
+  .worker-section-title {
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .worker-section-title p {
+    max-width: 230px;
+  }
+
+  .worker-job-card {
+    padding: 14px;
+  }
+
+  .worker-job-footer {
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .worker-footer {
+    margin-top: 27px;
+  }
+
+  .worker-user-content {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .worker-wizard {
+    max-width: none;
+  }
+
+  .worker-wizard-buttons {
+    flex-direction: column;
+  }
+
+  .worker-wizard-buttons button {
+    width: 100%;
+  }
+
+  .worker-review-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .worker-review-row strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 390px) {
+  .worker-logo {
+    font-size: 14px;
+    gap: 5px;
+  }
+
+  .worker-logo span {
+    width: 29px;
+    height: 29px;
+    font-size: 14px;
+  }
+
+  .worker-notification {
+    display: none;
+  }
+
+  .worker-header {
+    padding: 0 8px;
+  }
+
+  .worker-container {
+    padding-left: 9px;
+    padding-right: 9px;
+  }
+
+  .worker-hero h1 {
+    font-size: 24px;
+  }
+
+  .worker-job-detail-grid > div {
+    padding: 10px;
+  }
+}
