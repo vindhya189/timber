@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from "react";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 
 import GetStarted from "./pages/GetStarted";
 import RoleSelect from "./pages/RoleSelect";
-import Login from "./pages/Login";
+
+// FIXED LOGIN:
+// This Login file checks the role saved in the user's Supabase profile
+// and does not allow the user to switch to another dashboard role.
+import Login from "./pages/Login_FIXED_ROLE_LOCK";
+
+// PREMIUM PAGE
+import PremiumPage from "./pages/PremiumPage";
+
 import "./App.css";
 
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import RequirementWall from "./pages/RequirementWall";
-import AdminDashboard from "./dashboards/AdminDashboard";
 
+import AdminDashboard from "./dashboards/AdminDashboard";
 import FarmerDashboard from "./dashboards/FarmerDashboard";
 import MerchantDashboard from "./dashboards/MerchantDashboard";
 import SawmillDashboard from "./dashboards/SawmillDashboard";
@@ -22,44 +30,25 @@ import { supabase } from "./supabaseClient";
 
 /* =========================================================
    GLOBAL THEME
-   ---------------------------------------------------------
-   Dark Mode Settings lo ON chesina taruvatha,
-   page change ayina, dashboard ki vellina,
-   profile / requirements ki vellina theme continue avtundi.
-   ========================================================= */
-
+========================================================= */
 function GlobalTheme() {
   useEffect(() => {
-    /* ---------------------------------------------
-       Saved dark mode value
-    --------------------------------------------- */
-
     const applySavedTheme = () => {
       const darkMode =
         localStorage.getItem("timbermart_dark_mode") === "true";
 
-      /* HTML */
       document.documentElement.classList.toggle(
         "timber-dark",
         darkMode
       );
 
-      /* BODY */
       document.body.classList.toggle(
         "timber-dark-body",
         darkMode
       );
     };
 
-    /* ---------------------------------------------
-       App start ayyinappudu theme apply
-    --------------------------------------------- */
-
     applySavedTheme();
-
-    /* ---------------------------------------------
-       Settings nunchi theme change ayinappudu
-    --------------------------------------------- */
 
     const handleThemeChange = () => {
       applySavedTheme();
@@ -69,10 +58,6 @@ function GlobalTheme() {
       "timbermart-theme-change",
       handleThemeChange
     );
-
-    /* ---------------------------------------------
-       Cleanup
-    --------------------------------------------- */
 
     return () => {
       window.removeEventListener(
@@ -87,16 +72,7 @@ function GlobalTheme() {
 
 /* =========================================================
    ADMIN ROUTE PROTECTION
-   ---------------------------------------------------------
-   /admin URL ni direct ga type chesina normal user ki
-   AdminDashboard open avvakunda Supabase profiles.role
-   verify chestundi.
-
-   IMPORTANT:
-   AdminDashboard.jsx already has its own admin protection.
-   Ee guard additional route-level protection matrame.
-   ========================================================= */
-
+========================================================= */
 function AdminRoute() {
   const [status, setStatus] = useState("checking");
 
@@ -125,7 +101,11 @@ function AdminRoute() {
 
         if (profileError) throw profileError;
 
-        if (profile?.role === "admin") {
+        const actualRole = String(profile?.role || "")
+          .toLowerCase()
+          .trim();
+
+        if (actualRole === "admin" || actualRole === "administrator") {
           if (active) setStatus("allowed");
         } else {
           if (active) setStatus("unauthorized");
@@ -143,10 +123,6 @@ function AdminRoute() {
     };
   }, []);
 
-  /* ---------------------------------------------
-     Checking
-  --------------------------------------------- */
-
   if (status === "checking") {
     return (
       <div className="loading-screen">
@@ -157,163 +133,193 @@ function AdminRoute() {
     );
   }
 
-  /* ---------------------------------------------
-     Not authorized
-  --------------------------------------------- */
-
   if (status !== "allowed") {
-    return (
-      <Navigate
-        to="/login?role=admin"
-        replace
-      />
-    );
+    return <Navigate to="/roles" replace />;
   }
 
   return <AdminDashboard />;
 }
 
 /* =========================================================
-   DASHBOARD ROUTER
+   ROLE-PROTECTED DASHBOARD
    ---------------------------------------------------------
-   Existing dashboard routes same ga uncham.
-   ========================================================= */
+   Even if a user manually types another dashboard URL,
+   Supabase profile.role is checked before the dashboard renders.
+========================================================= */
+function RoleProtectedDashboard({ requiredRole, children }) {
+  const navigate = useNavigate();
+  const [status, setStatus] = useState("checking");
 
+  useEffect(() => {
+    let active = true;
+
+    const checkRole = async () => {
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
+        if (!session?.user?.id) {
+          if (active) {
+            setStatus("unauthorized");
+            navigate(`/login?role=${requiredRole}`, { replace: true });
+          }
+          return;
+        }
+
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("id, role")
+          .eq("id", session.user.id)
+          .maybeSingle();
+
+        if (profileError) throw profileError;
+
+        const actualRole = String(profile?.role || "")
+          .toLowerCase()
+          .trim();
+
+        // Exact role match only.
+        if (actualRole !== requiredRole) {
+          if (active) {
+            setStatus("wrong-role");
+            navigate(`/login?role=${requiredRole}`, { replace: true });
+          }
+          return;
+        }
+
+        if (active) setStatus("allowed");
+      } catch (error) {
+        console.error("Dashboard role check failed:", error);
+        if (active) {
+          setStatus("unauthorized");
+          navigate(`/login?role=${requiredRole}`, { replace: true });
+        }
+      }
+    };
+
+    checkRole();
+
+    return () => {
+      active = false;
+    };
+  }, [navigate, requiredRole]);
+
+  if (status === "checking") {
+    return (
+      <div className="loading-screen">
+        <div className="loading-logo">🌳</div>
+        <h2>TimberMart</h2>
+        <p>Verifying your account role...</p>
+      </div>
+    );
+  }
+
+  if (status !== "allowed") {
+    return null;
+  }
+
+  return children;
+}
+
+/* =========================================================
+   DASHBOARD ROUTER
+========================================================= */
 function DashboardRouter() {
   return (
     <Routes>
       <Route
         path="farmer"
-        element={<FarmerDashboard />}
+        element={
+          <RoleProtectedDashboard requiredRole="farmer">
+            <FarmerDashboard />
+          </RoleProtectedDashboard>
+        }
       />
 
       <Route
         path="merchant"
-        element={<MerchantDashboard />}
+        element={
+          <RoleProtectedDashboard requiredRole="merchant">
+            <MerchantDashboard />
+          </RoleProtectedDashboard>
+        }
       />
 
       <Route
         path="sawmill"
-        element={<SawmillDashboard />}
+        element={
+          <RoleProtectedDashboard requiredRole="sawmill">
+            <SawmillDashboard />
+          </RoleProtectedDashboard>
+        }
       />
 
       <Route
         path="carpenter"
-        element={<CarpenterDashboard />}
+        element={
+          <RoleProtectedDashboard requiredRole="carpenter">
+            <CarpenterDashboard />
+          </RoleProtectedDashboard>
+        }
       />
 
       <Route
         path="worker"
-        element={<WorkerDashboard />}
+        element={
+          <RoleProtectedDashboard requiredRole="worker">
+            <WorkerDashboard />
+          </RoleProtectedDashboard>
+        }
       />
 
       <Route
         path="buyer"
-        element={<BuyerDashboard />}
-      />
-
-      <Route
-        path="*"
         element={
-          <Navigate
-            to="/roles"
-            replace
-          />
+          <RoleProtectedDashboard requiredRole="buyer">
+            <BuyerDashboard />
+          </RoleProtectedDashboard>
         }
       />
+
+      <Route path="*" element={<Navigate to="/roles" replace />} />
     </Routes>
   );
 }
 
 /* =========================================================
    MAIN APP
-   ========================================================= */
-
+========================================================= */
 export default function App() {
   return (
     <>
-      {/*
-        GlobalTheme page change ayina theme ni maintain chestundi.
-        Existing routes ki emi disturbance undadu.
-      */}
-
       <GlobalTheme />
 
       <Routes>
+        {/* PUBLIC */}
+        <Route path="/" element={<GetStarted />} />
+        <Route path="/roles" element={<RoleSelect />} />
+        <Route path="/login" element={<Login />} />
 
-        {/* =================================================
-            PUBLIC
-        ================================================= */}
+        {/* COMMON LOGGED-IN PAGES */}
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/requirements" element={<RequirementWall />} />
 
-        <Route
-          path="/"
-          element={<GetStarted />}
-        />
+        {/* PREMIUM */}
+        <Route path="/premium" element={<PremiumPage />} />
 
-        <Route
-          path="/roles"
-          element={<RoleSelect />}
-        />
+        {/* ADMIN */}
+        <Route path="/admin" element={<AdminRoute />} />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+        {/* ROLE-PROTECTED DASHBOARDS */}
+        <Route path="/dashboard/*" element={<DashboardRouter />} />
 
-        {/* =================================================
-            COMMON LOGGED-IN PAGES
-        ================================================= */}
-
-        <Route
-          path="/profile"
-          element={<Profile />}
-        />
-
-        <Route
-          path="/settings"
-          element={<Settings />}
-        />
-
-        <Route
-          path="/requirements"
-          element={<RequirementWall />}
-        />
-
-        {/* =================================================
-            ADMIN
-            -------------------------------------------------
-            AdminDashboard.jsx and AdminDashboard.css already
-            exist. We are only protecting the route here.
-        ================================================= */}
-
-        <Route
-          path="/admin"
-          element={<AdminRoute />}
-        />
-
-        {/* =================================================
-            DASHBOARDS
-        ================================================= */}
-
-        <Route
-          path="/dashboard/*"
-          element={<DashboardRouter />}
-        />
-
-        {/* =================================================
-            FALLBACK
-        ================================================= */}
-
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to="/"
-              replace
-            />
-          }
-        />
-
+        {/* FALLBACK */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
   );
