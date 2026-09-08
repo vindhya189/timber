@@ -9,10 +9,13 @@ import {
   CircleUserRound,
   FileText,
   Eye,
+  ArrowLeft,
+  ArrowRight,
   Home,
   ImagePlus,
   LogOut,
   LocateFixed,
+  Languages,
   MapPin,
   Menu,
   MessageCircle,
@@ -32,6 +35,7 @@ import { supabase } from "../supabaseClient";
 
 import "./FarmerDashboard.css";
 import TreeLoader from "../components/TreeLoader";
+import PremiumLimitModal from "../components/PremiumLimitModal";
 
 /* =========================================================
    FARMER DASHBOARD
@@ -832,6 +836,9 @@ export default function FarmerDashboard() {
   const [selectedRequirement, setSelectedRequirement] =
     useState(null);
   const [selectedOwner, setSelectedOwner] = useState(null);
+  // Premium profile-view gate: free users can open 5 unique user profiles/day.
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [profileViewCount, setProfileViewCount] = useState(5);
 
   // CHAT STATE
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -844,12 +851,22 @@ export default function FarmerDashboard() {
   const selectedProfileRef = useRef(null);
   const showChatRef = useRef(false);
   const userRef = useRef(null);
+  const chatStreamRef = useRef(null);
 
   useEffect(() => {
     selectedProfileRef.current = selectedProfile;
     showChatRef.current = showChat;
     userRef.current = user;
   }, [selectedProfile, showChat, user]);
+
+  useEffect(() => {
+    if (!showChat || !selectedProfile) return;
+    const node = chatStreamRef.current;
+    if (!node) return;
+    requestAnimationFrame(() => {
+      node.scrollTop = node.scrollHeight;
+    });
+  }, [messages, showChat, selectedProfile]);
 
   /* =======================================================
      LISTING EXPIRY CLOCK
@@ -859,14 +876,22 @@ export default function FarmerDashboard() {
      expired listing from the visible Timber Listings section.
   ======================================================= */
 
-  const [expiryNow, setExpiryNow] = useState(Date.now());
+  const [expiryNow, setExpiryNow] = useState(() => Date.now());
 
   useEffect(() => {
-    const expiryTimer = window.setInterval(() => {
-      setExpiryNow(Date.now());
-    }, 1000);
+    const tickExpiry = () => setExpiryNow(Date.now());
+    tickExpiry();
+    const expiryTimer = window.setInterval(tickExpiry, 1000);
 
-    return () => window.clearInterval(expiryTimer);
+    const handleVisibility = () => {
+      if (!document.hidden) tickExpiry();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.clearInterval(expiryTimer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, []);
 
   /* =======================================================
@@ -2345,6 +2370,43 @@ export default function FarmerDashboard() {
 
 
   /* =======================================================
+     PROFILE ACCESS / PREMIUM GATE
+     -------------------------------------------------------
+     The Supabase RPC counts unique profiles viewed today.
+     Existing profile/contact/chat functionality is preserved.
+  ======================================================= */
+  async function openUserProfile(owner) {
+    if (!owner?.id) return;
+
+    if (user?.id && owner.id === user.id) {
+      setSelectedOwner(owner);
+      return;
+    }
+
+    const { data, error } = await supabase.rpc(
+      "check_profile_view_access",
+      { p_viewed_user_id: owner.id }
+    );
+
+    if (error) {
+      console.error("Profile access error:", error);
+      alert("Unable to open this profile right now.");
+      return;
+    }
+
+    const count = Number(data?.view_count);
+    if (Number.isFinite(count)) setProfileViewCount(count);
+
+    if (!data?.allowed) {
+      setProfileViewCount(Number(data?.view_count) || 5);
+      setShowPremiumModal(true);
+      return;
+    }
+
+    setSelectedOwner(owner);
+  }
+
+  /* =======================================================
      OPEN LISTING
   ======================================================= */
 
@@ -2363,11 +2425,25 @@ export default function FarmerDashboard() {
     // -----------------------------------------------------
     // LISTING NOTIFICATION
     // -----------------------------------------------------
+    const notificationType = String(notification.type || "").toLowerCase();
+    const notificationPostType = String(notification.post_type || "").toLowerCase();
+    const listingLikeType = new Set([
+      "listing",
+      "listing_approved",
+      "listing_rejected",
+      "listing_chat",
+      "nearby_match",
+      "approval",
+      "timber_listing",
+      "carpenter_listing",
+    ]);
+
     const listingId =
       notification.listing_id ||
-      (notification.post_type === "listing"
-        ? notification.post_id
-        : null);
+      notification.listingId ||
+      (listingLikeType.has(notificationPostType) ? notification.post_id : null) ||
+      (listingLikeType.has(notificationType) ? notification.post_id : null) ||
+      (String(notification.source || "").toLowerCase().includes("listing") ? notification.post_id : null);
 
     if (listingId) {
       const { data, error } = await supabase
@@ -2398,10 +2474,39 @@ export default function FarmerDashboard() {
       }
 
       if (data) {
+        setSelectedRequirement(null);
+        setSelectedOwner(null);
         setSelectedListing(data);
       }
 
       return;
+    }
+
+    // Some notification rows store the related listing in post_id
+    // without setting a listing-specific post_type/type. Try it as a
+    // final listing fallback before treating the notification as a
+    // requirement/job/service notification.
+    if (!listingId && notification.post_id) {
+      const { data: fallbackListing, error: fallbackListingError } = await supabase
+        .from("listings")
+        .select(`
+          *,
+          profiles:user_id (
+            id, name, role, phone, location, photo_url
+          ),
+          listing_images (
+            id, image_url, storage_path, sort_order
+          )
+        `)
+        .eq("id", notification.post_id)
+        .maybeSingle();
+
+      if (!fallbackListingError && fallbackListing) {
+        setSelectedListing(fallbackListing);
+        setSelectedRequirement(null);
+        setSelectedOwner(null);
+        return;
+      }
     }
 
     // -----------------------------------------------------
@@ -2409,9 +2514,10 @@ export default function FarmerDashboard() {
     // -----------------------------------------------------
     const requirementId =
       notification.requirement_id ||
-      (notification.post_type === "requirement"
-        ? notification.post_id
-        : null);
+      notification.requirementId ||
+      (notificationPostType === "requirement" ? notification.post_id : null) ||
+      (notificationType === "requirement" ? notification.post_id : null) ||
+      (String(notification.source || "").toLowerCase().includes("requirement") ? notification.post_id : null);
 
     if (requirementId) {
       const { data, error } = await supabase
@@ -2436,6 +2542,8 @@ export default function FarmerDashboard() {
       }
 
       if (data) {
+        setSelectedListing(null);
+        setSelectedOwner(null);
         setSelectedRequirement(data);
       }
 
@@ -2889,7 +2997,7 @@ export default function FarmerDashboard() {
               data-tm-language-switcher
               title="Language"
             >
-              <span className="farmer-language-icon">文</span>
+              <span className="farmer-language-icon"><Languages size={16} /></span>
               <select
                 value={language}
                 onChange={(event) => setLanguage(event.target.value)}
@@ -3122,6 +3230,20 @@ export default function FarmerDashboard() {
                 {locationUpdating ? "Updating..." : "Update"}
               </button>
             </div>
+
+            <button
+              type="button"
+              className="farmer-dashboard-premium-button"
+              onClick={() => { setMenuOpen(false); navigate("/premium"); }}
+              aria-label="Open Premium plans"
+            >
+              <span className="farmer-dashboard-premium-icon">♛</span>
+              <span>
+                <strong>Go Premium</strong>
+                <small>Unlimited profile viewing</small>
+              </span>
+              <ArrowRight size={17} />
+            </button>
 
           </div>
 
@@ -3578,13 +3700,7 @@ export default function FarmerDashboard() {
                           requirement.id
                         )
                       }
-                      onProfile={(
-                        owner
-                      ) =>
-                        setSelectedOwner(
-                          owner
-                        )
-                      }
+                      onProfile={openUserProfile}
                       onCall={
                         callUser
                       }
@@ -3594,6 +3710,7 @@ export default function FarmerDashboard() {
                       onChat={
                         chatUser
                       }
+                      nowMs={expiryNow}
                     />
                   )
                 )}
@@ -3623,7 +3740,7 @@ export default function FarmerDashboard() {
           </div>
 
 
-          {filteredListings.length ===
+          {filteredLiveListings.length ===
           0 ? (
 
             <div className="farmer-empty">
@@ -3679,13 +3796,7 @@ export default function FarmerDashboard() {
                           listing
                         )
                       }
-                      onProfile={(
-                        owner
-                      ) =>
-                        setSelectedOwner(
-                          owner
-                        )
-                      }
+                      onProfile={openUserProfile}
                       onCall={
                         callUser
                       }
@@ -3815,13 +3926,7 @@ export default function FarmerDashboard() {
               null
             )
           }
-          onProfile={(
-            owner
-          ) =>
-            setSelectedOwner(
-              owner
-            )
-          }
+          onProfile={openUserProfile}
           onCall={
             callUser
           }
@@ -3831,6 +3936,7 @@ export default function FarmerDashboard() {
           onChat={
             chatUser
           }
+          nowMs={expiryNow}
         />
       )}
 
@@ -3857,13 +3963,7 @@ export default function FarmerDashboard() {
               selectedRequirement.id
             )
           }
-          onProfile={(
-            owner
-          ) =>
-            setSelectedOwner(
-              owner
-            )
-          }
+          onProfile={openUserProfile}
           onCall={
             callUser
           }
@@ -3880,6 +3980,13 @@ export default function FarmerDashboard() {
       {/* =====================================================
           PROFILE MODAL
       ===================================================== */}
+
+      <PremiumLimitModal
+        open={showPremiumModal}
+        onClose={() => setShowPremiumModal(false)}
+        viewedCount={profileViewCount}
+        dailyLimit={5}
+      />
 
       {selectedOwner && (
         <ProfileModal
@@ -3931,7 +4038,7 @@ export default function FarmerDashboard() {
 
       {showMessages && (
         <div className="tm-inbox-overlay" onMouseDown={closeMessagesCenter}>
-          <div className="tm-inbox" onMouseDown={(event) => event.stopPropagation()}>
+          <div className={`tm-inbox ${selectedProfile ? "chat-open" : ""}`} onMouseDown={(event) => event.stopPropagation()}>
             <header className="tm-inbox-topbar">
               <div className="tm-inbox-brand">
                 <div className="tm-inbox-brand-icon"><MessageCircle size={22} /></div>
@@ -4000,6 +4107,14 @@ export default function FarmerDashboard() {
                 {selectedProfile ? (
                   <>
                     <div className="tm-chat-head">
+                      <button
+                        type="button"
+                        className="tm-chat-back"
+                        onClick={() => { setSelectedProfile(null); setShowChat(false); }}
+                        aria-label="Back to chats"
+                      >
+                        <ArrowLeft size={19} />
+                      </button>
                       <div className="tm-chat-person">
                         <div className="tm-chat-avatar">
                           {selectedProfile.photo_url ? <img src={selectedProfile.photo_url} alt="" /> : <span>{(selectedProfile.name || "U").charAt(0).toUpperCase()}</span>}
@@ -4016,7 +4131,7 @@ export default function FarmerDashboard() {
                       </div>
                     </div>
 
-                    <div className="tm-chat-stream">
+                    <div className="tm-chat-stream" ref={chatStreamRef}>
                       {chatLoading ? (
                         <div className="tm-chat-status">Loading messages...</div>
                       ) : messages.length === 0 ? (
@@ -5547,6 +5662,7 @@ function RequirementCard({
   onCall,
   onWhatsapp,
   onChat,
+  nowMs,
 }) {
   const owner =
     requirement.profiles;
@@ -5760,27 +5876,26 @@ function RequirementCard({
 function getListingExpiryDate(listing) {
   if (!listing) return null;
 
-  // Preferred value: Supabase expiry created at admin approval.
+  // The ONLY authoritative expiry value for a listing is expires_at.
+  // Admin approval SQL sets this to approval time + 15 days.
   if (listing.expires_at) {
-    const directDate = new Date(listing.expires_at);
-    if (!Number.isNaN(directDate.getTime())) return directDate;
+    const expiry = new Date(listing.expires_at);
+    if (!Number.isNaN(expiry.getTime())) return expiry;
   }
 
-  // Safe fallback for older approved rows created before expires_at
-  // was added. For approved listings, reviewed_at is the approval time.
-  const baseValue =
-    listing.reviewed_at ||
-    (listing.status === "approved" ? listing.created_at : null);
+  // Legacy compatibility: if an older approved row has no expires_at,
+  // derive it strictly from reviewed_at (admin approval time).
+  if (String(listing.status || "").toLowerCase() === "approved" && listing.reviewed_at) {
+    const reviewed = new Date(listing.reviewed_at);
+    if (!Number.isNaN(reviewed.getTime())) {
+      return new Date(reviewed.getTime() + 15 * 24 * 60 * 60 * 1000);
+    }
+  }
 
-  if (!baseValue) return null;
-
-  const baseDate = new Date(baseValue);
-  if (Number.isNaN(baseDate.getTime())) return null;
-
-  return new Date(baseDate.getTime() + 15 * 24 * 60 * 60 * 1000);
+  return null;
 }
 
-function getExpiryInfo(listing) {
+function getExpiryInfo(listing, nowMs = Date.now()) {
   const expiryDate = getListingExpiryDate(listing);
 
   if (!expiryDate) {
@@ -5792,7 +5907,7 @@ function getExpiryInfo(listing) {
   }
 
   const expiryTime = expiryDate.getTime();
-  const remaining = expiryTime - Date.now();
+  const remaining = expiryTime - nowMs;
 
   if (remaining <= 0) {
     return {
@@ -5827,6 +5942,7 @@ function ListingCard({
   onCall,
   onWhatsapp,
   onChat,
+  nowMs,
 }) {
   const owner =
     listing.profiles;
@@ -5843,7 +5959,7 @@ function ListingCard({
   const image =
     images[0]?.image_url;
 
-  const expiryInfo = getExpiryInfo(listing);
+  const expiryInfo = getExpiryInfo(listing, nowMs);
 
   return (
     <article className="farmer-listing-card">
@@ -5868,7 +5984,7 @@ function ListingCard({
               }
             />
             <span className="farmer-image-view-hint">
-              <Eye size={16} /> View photo
+              View photo <ArrowRight size={15} />
             </span>
           </>
         ) : (
@@ -6081,7 +6197,7 @@ function ListingCard({
             onClick={onOpen}
             type="button"
           >
-            <Eye size={16} />
+            <ArrowRight size={16} />
             View
           </button>
 
@@ -6164,6 +6280,7 @@ function ListingModal({
   onCall,
   onWhatsapp,
   onChat,
+  nowMs,
 }) {
   const owner =
     listing.profiles;
@@ -6177,19 +6294,32 @@ function ListingModal({
       (b.sort_order || 0)
   );
 
-  const [lightboxImage, setLightboxImage] = useState(null);
-  const expiryInfo = getExpiryInfo(listing);
+  const [lightboxIndex, setLightboxIndex] = useState(null);
+  const expiryInfo = getExpiryInfo(listing, nowMs);
 
   useEffect(() => {
-    if (!lightboxImage) return undefined;
+    if (lightboxIndex === null) return undefined;
 
     const handleKeyDown = (event) => {
-      if (event.key === "Escape") setLightboxImage(null);
+      if (event.key === "Escape") {
+        setLightboxIndex(null);
+        return;
+      }
+      if (event.key === "ArrowLeft" && images.length > 1) {
+        setLightboxIndex((current) =>
+          current === null ? 0 : (current - 1 + images.length) % images.length
+        );
+      }
+      if (event.key === "ArrowRight" && images.length > 1) {
+        setLightboxIndex((current) =>
+          current === null ? 0 : (current + 1) % images.length
+        );
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [lightboxImage]);
+  }, [lightboxIndex, images.length]);
 
   return (
     <div
@@ -6256,15 +6386,19 @@ function ListingModal({
                   key={image.id}
                   type="button"
                   className="farmer-modal-image-button"
-                  onClick={() => setLightboxImage(image.image_url)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setLightboxIndex(index);
+                  }}
+                  onMouseDown={(event) => event.stopPropagation()}
                   title="Click to enlarge"
                 >
                   <img
                     src={image.image_url}
                     alt={`${listing.title} photo ${index + 1}`}
                   />
-                  <span className="farmer-modal-image-zoom">
-                    <Eye size={18} />
+                  <span className="farmer-modal-image-arrow" aria-hidden="true">
+                    <ArrowRight size={17} />
                   </span>
                 </button>
               )
@@ -6534,28 +6668,68 @@ function ListingModal({
       </div>
 
 
-      {lightboxImage && (
+      {lightboxIndex !== null && images[lightboxIndex] && (
         <div
           className="farmer-image-lightbox"
-          onClick={() => setLightboxImage(null)}
+          onClick={() => setLightboxIndex(null)}
           role="dialog"
           aria-modal="true"
-          aria-label="Large listing image"
+          aria-label={`Listing image ${lightboxIndex + 1} of ${images.length}`}
         >
           <button
             type="button"
             className="farmer-lightbox-close"
-            onClick={() => setLightboxImage(null)}
+            onClick={() => setLightboxIndex(null)}
             aria-label="Close image"
           >
-            <X size={26} />
+            <X size={25} />
           </button>
+
+          {images.length > 1 && (
+            <>
+              <button
+                type="button"
+                className="farmer-lightbox-nav left"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex((current) =>
+                    current === null ? 0 : (current - 1 + images.length) % images.length
+                  );
+                }}
+                aria-label="Previous image"
+              >
+                <ArrowLeft size={24} />
+              </button>
+
+              <button
+                type="button"
+                className="farmer-lightbox-nav right"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setLightboxIndex((current) =>
+                    current === null ? 0 : (current + 1) % images.length
+                  );
+                }}
+                aria-label="Next image"
+              >
+                <ArrowRight size={24} />
+              </button>
+            </>
+          )}
+
           <img
-            src={lightboxImage}
-            alt={listing.title}
+            src={images[lightboxIndex].image_url}
+            alt={`${listing.title} photo ${lightboxIndex + 1}`}
             onClick={(event) => event.stopPropagation()}
           />
-          <span className="farmer-lightbox-caption">Click anywhere outside the image to close</span>
+
+          <span className="farmer-lightbox-counter">
+            {lightboxIndex + 1} / {images.length}
+          </span>
+
+          <span className="farmer-lightbox-caption">
+            Use the arrows to view all photos
+          </span>
         </div>
       )}
 

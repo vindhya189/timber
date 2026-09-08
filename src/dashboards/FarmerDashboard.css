@@ -3989,3 +3989,186 @@ body.timber-dark-body .farmer-listing-status.rejected {
     min-width: 35px;
   }
 }
+
+
+/* =========================================================
+   FINAL CORRECT WORKING PATCH
+   ========================================================= */
+
+/* Cleaner language selector */
+.farmer-language-switcher{
+  min-height:42px;
+  height:42px;
+  padding:0 10px;
+  gap:8px;
+  border-radius:12px;
+  background:rgba(255,255,255,.96);
+  border:1px solid #dce7df;
+  box-shadow:0 6px 18px rgba(25,63,39,.06);
+}
+.farmer-language-icon{
+  width:28px;
+  height:28px;
+  border-radius:8px;
+  background:#edf8f0;
+  color:#1e7a40;
+  display:grid;
+  place-items:center;
+  flex:0 0 28px;
+}
+.farmer-language-switcher select{
+  min-width:92px;
+  height:34px;
+  padding:0 20px 0 2px;
+  font-size:12px;
+  font-weight:800;
+  color:#294536;
+  cursor:pointer;
+}
+
+/* Photo thumbnail: never let a click fall through to the backdrop */
+.farmer-modal-image-button{cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.farmer-modal-image-button img{display:block;width:100%;height:100%;object-fit:cover}
+.farmer-modal-image-arrow{width:31px;height:31px;right:8px;bottom:8px;pointer-events:none}
+
+/* Full-screen lightbox: image arrows switch photos, backdrop closes only outside */
+.farmer-image-lightbox{touch-action:pan-y;overscroll-behavior:contain}
+.farmer-image-lightbox > img{user-select:none;-webkit-user-drag:none}
+.farmer-lightbox-nav{touch-action:manipulation}
+
+/* Notification panel: easier to tap and stable above content */
+.farmer-notification-panel{z-index:12000;max-height:min(72vh,620px);overflow:hidden}
+.farmer-notification-list{overflow:auto;max-height:calc(min(72vh,620px) - 72px)}
+.farmer-notification-item{width:100%;text-align:left;cursor:pointer;border:0}
+.farmer-notification-item:focus-visible{outline:2px solid #3e9a5c;outline-offset:-2px}
+
+/* WhatsApp-style inbox */
+.tm-inbox-overlay{padding:18px}
+.tm-inbox{border-radius:20px}
+.tm-chat{background:#efe8de}
+.tm-chat-head{position:relative;z-index:2;box-shadow:0 1px 6px rgba(40,60,45,.08)}
+.tm-chat-stream{
+  background:
+    radial-gradient(circle at 15% 15%,rgba(255,255,255,.55),transparent 26%),
+    radial-gradient(circle at 85% 45%,rgba(255,255,255,.4),transparent 22%),
+    #efe8de;
+  padding:22px clamp(16px,6vw,78px);
+  scroll-behavior:smooth;
+}
+.tm-message-bubble{box-shadow:0 1px 2px rgba(0,0,0,.08);border-radius:8px 8px 8px 2px}
+.tm-message-row.mine .tm-message-bubble{border-radius:8px 8px 2px 8px}
+.tm-chat-composer{padding:10px 14px;gap:8px}
+.tm-chat-composer input{border-radius:22px;height:44px;background:#f8fbfa}
+.tm-composer-plus,.tm-composer-send{border-radius:50%;width:42px;height:42px}
+.tm-composer-send{display:grid;place-items:center}
+.tm-chat-back{display:none}
+
+/* Desktop chat area */
+@media(min-width:761px){
+  .tm-chat-head{padding:0 18px}
+}
+
+/* Mobile: app-like full screen, proper chat back navigation */
+@media(max-width:760px){
+  .farmer-topbar{padding:10px 12px;min-height:64px}
+  .farmer-top-left{min-width:0;gap:9px}
+  .farmer-top-left h1{font-size:16px;line-height:1.15}
+  .farmer-top-left p{font-size:10px;margin-top:3px}
+  .farmer-top-actions{gap:6px}
+  .farmer-top-actions > .farmer-icon-button,
+  .farmer-top-actions > .farmer-profile-button{width:38px;height:38px}
+  .farmer-profile-button span{display:none}
+  .farmer-language-switcher{height:38px;min-height:38px;padding:0 6px;gap:5px}
+  .farmer-language-icon{width:25px;height:25px;flex-basis:25px}
+  .farmer-language-switcher select{min-width:70px;font-size:10px;height:30px;padding-right:12px}
+
+  .farmer-main{width:100%;min-width:0}
+  .farmer-content{padding:14px 12px 32px}
+  .farmer-welcome{padding:16px;border-radius:18px}
+  .farmer-location-summary{padding:10px 0 0}
+  .farmer-stats{grid-template-columns:1fr 1fr;gap:10px}
+  .farmer-stat-card{padding:12px;min-height:76px}
+  .farmer-actions-grid{grid-template-columns:1fr;gap:10px}
+  .farmer-search-box{height:46px}
+  .farmer-requirements-grid,.farmer-listings-grid{grid-template-columns:1fr;gap:12px}
+  .farmer-listing-image{height:210px}
+  .farmer-card-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .farmer-card-actions button:last-child{grid-column:1 / -1}
+
+  .farmer-modal-backdrop{padding:8px;align-items:flex-end}
+  .farmer-modal,.farmer-profile-modal{width:100%;max-width:none;max-height:92vh;border-radius:20px 20px 12px 12px}
+  .farmer-modal-header{padding:17px 16px 12px}
+  .farmer-modal h2{font-size:20px;line-height:1.2;padding-right:34px}
+  .farmer-modal-images{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:0 16px 12px}
+  .farmer-modal-images img{height:145px}
+  .farmer-modal-details{padding:0 16px 14px}
+  .farmer-modal-owner{margin:0 16px 14px}
+  .farmer-modal-actions,.farmer-profile-actions{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 16px 18px;gap:8px}
+  .farmer-modal-actions button:last-child,.farmer-profile-actions button:last-child{grid-column:1 / -1}
+
+  .farmer-image-lightbox{padding:8px}
+  .farmer-image-lightbox > img{max-width:calc(100vw - 16px);max-height:78vh;border-radius:10px}
+  .farmer-lightbox-nav{width:40px;height:40px;min-width:40px}
+  .farmer-lightbox-nav.left{left:7px}.farmer-lightbox-nav.right{right:7px}
+  .farmer-lightbox-close{top:9px;right:9px;width:40px;height:40px}
+  .farmer-lightbox-counter{top:10px;font-size:10px}
+  .farmer-lightbox-caption{display:none}
+
+  /* Inbox becomes WhatsApp-like: list first, conversation second */
+  .tm-inbox-overlay{padding:0;background:rgba(9,22,14,.48);backdrop-filter:none}
+  .tm-inbox{width:100%;height:100%;min-height:0;border-radius:0;box-shadow:none}
+  .tm-inbox-body{height:calc(100% - 64px)}
+  .tm-inbox-list{border-right:0}
+  .tm-inbox.chat-open .tm-inbox-list{display:none}
+  .tm-inbox.chat-open .tm-chat{display:flex}
+  .tm-inbox-topbar{height:64px;flex-basis:64px;padding:0 11px}
+  .tm-inbox-brand-icon{width:38px;height:38px;border-radius:12px}
+  .tm-inbox-brand strong{font-size:16px}
+  .tm-inbox-brand span{font-size:10px}
+  .tm-inbox-list-head{padding:14px 14px 10px}
+  .tm-conversation{padding:12px 10px;border-radius:12px}
+  .tm-chat-head{height:64px;flex-basis:64px;padding:0 10px;gap:9px}
+  .tm-chat-back{display:grid;width:38px;height:38px;flex:0 0 38px;place-items:center;border:0;background:transparent;color:#4d5d53;border-radius:50%;cursor:pointer}
+  .tm-chat-back:active{background:#edf3ef}
+  .tm-chat-person{gap:9px}
+  .tm-chat-avatar{width:40px;height:40px}
+  .tm-chat-person strong{font-size:14px}
+  .tm-chat-person span{max-width:190px;font-size:10px}
+  .tm-chat-stream{padding:16px 12px 14px;gap:6px}
+  .tm-message-bubble{max-width:84%;padding:9px 11px 6px}
+  .tm-message-bubble span{font-size:13px}
+  .tm-chat-composer{min-height:62px;padding:8px 9px;gap:6px}
+  .tm-composer-plus{display:none}
+  .tm-chat-composer input{height:44px;min-height:44px}
+  .tm-composer-send{width:42px;height:42px}
+}
+
+@media(max-width:390px){
+  .farmer-top-actions > .farmer-icon-button{display:none}
+  .farmer-language-switcher select{min-width:62px}
+  .farmer-listing-image{height:190px}
+  .farmer-modal-images img{height:125px}
+  .farmer-card-actions{grid-template-columns:1fr 1fr}
+}
+
+
+/* Final mobile/chat polish: one WhatsApp-like header when a conversation is open */
+@media (max-width:760px){
+  .tm-inbox.chat-open .tm-inbox-topbar{display:none}
+  .tm-inbox.chat-open .tm-inbox-body{height:100%}
+  .tm-inbox.chat-open .tm-chat{height:100%}
+  .tm-chat-head{background:#f7f9f7}
+  .tm-chat-stream{min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+  .farmer-top-actions{min-width:0}
+  .farmer-language-switcher{max-width:118px;flex:0 1 auto}
+  .farmer-language-switcher select{min-width:0;width:72px;max-width:72px;overflow:hidden;text-overflow:ellipsis}
+}
+
+@media (max-width:390px){
+  .farmer-top-left h1{font-size:15px}
+  .farmer-top-left p{display:none}
+  .farmer-language-switcher{max-width:94px}
+  .farmer-language-icon{display:grid}
+  .farmer-language-switcher select{width:54px;max-width:54px;font-size:9px}
+}

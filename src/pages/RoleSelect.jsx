@@ -47,20 +47,22 @@ export default function RoleSelect() {
   const handleRoleSelect = (role) => {
     console.log("Selected Role:", role.id);
 
-    // Login page ki selected role ni query parameter ga pampistundi
-    navigate(`/login?role=${role.id}`);
+    // Save the user's selected role before login.
+    localStorage.setItem("timbermart_selected_role", role.id);
+
+    // Pass selected role to Login page.
+    navigate(`/login?role=${encodeURIComponent(role.id)}`);
   };
 
   return (
     <div className="tm3-screen tm3-role">
-
       {/* ================= HEADER ================= */}
       <header className="tm3-header tm3-inner-header">
-
         <button
           type="button"
           className="tm3-circle-btn"
           onClick={() => navigate("/")}
+          aria-label="Back to home"
         >
           <ArrowLeft size={20} />
         </button>
@@ -69,6 +71,7 @@ export default function RoleSelect() {
           type="button"
           className="tm3-logo"
           onClick={() => navigate("/")}
+          aria-label="TimberMart home"
         >
           <span>🌳</span>
           <span>TimberMart</span>
@@ -78,15 +81,14 @@ export default function RoleSelect() {
           type="button"
           className="tm3-menu"
           onClick={() => navigate("/")}
+          aria-label="Menu"
         >
           <Menu size={21} />
         </button>
-
       </header>
 
       {/* ================= CONTENT ================= */}
       <main className="tm3-role-content">
-
         <div className="tm3-role-heading">
           <span className="tm3-heading-star">✦</span>
 
@@ -101,7 +103,6 @@ export default function RoleSelect() {
 
         {/* ================= ROLE LIST ================= */}
         <div className="tm3-role-list">
-
           {roles.map((role) => (
             <button
               key={role.id}
@@ -109,39 +110,30 @@ export default function RoleSelect() {
               className="tm3-role-item"
               onClick={() => handleRoleSelect(role)}
             >
-
               <span className="tm3-role-icon">
                 {role.icon}
               </span>
 
               <span className="tm3-role-copy">
+                <strong>{role.title}</strong>
 
-                <strong>
-                  {role.title}
-                </strong>
-
-                <small>
-                  {role.description}
-                </small>
-
+                <small>{role.description}</small>
               </span>
 
               <span className="tm3-role-arrow">
                 <ArrowRight size={19} />
               </span>
-
             </button>
           ))}
-
         </div>
 
         <div className="tm3-role-bottom-note">
           <span>🌳</span>
+
           <p>
             Select your role and continue to login.
           </p>
         </div>
-
       </main>
     </div>
   );

@@ -519,59 +519,46 @@ export default function Login() {
          LOGIN ROLE SHOULD BE SELECTED ROLE
          --------------------------------------------------- */
 
-      const profileRole =
-        normalizeRole(
-          profile?.role
-        );
-
       /* ---------------------------------------------------
-         ADMIN ACCOUNTS ARE NEVER CHANGED TO THE SELECTED
-         NORMAL USER ROLE.
+         STRICT ROLE VALIDATION
          --------------------------------------------------- */
 
-      if (
-        profileRole !== "admin" &&
-        profileRole &&
-        profileRole !== selectedRole
-      ) {
-        /*
-          User selected a different role.
+      const profileRole = normalizeRole(profile?.role);
 
-          Update profile role to the role
-          selected on the Role Select page.
-        */
+if (!profileRole) {
+  await supabase.auth.signOut();
 
-        const {
-          data: updatedProfile,
-          error: updateError,
-        } =
-          await supabase
-            .from("profiles")
-            .update({
-              role: selectedRole,
-            })
-            .eq("id", user.id)
-            .select()
-            .single();
+  throw new Error(
+    "Your account does not have a registered role. Please contact support."
+  );
+}
 
-        if (updateError) {
-          throw updateError;
-        }
+/*
+  Admin accounts can use the admin login flow.
+  Normal users MUST login using the role selected
+  on the Role Select page.
+*/
 
-        profile =
-          updatedProfile;
-      }
+if (profileRole !== "admin" && profileRole !== selectedRole) {
+  await supabase.auth.signOut();
 
+  const registeredRoleTitle =
+    ROLE_INFO[profileRole]?.title || profileRole;
+
+  throw new Error(
+    `This account is registered as "${registeredRoleTitle}". Please select "${registeredRoleTitle}" from Role Select and login again.`
+  );
+}
+
+/*
+  IMPORTANT:
+  Never change profile.role during login.
+*/
+
+      
       /* ---------------------------------------------------
-         FALLBACK FOR OLD/INCOMPLETE PROFILES
+         PROFILE ROLE IS AUTHORITATIVE
          --------------------------------------------------- */
-
-      if (!normalizeRole(profile?.role)) {
-        profile = {
-          ...profile,
-          role: selectedRole,
-        };
-      }
 
       /* ---------------------------------------------------
          ADMIN DIRECT LOGIN
