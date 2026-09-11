@@ -10,6 +10,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import RequirementWall from "./pages/RequirementWall";
 import AdminDashboard from "./dashboards/AdminDashboard";
+import AdminLogin from "./AdminLogin";
 
 import FarmerDashboard from "./dashboards/FarmerDashboard";
 import MerchantDashboard from "./dashboards/MerchantDashboard";
@@ -189,6 +190,11 @@ export default function App() {
 
         {/* ADMIN */}
         <Route path="/admin" element={<AdminRoute />} />
+        {/* Admin Login */}
+  <Route
+    path="/admin-login"
+    element={<AdminLogin />}
+  />
 
         {/* DASHBOARDS */}
         <Route path="/dashboard/*" element={<DashboardRouter />} />

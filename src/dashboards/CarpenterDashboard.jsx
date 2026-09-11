@@ -152,6 +152,13 @@ export default function CarpenterDashboard() {
   const [portfolio, setPortfolio] = useState([]);
   const [requirements, setRequirements] = useState([]);
   const [timberListings, setTimberListings] = useState([]);
+
+  // Premium subscription status for the currently logged-in carpenter.
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
+  const [profileViewCount, setProfileViewCount] = useState(5);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationLoading, setNotificationLoading] = useState(false);
@@ -239,6 +246,7 @@ export default function CarpenterDashboard() {
       }
 
       setSession(currentSession);
+      await refreshPremiumStatus(currentSession.user.id);
 
       let { data: userProfile } = await supabase
         .from("profiles")
@@ -384,14 +392,6 @@ export default function CarpenterDashboard() {
           image_url,
           storage_path,
           sort_order
-        ),
-        profiles (
-          id,
-          name,
-          role,
-          phone,
-          location,
-          photo_url
         )
       `)
       .in("role", ["farmer", "merchant", "timber_merchant", "sawmill", "sawmill_business", "carpenter"])
@@ -404,7 +404,35 @@ export default function CarpenterDashboard() {
       return;
     }
 
-    setTimberListings(data || []);
+    const rows = data || [];
+    const sellerIds = [...new Set(rows.map((item) => item?.user_id).filter(Boolean))];
+    let profilesById = {};
+
+    if (sellerIds.length) {
+      const { data: sellerProfiles, error: profileError } = await supabase
+        .from("profiles")
+        .select("id,name,role,phone,location,photo_url")
+        .in("id", sellerIds);
+
+      if (profileError) {
+        console.warn("Carpenter seller profiles warning:", profileError);
+      } else {
+        profilesById = Object.fromEntries((sellerProfiles || []).map((profile) => [profile.id, profile]));
+      }
+    }
+
+    const now = Date.now();
+    const validListings = rows.filter((item) => {
+      const expiry = item?.expires_at
+        ? new Date(item.expires_at).getTime()
+        : item?.created_at
+        ? new Date(item.created_at).getTime() + 15 * 86400000
+        : Infinity;
+
+      return !Number.isFinite(expiry) || expiry > now;
+    });
+
+    setTimberListings(validListings.map((item) => ({ ...item, profiles: profilesById[item.user_id] || null })));
   }
 
   function getAllImages(item) {
@@ -517,7 +545,8 @@ export default function CarpenterDashboard() {
         description: timberForm.description.trim() || null,
         latitude: profile?.latitude ?? null,
         longitude: profile?.longitude ?? null,
-        contact_preference: "Call / WhatsApp / Chat"
+        contact_preference: "Call / WhatsApp / Chat",
+        expires_at: new Date(Date.now() + 15 * 86400000).toISOString()
       }).select("*").single();
       if (listingError) throw listingError;
       let uploaded = 0;
@@ -1038,7 +1067,108 @@ export default function CarpenterDashboard() {
     setShowRequirement(true);
   }
 
+  async function refreshPremiumStatus(userId = session?.user?.id) {
+    if (!userId) {
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Carpenter Premium status check skipped:", error.message);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    setIsPremium(Boolean(data));
+    setPremiumExpiresAt(data?.expires_at || null);
+    setPremiumPlanName(data?.plan_name || data?.plan_id || "");
+    return data || null;
+  }
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    refreshPremiumStatus(session.user.id);
+
+    const interval = window.setInterval(() => {
+      refreshPremiumStatus(session.user.id);
+    }, 15000);
+
+    const handleFocus = () => refreshPremiumStatus(session.user.id);
+    const handleVisibility = () => {
+      if (!document.hidden) refreshPremiumStatus(session.user.id);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [session?.user?.id]);
+
   async function openUserProfile(userId) {
+    if (!userId || !session?.user?.id) return;
+
+    // The carpenter can always open their own profile.
+    if (userId === session.user.id) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      if (data) {
+        setSelectedUser(data);
+        setShowUserProfile(true);
+      }
+      return;
+    }
+
+    // Active Premium users have unlimited profile viewing.
+    if (!isPremium) {
+      const { data: access, error: accessError } = await supabase.rpc(
+        "check_profile_view_access",
+        { p_viewed_user_id: userId }
+      );
+
+      if (accessError) {
+        console.error("Profile access error:", accessError);
+        alert("Unable to open this profile right now.");
+        return;
+      }
+
+      const count = Number(access?.view_count);
+      if (Number.isFinite(count)) setProfileViewCount(count);
+
+      if (!access?.allowed) {
+        setProfileViewCount(Number(access?.view_count) || 5);
+        setShowPremiumModal(true);
+        return;
+      }
+    }
+
     const { data, error } = await supabase
       .from("profiles")
       .select("*")
@@ -1261,6 +1391,23 @@ export default function CarpenterDashboard() {
           <span>🌳</span>
           TimberMart
         </div>
+
+        <button
+          type="button"
+          className={`carpenter-premium-badge ${isPremium ? "active" : "inactive"}`}
+          onClick={() => navigate("/premium")}
+          title={isPremium ? "Premium subscription active" : "Open Premium plans"}
+        >
+          <span className="carpenter-premium-crown">♛</span>
+          <span className="carpenter-premium-copy">
+            <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+            <small>
+              {isPremium
+                ? `${premiumPlanName || "Premium plan"}${premiumExpiresAt ? ` · Until ${new Date(premiumExpiresAt).toLocaleDateString()}` : ""}`
+                : "5 user profiles/day"}
+            </small>
+          </span>
+        </button>
 
         <div className="carpenter-header-right">
           <label className="carpenter-language-picker" title="Language">
@@ -2144,7 +2291,7 @@ export default function CarpenterDashboard() {
                         }}
                       >
                         {images.length > 0 ? (
-                          <div className="carpenter-listing-photo-grid">
+                          <div className="carpenter-listing-photo-grid carpenter-watermark-container">
                             {images.map((image, index) => (
                               <img
                                 key={`${listing.id}-${image}-${index}`}
@@ -2161,6 +2308,15 @@ export default function CarpenterDashboard() {
                                 +{images.length - 6} more
                               </span>
                             )}
+                            <div className="carpenter-watermark-overlay" aria-hidden="true">
+                              <span>TIMBERMART</span>
+                              <span>TIMBERMART</span>
+                              <span>TIMBERMART</span>
+                              <span>TIMBERMART</span>
+                            </div>
+                            <div className="carpenter-watermark-bottom" aria-hidden="true">
+                              TIMBERMART · OFFICIAL MARKETPLACE
+                            </div>
                           </div>
                         ) : (
                           <div className="carpenter-listing-placeholder">
@@ -3603,6 +3759,55 @@ export default function CarpenterDashboard() {
           </div>
         )}
 
+      {showPremiumModal && !isPremium && (
+        <div
+          className="carpenter-modal-overlay"
+          onMouseDown={() => setShowPremiumModal(false)}
+        >
+          <div
+            className="carpenter-premium-modal"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="carpenter-close"
+              onClick={() => setShowPremiumModal(false)}
+              aria-label="Close"
+            >
+              <X size={19} />
+            </button>
+
+            <div className="carpenter-premium-modal-icon">♛</div>
+            <span className="carpenter-premium-modal-kicker">TIMBERMART PREMIUM</span>
+            <h2>You've reached your daily profile limit</h2>
+            <p>
+              Free accounts can view up to <strong>5 user profiles per day</strong>.
+              Upgrade to Premium for unlimited profile viewing.
+            </p>
+
+            <div className="carpenter-premium-modal-actions">
+              <button
+                type="button"
+                className="carpenter-premium-primary"
+                onClick={() => {
+                  setShowPremiumModal(false);
+                  navigate("/premium");
+                }}
+              >
+                Upgrade to Premium
+              </button>
+              <button
+                type="button"
+                className="carpenter-premium-secondary"
+                onClick={() => setShowPremiumModal(false)}
+              >
+                Continue with Free
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* =====================================================
           NOTIFICATIONS PANEL
       ===================================================== */}
@@ -3762,7 +3967,7 @@ export default function CarpenterDashboard() {
             <div className="carpenter-listing-detail-body">
               {getAllImages(selectedListing).length > 0 ? (
                 <div className="carpenter-detail-gallery">
-                  <div className="carpenter-detail-gallery-main">
+                  <div className="carpenter-detail-gallery-main carpenter-watermark-container">
                     <img
                       src={getAllImages(selectedListing)[listingPhotoIndex]}
                       alt={`${selectedListing.title || "Timber"} ${listingPhotoIndex + 1}`}
@@ -3793,6 +3998,16 @@ export default function CarpenterDashboard() {
                         </span>
                       </>
                     )}
+
+                    <div className="carpenter-watermark-overlay" aria-hidden="true">
+                      <span>TIMBERMART</span>
+                      <span>TIMBERMART</span>
+                      <span>TIMBERMART</span>
+                      <span>TIMBERMART</span>
+                    </div>
+                    <div className="carpenter-watermark-bottom" aria-hidden="true">
+                      TIMBERMART · OFFICIAL MARKETPLACE
+                    </div>
                   </div>
 
                   {getAllImages(selectedListing).length > 1 && (

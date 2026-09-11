@@ -1070,3 +1070,26 @@ body.tm-premium-lock-scroll {
     font-size: 8px;
   }
 }
+
+
+/* Premium status banner */
+.tm-premium-active-banner{
+  margin:0 0 24px;
+  padding:16px 18px;
+  border:1px solid rgba(26,126,91,.20);
+  border-radius:18px;
+  background:linear-gradient(135deg,#effaf4,#ffffff);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  color:#174638;
+  box-shadow:0 10px 28px rgba(20,80,60,.06);
+}
+.tm-premium-active-banner strong{display:block;font-size:15px;font-weight:800}
+.tm-premium-active-banner span{display:block;margin-top:4px;color:#668079;font-size:12px}
+.tm-premium-active-banner svg{flex:0 0 auto;color:#0c7558}
+@media (max-width:620px){
+  .tm-premium-active-banner{padding:14px;border-radius:15px}
+  .tm-premium-active-banner span{font-size:11px;line-height:1.5}
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
+  Clock,
   Search,
   MapPin,
   Phone,
@@ -468,6 +469,13 @@ export default function MerchantDashboard() {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
 
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
+  const [profileViewCount, setProfileViewCount] = useState(0);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [clockTick, setClockTick] = useState(Date.now());
+
   const [listings, setListings] = useState([]);
   const [requirements, setRequirements] = useState([]);
   const [jobs, setJobs] = useState([]);
@@ -586,6 +594,89 @@ export default function MerchantDashboard() {
 
 
   /* =====================================================
+     PREMIUM + 15 DAY LISTING EXPIRY
+  ===================================================== */
+
+  async function refreshPremiumStatus(userId = session?.user?.id) {
+    if (!userId) {
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Merchant Premium status check skipped:", error.message);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    setIsPremium(Boolean(data));
+    setPremiumExpiresAt(data?.expires_at || null);
+    setPremiumPlanName(data?.plan_name || data?.plan_id || "");
+    return data || null;
+  }
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    refreshPremiumStatus(session.user.id);
+    const timer = window.setInterval(() => refreshPremiumStatus(session.user.id), 15000);
+    const onFocus = () => refreshPremiumStatus(session.user.id);
+    const onVisibility = () => { if (!document.hidden) refreshPremiumStatus(session.user.id); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  function getListingExpiry(listing) {
+    if (!listing) return null;
+    if (listing.expires_at) return new Date(listing.expires_at);
+    if (listing.created_at) return new Date(new Date(listing.created_at).getTime() + 15 * 86400000);
+    return null;
+  }
+
+  function isListingExpired(listing) {
+    const expiry = getListingExpiry(listing);
+    return expiry ? expiry.getTime() <= clockTick : false;
+  }
+
+  function listingCountdown(listing) {
+    const expiry = getListingExpiry(listing);
+    if (!expiry) return "Expiry not available";
+    const diff = expiry.getTime() - clockTick;
+    if (diff <= 0) return "EXPIRED";
+    const total = Math.floor(diff / 1000);
+    const days = Math.floor(total / 86400);
+    const hours = Math.floor((total % 86400) / 3600);
+    const minutes = Math.floor((total % 3600) / 60);
+    const seconds = total % 60;
+    return days > 0 ? `${days}d ${hours}h ${minutes}m ${seconds}s` :
+      hours > 0 ? `${hours}h ${minutes}m ${seconds}s` :
+      `${minutes}m ${seconds}s`;
+  }
+
+  /* =====================================================
      INITIAL LOAD
   ===================================================== */
 
@@ -607,6 +698,7 @@ export default function MerchantDashboard() {
       if (!mounted) return;
 
       setSession(currentSession);
+      await refreshPremiumStatus(currentSession.user.id);
 
       let { data: userProfile } = await supabase
         .from("profiles")
@@ -936,7 +1028,7 @@ export default function MerchantDashboard() {
     return listings.filter((item) => {
       const text = [item.title, item.wood_type, item.wood_subtype, item.product_type, item.description, item.category]
         .filter(Boolean).join(" ").toLowerCase();
-      return /patta teak|patta|indian teak/.test(text) &&
+      return !isListingExpired(item) && /patta teak|patta|indian teak/.test(text) &&
         (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
     });
   }, [listings, session?.user?.id]);
@@ -945,7 +1037,7 @@ export default function MerchantDashboard() {
     return listings.filter((item) => {
       const text = [item.title, item.wood_type, item.wood_subtype, item.product_type, item.description, item.category]
         .filter(Boolean).join(" ").toLowerCase();
-      return /imported teak|imported|burma teak|african teak|malaysian teak/.test(text) &&
+      return !isListingExpired(item) && /imported teak|imported|burma teak|african teak|malaysian teak/.test(text) &&
         (item.status == null || item.status === "approved" || item.user_id === session?.user?.id);
     });
   }, [listings, session?.user?.id]);
@@ -1011,6 +1103,7 @@ export default function MerchantDashboard() {
     return listings.filter((item) => {
       const visible = item.user_id === session?.user?.id || item.status == null || item.status === "approved";
       if (!visible) return false;
+      if (isListingExpired(item)) return false;
 
       const title = String(item.title || "").toLowerCase();
       const wood = String(item.wood_type || "").toLowerCase();
@@ -1080,6 +1173,7 @@ export default function MerchantDashboard() {
     locationFilter,
     maxPrice,
     session?.user?.id,
+    clockTick,
   ]);
 
   /* =====================================================
@@ -1523,7 +1617,39 @@ export default function MerchantDashboard() {
   ===================================================== */
 
   async function openProfile(userId) {
-    if (!userId) return;
+    if (!userId || !session?.user?.id) return;
+
+    if (userId === session.user.id) {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+      if (!error && data) setSelectedSeller(data);
+      return;
+    }
+
+    if (!isPremium) {
+      const { data: access, error: accessError } = await supabase.rpc(
+        "check_profile_view_access",
+        { p_viewed_user_id: userId }
+      );
+
+      if (accessError) {
+        console.error("Merchant profile access error:", accessError);
+        alert("Unable to open this profile right now.");
+        return;
+      }
+
+      const count = Number(access?.view_count);
+      if (Number.isFinite(count)) setProfileViewCount(count);
+
+      if (!access?.allowed) {
+        setProfileViewCount(Number(access?.view_count) || 5);
+        setShowPremiumModal(true);
+        return;
+      }
+    }
 
     const { data, error } = await supabase
       .from("profiles")
@@ -1531,9 +1657,7 @@ export default function MerchantDashboard() {
       .eq("id", userId)
       .maybeSingle();
 
-    if (!error && data) {
-      setSelectedSeller(data);
-    }
+    if (!error && data) setSelectedSeller(data);
   }
 
   /* =====================================================
@@ -1846,6 +1970,23 @@ export default function MerchantDashboard() {
           }
         >
           🌳 TimberMart
+        </button>
+
+        <button
+          type="button"
+          className={`merchant-premium-badge ${isPremium ? "active" : "inactive"}`}
+          onClick={() => navigate("/premium")}
+          title={isPremium ? "Premium subscription active" : "Open Premium plans"}
+        >
+          <span className="merchant-premium-icon">♛</span>
+          <span className="merchant-premium-copy">
+            <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+            <small>
+              {isPremium
+                ? `${premiumPlanName || "Premium plan"}${premiumExpiresAt ? ` · Until ${new Date(premiumExpiresAt).toLocaleDateString("en-IN")}` : ""}`
+                : "5 user profiles/day"}
+            </small>
+          </span>
         </button>
 
         <div className="merchant-top-right">
@@ -2478,10 +2619,21 @@ export default function MerchantDashboard() {
                       >
 
                         {image ? (
-                          <img src={image} alt={listing.title} />
+                          <div className="merchant-watermark-wrap">
+                            <img src={image} alt={listing.title} />
+                            <div className="merchant-watermark-grid" aria-hidden="true">
+                              <span>TIMBERMART</span><span>TIMBERMART</span><span>TIMBERMART</span><span>TIMBERMART</span>
+                            </div>
+                            <div className="merchant-watermark-bottom">TIMBERMART · OFFICIAL MARKETPLACE</div>
+                          </div>
                         ) : (
                           <div className="merchant-no-photo">🪵<small>{t("No photo")}</small></div>
                         )}
+
+                        <div className={`merchant-expiry-countdown ${isListingExpired(listing) ? "expired" : ""}`}>
+                          <Clock size={12} />
+                          {isListingExpired(listing) ? "EXPIRED" : `${listingCountdown(listing)} left`}
+                        </div>
 
                         {images.length > 0 && (
                           <div className="merchant-photo-count-pill"><ImageIcon size={13} /> {images.length} photo{images.length > 1 ? "s" : ""}</div>
@@ -3904,7 +4056,13 @@ export default function MerchantDashboard() {
                 <div className="merchant-detail-gallery">
                   <div className="merchant-detail-image merchant-detail-image-large">
                     {detailImages.length ? (
-                      <img src={detailImages[activeIndex] || detailImages[0]} alt={selectedListing.title} />
+                      <div className="merchant-watermark-wrap merchant-detail-watermark">
+                        <img src={detailImages[activeIndex] || detailImages[0]} alt={selectedListing.title} />
+                        <div className="merchant-watermark-grid" aria-hidden="true">
+                          <span>TIMBERMART</span><span>TIMBERMART</span><span>TIMBERMART</span><span>TIMBERMART</span>
+                        </div>
+                        <div className="merchant-watermark-bottom">TIMBERMART · OFFICIAL MARKETPLACE</div>
+                      </div>
                     ) : <div>🪵</div>}
                     {detailImages.length > 1 && (
                       <>
@@ -4050,6 +4208,13 @@ export default function MerchantDashboard() {
                     {formatDate(
                       selectedListing.created_at
                     )}
+                  </strong>
+                </div>
+
+                <div className={`merchant-detail-expiry ${isListingExpired(selectedListing) ? "expired" : ""}`}>
+                  <span>Listing Expiry</span>
+                  <strong>
+                    {isListingExpired(selectedListing) ? "EXPIRED" : `${listingCountdown(selectedListing)} remaining`}
                   </strong>
                 </div>
 
@@ -4295,6 +4460,24 @@ export default function MerchantDashboard() {
 
           </div>
 
+        </div>
+      )}
+
+      {showPremiumModal && !isPremium && (
+        <div className="merchant-modal-backdrop" onClick={() => setShowPremiumModal(false)}>
+          <div className="merchant-premium-modal" onClick={(e) => e.stopPropagation()}>
+            <button type="button" className="merchant-detail-close" onClick={() => setShowPremiumModal(false)}>
+              <X size={20} />
+            </button>
+            <div className="merchant-premium-modal-icon">♛</div>
+            <h2>Premium Profiles</h2>
+            <p>You have reached the free limit of 5 unique user profiles per day. Upgrade to Premium for unlimited profile access.</p>
+            <div className="merchant-premium-modal-count">{Math.min(Number(profileViewCount) || 5, 5)} / 5 free views used</div>
+            <div className="merchant-premium-modal-actions">
+              <button type="button" className="merchant-premium-primary" onClick={() => { setShowPremiumModal(false); navigate("/premium"); }}>Upgrade to Premium</button>
+              <button type="button" className="merchant-premium-secondary" onClick={() => setShowPremiumModal(false)}>Continue with Free</button>
+            </div>
+          </div>
         </div>
       )}
 

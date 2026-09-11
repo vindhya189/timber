@@ -1907,3 +1907,66 @@ html, body, #root, .buyer-app, .buyer-main {
     font-size: 11px !important;
   }
 }
+
+/* =========================================================
+   PREMIUM ACCESS + 15-DAY LISTING VISIBILITY + WATERMARK
+   ========================================================= */
+.buyer-premium-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  min-height:44px;padding:5px 11px 5px 6px;
+  border:1px solid #d9e6df;border-radius:14px;
+  background:#fff;color:#23443b;
+  transition:.2s ease;
+}
+.buyer-premium-badge:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(19,70,54,.08)}
+.buyer-premium-badge.active{background:linear-gradient(135deg,#fff8de,#f4e4a5);border-color:#d5b75d}
+.buyer-premium-crown{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;background:#0b5143;color:#f4d36d;font-size:18px}
+.buyer-premium-copy{display:flex;flex-direction:column;align-items:flex-start;line-height:1.1}
+.buyer-premium-copy strong{font-size:10px;letter-spacing:.07em;font-weight:900}
+.buyer-premium-copy small{font-size:9px;color:#71827c;margin-top:3px;white-space:nowrap}
+.buyer-premium-badge.active .buyer-premium-copy strong{color:#5a4307}
+.buyer-sidebar-premium{margin-top:7px;border:0;background:rgba(255,255,255,.09);color:#eaf7f2;border-radius:9px;padding:6px 8px;display:inline-flex;align-items:center;gap:6px;font-size:9px;font-weight:900;letter-spacing:.04em}
+.buyer-sidebar-premium.active{background:rgba(242,213,112,.16);color:#ffe18a}
+.buyer-sidebar-premium span{font-size:13px}
+
+.buyer-premium-limit-backdrop{position:fixed;inset:0;z-index:1700;background:rgba(5,27,22,.58);display:flex;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+.buyer-premium-limit-modal{width:min(420px,95vw);background:#fff;border-radius:22px;padding:28px;box-shadow:0 35px 90px rgba(0,0,0,.24);text-align:center;border:1px solid #e0e9e5}
+.buyer-premium-limit-crown{width:62px;height:62px;margin:0 auto 12px;border-radius:18px;display:grid;place-items:center;background:#0b5143;color:#f1d16b;font-size:30px}
+.buyer-premium-limit-modal>span{font-size:10px;letter-spacing:.12em;font-weight:900;color:#8a9a94}
+.buyer-premium-limit-modal h2{margin:8px 0 8px;color:#173d34;font-size:25px}
+.buyer-premium-limit-modal p{margin:0;color:#72847d;font-size:13px;line-height:1.65}
+.buyer-premium-limit-actions{display:flex;justify-content:center;gap:9px;margin-top:20px}
+.buyer-premium-limit-actions button{height:42px;border:0;border-radius:10px;padding:0 16px;background:#edf4f1;color:#31574d;font-weight:800}
+.buyer-premium-limit-actions button.primary{background:#0b5d4b;color:#fff}
+
+/* Strong visible watermark, independent of stored-image watermarking. */
+.buyer-product-image::after,.buyer-detail-main-image::after,.buyer-detail-thumb::after,.buyer-notification-image-wrap::after,.buyer-admin-post-hero::after{
+  content:"TIMBERMART\A TIMBERMART\A TIMBERMART";
+  white-space:pre;
+  display:flex;align-items:center;justify-content:center;
+  text-align:center;
+  transform:rotate(-22deg) scale(1.35);
+  color:rgba(255,255,255,.24);
+  font-size:clamp(17px,2.3vw,28px);
+  font-weight:950;letter-spacing:.14em;line-height:4.2;
+  background:repeating-linear-gradient(-22deg,transparent 0 84px,rgba(255,255,255,.025) 84px 86px);
+  pointer-events:none;z-index:3;
+}
+.buyer-product-image::before,.buyer-detail-main-image::before,.buyer-notification-image-wrap::before,.buyer-admin-post-hero::before{
+  content:"TIMBERMART  •  OFFICIAL MARKETPLACE";
+  position:absolute;right:10px;bottom:9px;z-index:4;pointer-events:none;
+  padding:6px 10px;border-radius:999px;background:rgba(6,55,44,.58);
+  color:rgba(255,255,255,.92);font-size:9px;font-weight:900;letter-spacing:.06em;
+  box-shadow:0 5px 14px rgba(0,0,0,.14);backdrop-filter:blur(4px);
+}
+
+@media (max-width:900px){
+  .buyer-premium-copy small{display:none}
+  .buyer-premium-badge{padding-right:7px}
+}
+@media (max-width:620px){
+  .buyer-premium-badge{min-height:40px}
+  .buyer-premium-crown{width:29px;height:29px;font-size:16px}
+  .buyer-premium-copy strong{font-size:9px}
+  .buyer-premium-limit-modal{padding:23px}
+}

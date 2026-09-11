@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { supabase } from "./supabaseClient";
 import "./PremiumPage.css";
 
 const PLANS = [
@@ -167,6 +168,8 @@ function loadRazorpayScript() {
   });
 }
 
+const RAZORPAY_SERVER_URL = (import.meta.env.VITE_RAZORPAY_SERVER_URL || "http://localhost:5000").replace(/\/$/, "");
+
 export default function PremiumPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -176,6 +179,49 @@ export default function PremiumPage() {
   const [paying, setPaying] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState("");
   const [error, setError] = useState("");
+  const [currentSubscription, setCurrentSubscription] = useState(null);
+  const [loadingSubscription, setLoadingSubscription] = useState(true);
+
+  const loadCurrentSubscription = async () => {
+    try {
+      setLoadingSubscription(true);
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user?.id) {
+        setCurrentSubscription(null);
+        return;
+      }
+
+      const { data, error: subscriptionError } = await supabase
+        .from("user_subscriptions")
+        .select("id,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id")
+        .eq("user_id", session.user.id)
+        .eq("status", "active")
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (subscriptionError) {
+        console.warn("Subscription status check failed:", subscriptionError.message);
+        setCurrentSubscription(null);
+      } else {
+        setCurrentSubscription(data || null);
+      }
+    } catch (subscriptionError) {
+      console.warn("Subscription status check failed:", subscriptionError);
+      setCurrentSubscription(null);
+    } finally {
+      setLoadingSubscription(false);
+    }
+  };
+
+  useEffect(() => {
+    loadCurrentSubscription();
+  }, []);
 
   useEffect(() => {
     const planId = searchParams.get("plan");
@@ -242,12 +288,25 @@ export default function PremiumPage() {
         throw new Error("Payment gateway could not be loaded. Check your internet connection.");
       }
 
+      // Get the currently authenticated Supabase session.
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session?.user?.id || !session.access_token) {
+        throw new Error("Please login again before purchasing Premium.");
+      }
+
       // IMPORTANT:
-      // Your backend must create the Razorpay order.
-      // Never put RAZORPAY_KEY_SECRET in React/frontend code.
-      const orderResponse = await fetch("/api/payments/create-order", {
+      // Your backend creates the Razorpay order and verifies the payment.
+      // The Supabase access token lets the server identify the logged-in user.
+      // Never put RAZORPAY_KEY_SECRET or the Supabase service-role key in React.
+      const orderResponse = await fetch(`${RAZORPAY_SERVER_URL}/api/payments/create-order`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({
           planId: selectedPlan.id,
         }),
@@ -294,9 +353,20 @@ export default function PremiumPage() {
 
         handler: async (response) => {
           try {
-            const verifyResponse = await fetch("/api/payments/verify", {
+            const {
+              data: { session: verifySession },
+            } = await supabase.auth.getSession();
+
+            if (!verifySession?.access_token) {
+              throw new Error("Your login session expired. Please login again.");
+            }
+
+            const verifyResponse = await fetch(`${RAZORPAY_SERVER_URL}/api/payments/verify`, {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${verifySession.access_token}`,
+              },
               body: JSON.stringify({
                 planId: selectedPlan.id,
                 razorpayPaymentId: response.razorpay_payment_id,
@@ -315,6 +385,9 @@ export default function PremiumPage() {
 
             setPaymentStatus("Payment successful! Premium activation is complete.");
             setError("");
+
+            // Refresh Premium status from Supabase immediately.
+            await loadCurrentSubscription();
           } catch (verificationError) {
             console.error(verificationError);
             setError(
@@ -416,6 +489,18 @@ export default function PremiumPage() {
           </div>
         </section>
 
+        {currentSubscription && (
+          <section className="tm-premium-active-banner">
+            <div>
+              <strong>👑 Premium Active</strong>
+              <span>
+                {currentSubscription.plan_name || "Premium"} · expires {new Date(currentSubscription.expires_at).toLocaleDateString()}
+              </span>
+            </div>
+            <ShieldCheck size={24} />
+          </section>
+        )}
+
         <section className="tm-section-heading">
           <div><h2>Compare Plans</h2></div>
           <p>Choose the plan that fits your needs</p>
@@ -456,11 +541,19 @@ export default function PremiumPage() {
               <button
                 type="button"
                 className="tm-plan-button"
-                disabled={plan.amount === 0}
+                disabled={
+                  plan.amount === 0 ||
+                  loadingSubscription ||
+                  (currentSubscription?.plan_id === plan.id)
+                }
                 onClick={() => openPayment(plan)}
               >
                 {plan.amount > 0 && <Crown size={17} />}
-                {plan.amount > 0 ? "Choose Plan" : "Current Plan"}
+                {plan.amount === 0
+                  ? "Free Plan"
+                  : currentSubscription?.plan_id === plan.id
+                    ? "Active Plan"
+                    : "Choose Plan"}
               </button>
 
               <ul className="tm-features">

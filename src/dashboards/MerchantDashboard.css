@@ -1139,3 +1139,39 @@ body,
     min-height: 100px;
   }
 }
+
+/* PREMIUM + EXPIRY + WATERMARK */
+.merchant-premium-badge{display:flex;align-items:center;gap:8px;min-height:42px;padding:5px 11px 5px 5px;border:1px solid #eadba8;border-radius:13px;background:linear-gradient(135deg,#fffdf3,#fbf1ca);color:#624b08;box-shadow:0 7px 20px rgba(100,75,8,.08)}
+.merchant-premium-badge.inactive{background:#f8fbf9;border-color:var(--mborder);color:var(--mg)}
+.merchant-premium-icon{width:31px;height:31px;border-radius:9px;display:grid;place-items:center;background:#103e2e;color:#f3d66c;font-size:17px;flex:0 0 31px}
+.merchant-premium-copy{display:flex;flex-direction:column;min-width:0;text-align:left}
+.merchant-premium-copy strong{font-size:10px;letter-spacing:.05em;white-space:nowrap;font-weight:950}
+.merchant-premium-copy small{margin-top:2px;color:#7a6a39;font-size:8px;white-space:nowrap}
+.merchant-premium-badge.inactive .merchant-premium-copy small{color:#78857d}
+.merchant-watermark-wrap{position:relative;width:100%;height:100%;overflow:hidden}
+.merchant-watermark-wrap>img{width:100%;height:100%;object-fit:cover;display:block}
+.merchant-watermark-grid{position:absolute;inset:0;z-index:3;pointer-events:none;display:grid;grid-template-columns:repeat(2,1fr);grid-template-rows:repeat(2,1fr);place-items:center;overflow:hidden}
+.merchant-watermark-grid span{color:rgba(255,255,255,.74);font-size:clamp(14px,2vw,30px);font-weight:950;letter-spacing:2px;transform:rotate(-28deg);text-shadow:0 1px 3px rgba(0,0,0,.55);opacity:.62;white-space:nowrap}
+.merchant-watermark-bottom{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:8px 10px;text-align:center;background:rgba(7,38,27,.88);color:#fff;font-size:8px;line-height:1.2;letter-spacing:1px;font-weight:950;pointer-events:none}
+.merchant-expiry-countdown{position:absolute;left:9px;top:9px;z-index:6;display:inline-flex;align-items:center;gap:4px;padding:6px 8px;border-radius:999px;background:rgba(8,32,22,.82);color:#fff;font-size:8px;font-weight:950;backdrop-filter:blur(6px)}
+.merchant-expiry-countdown.expired{background:rgba(177,46,38,.92)}
+.merchant-my-expiry{display:inline-flex!important;width:max-content!important;margin-top:6px!important;padding:5px 8px;border-radius:999px;background:#eef7f0;color:var(--mg);font-size:8px!important;font-weight:950!important}
+.merchant-my-expiry.expired{background:#fff0ee;color:#b3382b}
+.merchant-detail-watermark{width:100%;min-height:520px}
+.merchant-detail-watermark>img{position:absolute;inset:0}
+.merchant-detail-expiry{border:1px solid #dce8df;border-radius:10px;padding:10px;background:#f7fbf8}
+.merchant-detail-expiry span{display:block;font-size:8px;color:#78857d;font-weight:800}
+.merchant-detail-expiry strong{display:block;margin-top:4px;font-size:10px;color:var(--mg)}
+.merchant-detail-expiry.expired{background:#fff3f1;border-color:#f0d1ce}
+.merchant-detail-expiry.expired strong{color:#b3382b}
+.merchant-premium-modal{position:relative;width:min(470px,92vw);padding:30px 24px 24px;border-radius:22px;background:#fff;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.28)}
+.merchant-premium-modal-icon{width:58px;height:58px;margin:0 auto 10px;display:grid;place-items:center;border-radius:17px;background:#103e2e;color:#f2d46b;font-size:28px}
+.merchant-premium-modal h2{margin:0;font-size:22px;color:#18362a}
+.merchant-premium-modal p{margin:10px auto 0;max-width:380px;color:#6e7d74;font-size:11px;line-height:1.6}
+.merchant-premium-modal-count{margin-top:14px;display:inline-flex;padding:7px 10px;border-radius:999px;background:#fff6dd;color:#8a6700;font-size:9px;font-weight:950}
+.merchant-premium-modal-actions{display:flex;gap:8px;margin-top:19px}
+.merchant-premium-modal-actions button{flex:1;min-height:41px;border-radius:10px;font-size:10px;font-weight:950}
+.merchant-premium-primary{border:0;background:var(--mg);color:#fff}
+.merchant-premium-secondary{border:1px solid #d7e3db;background:#fff;color:#5e6d65}
+@media (max-width:900px){.merchant-premium-badge{margin-left:auto}}
+@media (max-width:640px){.merchant-premium-badge{max-width:145px}.merchant-premium-copy strong{font-size:8px}.merchant-premium-copy small{font-size:7px}.merchant-premium-icon{width:28px;height:28px;flex-basis:28px}.merchant-premium-modal-actions{flex-direction:column}}

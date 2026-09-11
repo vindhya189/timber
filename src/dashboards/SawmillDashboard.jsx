@@ -34,6 +34,7 @@ import {
   Languages,
   TreePine,
   Upload,
+  RefreshCw,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
@@ -1600,6 +1601,16 @@ export default function SawmillDashboard() {
   const [profile, setProfile] = useState(null);
 
   /* =====================================================
+     PREMIUM / EXPIRY CLOCK
+  ===================================================== */
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
+  const [profileViewCount, setProfileViewCount] = useState(5);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [nowMs, setNowMs] = useState(Date.now());
+
+  /* =====================================================
      DATA
   ===================================================== */
 
@@ -1685,11 +1696,75 @@ export default function SawmillDashboard() {
     useState(false);
 
   /* =====================================================
+     WHATSAPP-STYLE CHAT INBOX
+  ===================================================== */
+
+  async function loadChatInbox() {
+    const myId = session?.user?.id;
+    if (!myId) return;
+
+    setChatInboxLoading(true);
+    try {
+      const { data: rows, error } = await supabase
+        .from("messages")
+        .select("id,sender_id,receiver_id,body,created_at")
+        .or(`sender_id.eq.${myId},receiver_id.eq.${myId}`)
+        .order("created_at", { ascending: false })
+        .limit(300);
+
+      if (error) throw error;
+
+      const latestByUser = new Map();
+      for (const row of rows || []) {
+        const otherId = row.sender_id === myId ? row.receiver_id : row.sender_id;
+        if (!otherId || otherId === myId || latestByUser.has(otherId)) continue;
+        latestByUser.set(otherId, row);
+      }
+
+      const otherIds = [...latestByUser.keys()];
+      if (!otherIds.length) {
+        setChatInbox([]);
+        return;
+      }
+
+      const { data: people, error: peopleError } = await supabase
+        .from("profiles")
+        .select("id,name,role,phone,location,photo_url")
+        .in("id", otherIds);
+
+      if (peopleError) throw peopleError;
+
+      const peopleMap = new Map((people || []).map((person) => [person.id, person]));
+      const items = otherIds.map((id) => ({
+        user: peopleMap.get(id) || { id, name: "TimberMart User", role: "User" },
+        lastMessage: latestByUser.get(id),
+      })).sort((a, b) => new Date(b.lastMessage?.created_at || 0) - new Date(a.lastMessage?.created_at || 0));
+
+      setChatInbox(items);
+    } catch (error) {
+      console.error("Chat inbox error:", error);
+      setChatInbox([]);
+    } finally {
+      setChatInboxLoading(false);
+    }
+  }
+
+  async function openChatInbox() {
+    setShowChatInbox(true);
+    setMobileMenu(false);
+    await loadChatInbox();
+  }
+
+  /* =====================================================
      CHAT
   ===================================================== */
 
   const [chatUser, setChatUser] = useState(null);
   const [showChat, setShowChat] = useState(false);
+  const [showChatInbox, setShowChatInbox] = useState(false);
+  const [chatInbox, setChatInbox] = useState([]);
+  const [chatSearch, setChatSearch] = useState("");
+  const [chatInboxLoading, setChatInboxLoading] = useState(false);
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState("");
 
@@ -1717,6 +1792,7 @@ export default function SawmillDashboard() {
       }
 
       setSession(currentSession);
+      await refreshPremiumStatus(currentSession.user.id);
 
       let { data: userProfile, error } =
         await supabase
@@ -1795,6 +1871,66 @@ export default function SawmillDashboard() {
       setLoading(false);
     }
   }
+
+  async function refreshPremiumStatus(userId = session?.user?.id) {
+    if (!userId) {
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Sawmill Premium status check skipped:", error.message);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    setIsPremium(Boolean(data));
+    setPremiumExpiresAt(data?.expires_at || null);
+    setPremiumPlanName(data?.plan_name || data?.plan_id || "");
+    return data || null;
+  }
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNowMs(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    refreshPremiumStatus(session.user.id);
+    const interval = window.setInterval(() => {
+      refreshPremiumStatus(session.user.id);
+    }, 15000);
+
+    const handleFocus = () => refreshPremiumStatus(session.user.id);
+    const handleVisibility = () => {
+      if (!document.hidden) refreshPremiumStatus(session.user.id);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [session?.user?.id]);
 
   /* =====================================================
      LOAD JOBS
@@ -2287,7 +2423,7 @@ export default function SawmillDashboard() {
 
   function isListingExpired(item) {
     const d = getListingExpiry(item);
-    return !!d && d.getTime() <= Date.now();
+    return !!d && d.getTime() <= nowMs;
   }
 
   function formatListingDate(value) {
@@ -2301,8 +2437,21 @@ export default function SawmillDashboard() {
   function getDaysLeft(item) {
     const d = getListingExpiry(item);
     if (!d) return null;
-    return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+    return Math.max(0, Math.ceil((d.getTime() - nowMs) / 86400000));
   }
+  function getExpiryCountdown(item) {
+    const d = getListingExpiry(item);
+    if (!d) return "No expiry";
+    const diff = Math.max(0, d.getTime() - nowMs);
+    if (diff <= 0) return "EXPIRED";
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${days}d ${String(hours).padStart(2,"0")}h ${String(minutes).padStart(2,"0")}m ${String(seconds).padStart(2,"0")}s`;
+  }
+
 
   function isPattaTeak(item) {
     const text = [item?.title,item?.wood_type,item?.product_type,item?.description,item?.category]
@@ -2324,7 +2473,7 @@ export default function SawmillDashboard() {
     // Seller can always see their own listing/status.
     // Other users only see admin-approved/live listings.
     return isMine || status === "approved";
-  }), [timberListings, session?.user?.id]);
+  }), [timberListings, session?.user?.id, nowMs]);
 
   const filteredSupplierListings = useMemo(() => {
     if (supplierMode === "patta") return visibleTimberListings.filter(isPattaTeak);
@@ -2754,7 +2903,31 @@ export default function SawmillDashboard() {
      WORKER PROFILE
   ===================================================== */
 
-  function openWorker(worker) {
+  async function openWorker(worker) {
+    if (!worker?.id || !session?.user?.id) return;
+
+    if (worker.id !== session.user.id && !isPremium) {
+      const { data: access, error: accessError } = await supabase.rpc(
+        "check_profile_view_access",
+        { p_viewed_user_id: worker.id }
+      );
+
+      if (accessError) {
+        console.error("Sawmill profile access error:", accessError);
+        alert("Unable to open this profile right now.");
+        return;
+      }
+
+      const count = Number(access?.view_count);
+      if (Number.isFinite(count)) setProfileViewCount(count);
+
+      if (!access?.allowed) {
+        setProfileViewCount(Number(access?.view_count) || 5);
+        setShowPremiumModal(true);
+        return;
+      }
+    }
+
     setSelectedWorker(worker);
     setShowWorkerProfile(true);
   }
@@ -2817,6 +2990,7 @@ export default function SawmillDashboard() {
     }
 
     setChatUser(user);
+    setShowChatInbox(false);
 
     await loadMessages(user.id);
 
@@ -2891,6 +3065,8 @@ export default function SawmillDashboard() {
                   session.user.id
               );
 
+            loadChatInbox();
+
             if (belongs) {
               setMessages((old) => {
                 if (
@@ -2960,6 +3136,7 @@ export default function SawmillDashboard() {
     ]);
 
     setMessageText("");
+    loadChatInbox();
   }
 
   /* =====================================================
@@ -3198,6 +3375,23 @@ export default function SawmillDashboard() {
 
           
           <button
+            type="button"
+            className={`sawmill-premium-badge ${isPremium ? "active" : "inactive"}`}
+            onClick={() => navigate("/premium")}
+            title={isPremium ? "Premium subscription active" : "Open Premium plans"}
+          >
+            <span className="sawmill-premium-crown">♛</span>
+            <span className="sawmill-premium-copy">
+              <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+              <small>
+                {isPremium
+                  ? `${premiumPlanName || "Premium plan"}${premiumExpiresAt ? ` · Until ${new Date(premiumExpiresAt).toLocaleDateString("en-IN")}` : ""}`
+                  : "Unlimited profile views"}
+              </small>
+            </span>
+          </button>
+
+          <button
             className="sawmill-bell"
             onClick={() => setNotificationOpen(true)}
             aria-label="Notifications"
@@ -3317,6 +3511,18 @@ export default function SawmillDashboard() {
 
           </div>
 
+
+          <button
+            type="button"
+            className={`sawmill-sidebar-premium ${isPremium ? "active" : "inactive"}`}
+            onClick={() => navigate("/premium")}
+          >
+            <span>♛</span>
+            <div>
+              <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+              <small>{isPremium ? (premiumExpiresAt ? `Until ${new Date(premiumExpiresAt).toLocaleDateString("en-IN")}` : "Active") : "Unlimited profiles + benefits"}</small>
+            </div>
+          </button>
 
           <nav className="sawmill-nav">
 
@@ -3467,6 +3673,15 @@ export default function SawmillDashboard() {
                   )
                 ).length}
               </b>
+            </button>
+
+            <button
+              onClick={openChatInbox}
+              className={showChatInbox ? "active" : ""}
+            >
+              <MessageCircle size={18} />
+              Chats
+              {chatInbox.length > 0 && <b>{chatInbox.length}</b>}
             </button>
 
             <button
@@ -4499,6 +4714,10 @@ export default function SawmillDashboard() {
                           <Clock3 size={15} />
                           <div><small>{expired ? "Expired on" : "Expires on"}</small><strong>{formatListingDate(expiry)}</strong></div>
                           {!expired && daysLeft != null && <b>{daysLeft} day{daysLeft === 1 ? "" : "s"} left</b>}
+                        </div>
+                        <div className={`sawmill-expiry-countdown ${expired ? "expired" : ""}`}>
+                          <span>⏳ {expired ? "Listing expired" : "Time left"}</span>
+                          <strong>{getExpiryCountdown(listing)}</strong>
                         </div>
                         <div className="sawmill-timber-card-footer">
                           <small>Posted {formatListingDate(listing.created_at)}</small>
@@ -6615,6 +6834,85 @@ export default function SawmillDashboard() {
       )}
 
       {/* =====================================================
+          WHATSAPP-STYLE CHAT INBOX
+      ===================================================== */}
+      {showChatInbox && (
+        <div
+          className="sawmill-chat-inbox-overlay"
+          onMouseDown={() => setShowChatInbox(false)}
+        >
+          <aside
+            className="sawmill-chat-inbox"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <header className="sawmill-chat-inbox-header">
+              <div>
+                <span>MESSAGES</span>
+                <h2>Chats</h2>
+              </div>
+              <div className="sawmill-chat-inbox-head-actions">
+                <button type="button" onClick={loadChatInbox} title="Refresh chats"><RefreshCw size={17} /></button>
+                <button type="button" onClick={() => setShowChatInbox(false)} title="Close"><X size={18} /></button>
+              </div>
+            </header>
+
+            <div className="sawmill-chat-search">
+              <Search size={16} />
+              <input
+                value={chatSearch}
+                onChange={(e) => setChatSearch(e.target.value)}
+                placeholder="Search chats..."
+              />
+            </div>
+
+            <div className="sawmill-chat-inbox-list">
+              {chatInboxLoading ? (
+                <div className="sawmill-chat-inbox-empty"><TreeLoader /></div>
+              ) : chatInbox.filter(({ user }) => {
+                const q = chatSearch.trim().toLowerCase();
+                if (!q) return true;
+                return `${user?.name || ""} ${user?.role || ""} ${user?.location || ""}`.toLowerCase().includes(q);
+              }).length === 0 ? (
+                <div className="sawmill-chat-inbox-empty">
+                  <MessageCircle size={38} />
+                  <strong>No chats yet</strong>
+                  <span>Start a conversation from a listing, worker or job.</span>
+                </div>
+              ) : (
+                chatInbox
+                  .filter(({ user }) => {
+                    const q = chatSearch.trim().toLowerCase();
+                    if (!q) return true;
+                    return `${user?.name || ""} ${user?.role || ""} ${user?.location || ""}`.toLowerCase().includes(q);
+                  })
+                  .map(({ user, lastMessage }) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      className="sawmill-chat-row"
+                      onClick={() => openChat(user)}
+                    >
+                      <span className="sawmill-chat-row-avatar">
+                        {user.photo_url ? <img src={user.photo_url} alt="" /> : <User size={19} />}
+                      </span>
+                      <span className="sawmill-chat-row-copy">
+                        <strong>{user.name || "TimberMart User"}</strong>
+                        <small>{lastMessage?.body || "Start conversation"}</small>
+                      </span>
+                      <time>
+                        {lastMessage?.created_at
+                          ? new Date(lastMessage.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                          : ""}
+                      </time>
+                    </button>
+                  ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* =====================================================
           CHAT MODAL
       ===================================================== */}
 
@@ -6774,6 +7072,51 @@ export default function SawmillDashboard() {
 
         )}
 
+      {showPremiumModal && !isPremium && (
+        <div
+          className="sawmill-modal-overlay"
+          onMouseDown={() => setShowPremiumModal(false)}
+        >
+          <div
+            className="sawmill-premium-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="sawmill-premium-close"
+              onClick={() => setShowPremiumModal(false)}
+              aria-label="Close"
+            >
+              <X size={18} />
+            </button>
+            <div className="sawmill-premium-icon">♛</div>
+            <h2>Upgrade to Premium</h2>
+            <p>
+              Free accounts can view up to 5 unique user profiles per day.
+              Premium gives unlimited profile access while your subscription is active.
+            </p>
+            <div className="sawmill-premium-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => {
+                  setShowPremiumModal(false);
+                  navigate("/premium");
+                }}
+              >
+                Go Premium
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowPremiumModal(false)}
+              >
+                Continue Free
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+
   );
 }

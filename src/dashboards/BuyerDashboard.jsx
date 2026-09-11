@@ -26,6 +26,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import watermarkImage from "../watermarkImage";
 import "./BuyerDashboard.css";
 import TreeLoader from "../components/TreeLoader";
 
@@ -489,6 +490,46 @@ function getListingImage(listing) {
   return getListingImages(listing)[0] || "";
 }
 
+function isListingVisibleNow(listing, now = Date.now()) {
+  if (!listing) return false;
+
+  const status = String(listing.status || "approved").trim().toLowerCase();
+  const allowedStatus = !listing.status || ["approved", "active", "published"].includes(status);
+  if (!allowedStatus) return false;
+
+  if (listing.is_expired === true) return false;
+
+  if (listing.expires_at) {
+    const expiry = new Date(listing.expires_at).getTime();
+    if (!Number.isFinite(expiry) || expiry <= now) return false;
+  }
+
+  return true;
+}
+
+async function createBuyerWatermarkedCopy(imageUrl) {
+  if (!imageUrl || typeof window === "undefined") return null;
+
+  try {
+    const response = await fetch(imageUrl, { mode: "cors" });
+    if (!response.ok) throw new Error(`Image request failed (${response.status})`);
+    const blob = await response.blob();
+    const file = new File([blob], "timbermart-buyer-image", {
+      type: blob.type || "image/jpeg",
+    });
+    return await watermarkImage(file, {
+      watermark: "TIMBERMART",
+      bottomText: "TIMBERMART  •  OFFICIAL MARKETPLACE",
+      quality: 0.9,
+    });
+  } catch (error) {
+    // The CSS watermark remains visible even when storage CORS blocks
+    // client-side image processing.
+    console.debug("Buyer watermark processing fallback:", error?.message || error);
+    return null;
+  }
+}
+
 export default function BuyerDashboard() {
   const navigate = useNavigate();
 
@@ -544,6 +585,26 @@ export default function BuyerDashboard() {
   const [locationSaving, setLocationSaving] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [language, setLanguage] = useState(() => localStorage.getItem("timbermart_language") || "en");
+
+  // Premium access: user-specific subscription with automatic expiry.
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
+  const [profileViewIds, setProfileViewIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem("timbermart_buyer_profile_views");
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+  const [listingNow, setListingNow] = useState(() => Date.now());
+  const [showProfileLimit, setShowProfileLimit] = useState(false);
+
+  const freeProfileLimit = 5;
+  const profileViewCount = profileViewIds.length;
   const [teakType, setTeakType] = useState("");
   const [firewoodType, setFirewoodType] = useState("");
 
@@ -658,6 +719,8 @@ export default function BuyerDashboard() {
     if (!mode) return [];
 
     return listings.filter((listing) => {
+      if (!isListingVisibleNow(listing, listingNow)) return false;
+
       const text = [
         listing.title,
         listing.description,
@@ -681,7 +744,126 @@ export default function BuyerDashboard() {
 
       return false;
     });
-  }, [listings, supplierMode]);
+  }, [listings, supplierMode, listingNow]);
+
+  /* -------------------------------------------------------
+     PREMIUM + DAILY PROFILE ACCESS
+  ------------------------------------------------------- */
+
+  function getBuyerProfileViewStorageKey(userId) {
+    return `timbermart_buyer_profile_views_${userId}_${new Date().toISOString().slice(0, 10)}`;
+  }
+
+  function loadTodayProfileViews(userId) {
+    if (!userId) return [];
+    try {
+      const key = getBuyerProfileViewStorageKey(userId);
+      const ids = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(ids) ? [...new Set(ids.map(String))] : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function saveTodayProfileViews(userId, ids) {
+    if (!userId) return;
+    try {
+      const clean = [...new Set((ids || []).map(String))];
+      localStorage.setItem(getBuyerProfileViewStorageKey(userId), JSON.stringify(clean));
+      setProfileViewIds(clean);
+    } catch (error) {
+      console.warn("Buyer profile-view counter storage error:", error);
+    }
+  }
+
+  async function refreshPremiumStatus(userId = session?.user?.id) {
+    if (!userId) {
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    const nowIso = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", nowIso)
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Buyer Premium status check skipped:", error.message);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    setIsPremium(Boolean(data));
+    setPremiumExpiresAt(data?.expires_at || null);
+    setPremiumPlanName(data?.plan_name || data?.plan_id || "");
+    return data || null;
+  }
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setListingNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+
+    saveTodayProfileViews(session.user.id, loadTodayProfileViews(session.user.id));
+    refreshPremiumStatus(session.user.id);
+
+    const premiumTimer = window.setInterval(() => {
+      refreshPremiumStatus(session.user.id);
+    }, 15000);
+
+    const onFocus = () => {
+      refreshPremiumStatus(session.user.id);
+    };
+    const onVisibility = () => {
+      if (!document.hidden) refreshPremiumStatus(session.user.id);
+    };
+
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    return () => {
+      window.clearInterval(premiumTimer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [session?.user?.id]);
+
+  useEffect(() => {
+    if (session?.user?.id) {
+      setProfileViewIds(loadTodayProfileViews(session.user.id));
+    }
+  }, [session?.user?.id]);
+
+  function canViewSellerProfile(userId) {
+    if (!userId) return false;
+    if (isPremium) return true;
+
+    const todayIds = loadTodayProfileViews(session?.user?.id);
+    if (todayIds.includes(String(userId))) return true;
+    return todayIds.length < freeProfileLimit;
+  }
+
+  function recordSellerProfileView(userId) {
+    if (!userId || isPremium || !session?.user?.id) return;
+    const todayIds = loadTodayProfileViews(session.user.id);
+    const key = String(userId);
+    if (!todayIds.includes(key)) {
+      saveTodayProfileViews(session.user.id, [...todayIds, key]);
+    }
+  }
 
   /* -------------------------------------------------------
      AUTH + PROFILE
@@ -705,6 +887,8 @@ export default function BuyerDashboard() {
       if (!mounted) return;
 
       setSession(currentSession);
+      setProfileViewIds(loadTodayProfileViews(currentSession.user.id));
+      await refreshPremiumStatus(currentSession.user.id);
 
       let { data: userProfile } = await supabase
         .from("profiles")
@@ -1219,6 +1403,8 @@ export default function BuyerDashboard() {
     const location = locationFilter.trim().toLowerCase();
 
     return listings.filter((listing) => {
+      if (!isListingVisibleNow(listing, listingNow)) return false;
+
       const title = String(listing.title || "").toLowerCase();
       const wood = String(listing.wood_type || "").toLowerCase();
       const product = String(listing.product_type || "").toLowerCase();
@@ -1297,6 +1483,7 @@ export default function BuyerDashboard() {
     });
   }, [
     listings,
+    listingNow,
     searchText,
     category,
     woodType,
@@ -1344,6 +1531,20 @@ export default function BuyerDashboard() {
   async function openSellerProfile(userId) {
     if (!userId) return;
 
+    if (!isPremium) {
+      const todayIds = loadTodayProfileViews(session?.user?.id);
+      const alreadyViewed = todayIds.includes(String(userId));
+
+      if (!alreadyViewed && todayIds.length >= freeProfileLimit) {
+        setShowProfileLimit(true);
+        return;
+      }
+
+      if (!alreadyViewed) {
+        recordSellerProfileView(userId);
+      }
+    }
+
     setSellerLoading(true);
 
     const { data, error } = await supabase
@@ -1370,6 +1571,15 @@ export default function BuyerDashboard() {
     setSelectedListing(listing);
     setSelectedDetailImage(localImages[0] || "");
 
+    // Attempt a true client-side watermark copy; CSS watermark is the fallback.
+    if (localImages[0]) {
+      const watermarkedFile = await createBuyerWatermarkedCopy(localImages[0]);
+      if (watermarkedFile) {
+        const objectUrl = URL.createObjectURL(watermarkedFile);
+        setSelectedDetailImage(objectUrl);
+      }
+    }
+
     const { data, error } = await supabase
       .from("listings")
       .select(`
@@ -1388,6 +1598,14 @@ export default function BuyerDashboard() {
       const images = getListingImages(data);
       setSelectedListing(data);
       setSelectedDetailImage(images[0] || "");
+
+      if (images[0]) {
+        const watermarkedFile = await createBuyerWatermarkedCopy(images[0]);
+        if (watermarkedFile) {
+          const objectUrl = URL.createObjectURL(watermarkedFile);
+          setSelectedDetailImage(objectUrl);
+        }
+      }
     } else if (error) {
       console.error("Product details error:", error);
     }
@@ -1416,6 +1634,14 @@ export default function BuyerDashboard() {
     showChatList,
     showNotifications,
   ]);
+
+  useEffect(() => {
+    return () => {
+      if (selectedDetailImage?.startsWith("blob:")) {
+        URL.revokeObjectURL(selectedDetailImage);
+      }
+    };
+  }, [selectedDetailImage]);
 
   /* -------------------------------------------------------
      CALL
@@ -1747,6 +1973,22 @@ export default function BuyerDashboard() {
           </button>
 
           <button
+            className={`buyer-premium-badge ${isPremium ? "active" : "inactive"}`}
+            onClick={() => navigate("/premium")}
+            title={isPremium ? "Premium subscription active" : "Open Premium plans"}
+          >
+            <span className="buyer-premium-crown">♛</span>
+            <span className="buyer-premium-copy">
+              <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+              <small>
+                {isPremium
+                  ? `${premiumPlanName || "Premium plan"} · ${premiumExpiresAt ? `Until ${formatDate(premiumExpiresAt)}` : "Active"}`
+                  : `${freeProfileLimit} user profiles/day`}
+              </small>
+            </span>
+          </button>
+
+          <button
             className="buyer-user-mini"
             onClick={() => goTab("profile")}
           >
@@ -1828,6 +2070,15 @@ export default function BuyerDashboard() {
             <em className={hasLocation ? "buyer-gps-status on" : "buyer-gps-status"}>
               {hasLocation ? `● ${t("locationActive")}` : `○ ${t("locationNotSet")}`}
             </em>
+
+            <button
+              type="button"
+              className={`buyer-sidebar-premium ${isPremium ? "active" : ""}`}
+              onClick={() => navigate("/premium")}
+            >
+              <span>♛</span>
+              <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+            </button>
           </div>
 
         </div>
@@ -2932,6 +3183,42 @@ export default function BuyerDashboard() {
                     </div>
                   )}
 
+                  {getListingImages(selectedListing).length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        className="buyer-detail-image-nav buyer-detail-image-nav-left"
+                        onClick={() => {
+                          const images = getListingImages(selectedListing);
+                          const current = images.indexOf(selectedDetailImage);
+                          const next =
+                            current <= 0 ? images.length - 1 : current - 1;
+                          setSelectedDetailImage(images[next]);
+                        }}
+                        aria-label="Previous photo"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="buyer-detail-image-nav buyer-detail-image-nav-right"
+                        onClick={() => {
+                          const images = getListingImages(selectedListing);
+                          const current = images.indexOf(selectedDetailImage);
+                          const next =
+                            current < 0 || current >= images.length - 1
+                              ? 0
+                              : current + 1;
+                          setSelectedDetailImage(images[next]);
+                        }}
+                        aria-label="Next photo"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
+
                   {getListingImages(selectedListing).length > 0 && (
                     <span className="buyer-detail-photo-count">
                       {getListingImages(selectedListing).length} photos
@@ -2940,24 +3227,56 @@ export default function BuyerDashboard() {
                 </div>
 
                 {getListingImages(selectedListing).length > 0 && (
-                  <div className="buyer-detail-thumbnails">
-                    {getListingImages(selectedListing).map((image, index) => (
+                  <div className="buyer-detail-thumbnails-wrap">
+                    {getListingImages(selectedListing).length > 3 && (
                       <button
                         type="button"
-                        key={`${image}-${index}`}
-                        className={`buyer-detail-thumb ${
-                          selectedDetailImage === image ? "active" : ""
-                        }`}
-                        onClick={() => setSelectedDetailImage(image)}
-                        aria-label={`View photo ${index + 1}`}
+                        className="buyer-detail-thumbnails-arrow"
+                        onClick={() =>
+                          document
+                            .querySelector(".buyer-detail-thumbnails")
+                            ?.scrollBy({ left: -220, behavior: "smooth" })
+                        }
+                        aria-label="Previous thumbnails"
                       >
-                        <img
-                          src={image}
-                          alt={`${selectedListing.title || "Timber"} ${index + 1}`}
-                        />
-                        <span>{index + 1}</span>
+                        <ChevronLeft size={18} />
                       </button>
-                    ))}
+                    )}
+
+                    <div className="buyer-detail-thumbnails">
+                      {getListingImages(selectedListing).map((image, index) => (
+                        <button
+                          type="button"
+                          key={`${image}-${index}`}
+                          className={`buyer-detail-thumb ${
+                            selectedDetailImage === image ? "active" : ""
+                          }`}
+                          onClick={() => setSelectedDetailImage(image)}
+                          aria-label={`View photo ${index + 1}`}
+                        >
+                          <img
+                            src={image}
+                            alt={`${selectedListing.title || "Timber"} ${index + 1}`}
+                          />
+                          <span>{index + 1}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    {getListingImages(selectedListing).length > 3 && (
+                      <button
+                        type="button"
+                        className="buyer-detail-thumbnails-arrow"
+                        onClick={() =>
+                          document
+                            .querySelector(".buyer-detail-thumbnails")
+                            ?.scrollBy({ left: 220, behavior: "smooth" })
+                        }
+                        aria-label="Next thumbnails"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    )}
                   </div>
                 )}
               </section>
@@ -3427,6 +3746,31 @@ export default function BuyerDashboard() {
 
           </div>
 
+        </div>
+      )}
+
+      {showProfileLimit && !isPremium && (
+        <div
+          className="buyer-premium-limit-backdrop"
+          onClick={() => setShowProfileLimit(false)}
+        >
+          <div
+            className="buyer-premium-limit-modal"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="buyer-premium-limit-crown">♛</div>
+            <span>FREE ACCOUNT LIMIT</span>
+            <h2>5 User Profiles Per Day</h2>
+            <p>
+              You have reached today's free profile-view limit. Upgrade to Premium for unlimited seller profile viewing.
+            </p>
+            <div className="buyer-premium-limit-actions">
+              <button type="button" onClick={() => setShowProfileLimit(false)}>Close</button>
+              <button type="button" className="primary" onClick={() => navigate("/premium")}>
+                Go Premium
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

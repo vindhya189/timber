@@ -1,627 +1,439 @@
-/**
- * TimberMart Universal Watermark Helper
- * -------------------------------------
- * Use this same file in all TimberMart dashboards.
- *
- * Works with:
- * Farmer
- * Timber Merchant
- * Sawmill / Wood Business
- * Carpenter
- * Worker
- * Any future upload dashboard
- *
- * IMPORTANT:
- * This helper applies the watermark BEFORE the image is uploaded
- * to Supabase Storage.
- */
+// ============================================================
+// TimberMart Permanent Image Watermark
+// Full-page light repeated watermark
+// + dark bottom TimberMart branding bar
+// ============================================================
 
-/* ============================================================
-   IMAGE LOADER
-============================================================ */
-
-function loadImageFromBlob(blob) {
-  if (typeof createImageBitmap === "function") {
-    return createImageBitmap(blob);
-  }
-
+function loadImage(file) {
   return new Promise((resolve, reject) => {
-    const objectUrl = URL.createObjectURL(blob);
-    const image = new Image();
+    const url = URL.createObjectURL(file);
 
-    image.onload = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve(image);
+    const img = new Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(img);
     };
 
-    image.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
       reject(
-        new Error(
-          "Unable to read the selected image. Please choose a valid image."
-        )
+        new Error("Unable to read selected image.")
       );
     };
 
-    image.src = objectUrl;
+    img.src = url;
   });
 }
 
-/* ============================================================
-   CLOSE IMAGE BITMAP SAFELY
-============================================================ */
+function canvasToBlob(
+  canvas,
+  type = "image/jpeg",
+  quality = 0.92
+) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(
+            new Error(
+              "Unable to create watermarked image."
+            )
+          );
+          return;
+        }
 
-function safeCloseImage(image) {
-  try {
-    if (image && typeof image.close === "function") {
-      image.close();
-    }
-  } catch (error) {
-    console.warn("Unable to close ImageBitmap:", error);
-  }
+        resolve(blob);
+      },
+      type,
+      quality
+    );
+  });
 }
 
-/* ============================================================
-   CREATE WEBP FILE
-============================================================ */
+export async function watermarkImage(
+  file,
+  options = {}
+) {
+  if (!(file instanceof File)) {
+    throw new Error(
+      "Invalid image file."
+    );
+  }
 
-function makeWebpFile(blob, originalFile, suffix = "timbermart") {
+  if (!file.type?.startsWith("image/")) {
+    throw new Error(
+      "Selected file is not an image."
+    );
+  }
+
+  const {
+    centerText = "TimberMart",
+
+    bottomTitle = "TIMBERMART",
+
+    bottomSubtitle =
+      "Official Timber Marketplace",
+
+    watermarkOpacity = 0.12,
+
+    quality = 0.92,
+
+    maxWidth = 2400,
+
+    maxHeight = 2400,
+  } = options;
+
+  // ----------------------------------------------------------
+  // LOAD IMAGE
+  // ----------------------------------------------------------
+
+  const img = await loadImage(file);
+
+  // ----------------------------------------------------------
+  // RESIZE
+  // ----------------------------------------------------------
+
+  const ratio = Math.min(
+    1,
+    maxWidth / img.naturalWidth,
+    maxHeight / img.naturalHeight
+  );
+
+  const width = Math.max(
+    1,
+    Math.round(
+      img.naturalWidth * ratio
+    )
+  );
+
+  const height = Math.max(
+    1,
+    Math.round(
+      img.naturalHeight * ratio
+    )
+  );
+
+  // ----------------------------------------------------------
+  // CANVAS
+  // ----------------------------------------------------------
+
+  const canvas =
+    document.createElement("canvas");
+
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx =
+    canvas.getContext("2d");
+
+  if (!ctx) {
+    throw new Error(
+      "Canvas is not supported."
+    );
+  }
+
+  // Draw original photo
+  ctx.drawImage(
+    img,
+    0,
+    0,
+    width,
+    height
+  );
+
+  // ==========================================================
+  // FULL PAGE LIGHT WATERMARK
+  // ==========================================================
+
+  const diagonalText =
+    String(centerText || "TimberMart")
+      .toUpperCase();
+
+  const shortSide = Math.min(
+    width,
+    height
+  );
+
+  // Font size based on image
+  const fontSize = Math.max(
+    28,
+    Math.round(
+      shortSide * 0.055
+    )
+  );
+
+  const opacity = Math.min(
+    0.28,
+    Math.max(
+      0.06,
+      Number(watermarkOpacity) || 0.12
+    )
+  );
+
+  const horizontalGap =
+    Math.max(
+      230,
+      Math.round(
+        width * 0.28
+      )
+    );
+
+  const verticalGap =
+    Math.max(
+      150,
+      Math.round(
+        height * 0.20
+      )
+    );
+
+  ctx.save();
+
+  // Move to center
+  ctx.translate(
+    width / 2,
+    height / 2
+  );
+
+  // Diagonal watermark
+  ctx.rotate(
+    (-28 * Math.PI) / 180
+  );
+
+  ctx.font =
+    `800 ${fontSize}px Arial, Helvetica, sans-serif`;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  for (
+    let y = -height * 2;
+    y <= height * 2;
+    y += verticalGap
+  ) {
+    for (
+      let x = -width * 2;
+      x <= width * 2;
+      x += horizontalGap
+    ) {
+
+      // White soft watermark
+      ctx.fillStyle =
+        `rgba(255,255,255,${opacity})`;
+
+      ctx.fillText(
+        diagonalText,
+        x,
+        y
+      );
+
+      // Very subtle dark edge
+      ctx.strokeStyle =
+        `rgba(0,0,0,${opacity * 0.15})`;
+
+      ctx.lineWidth = 1.5;
+
+      ctx.strokeText(
+        diagonalText,
+        x,
+        y
+      );
+    }
+  }
+
+  ctx.restore();
+
+  // ==========================================================
+  // DARK BOTTOM BRANDING BAR
+  // ==========================================================
+
+  const bottomBarHeight =
+    Math.max(
+      105,
+      Math.round(
+        height * 0.12
+      )
+    );
+
+  // Dark gradient
+  const gradient =
+    ctx.createLinearGradient(
+      0,
+      height - bottomBarHeight,
+      0,
+      height
+    );
+
+  gradient.addColorStop(
+    0,
+    "rgba(7,25,16,0.84)"
+  );
+
+  gradient.addColorStop(
+    1,
+    "rgba(4,18,11,0.96)"
+  );
+
+  ctx.fillStyle = gradient;
+
+  ctx.fillRect(
+    0,
+    height - bottomBarHeight,
+    width,
+    bottomBarHeight
+  );
+
+  // ----------------------------------------------------------
+  // TIMBERMART TITLE
+  // ----------------------------------------------------------
+
+  const titleSize =
+    Math.max(
+      28,
+      Math.round(
+        bottomBarHeight * 0.38
+      )
+    );
+
+  ctx.font =
+    `900 ${titleSize}px Arial, Helvetica, sans-serif`;
+
+  ctx.fillStyle =
+    "#ffffff";
+
+  ctx.textAlign = "left";
+
+  ctx.textBaseline =
+    "alphabetic";
+
+  const padding =
+    Math.max(
+      22,
+      Math.round(
+        width * 0.035
+      )
+    );
+
+  ctx.fillText(
+    bottomTitle || "TIMBERMART",
+    padding,
+    height -
+      bottomBarHeight * 0.48
+  );
+
+  // ----------------------------------------------------------
+  // SUBTITLE
+  // ----------------------------------------------------------
+
+  const subtitleSize =
+    Math.max(
+      14,
+      Math.round(
+        bottomBarHeight * 0.18
+      )
+    );
+
+  ctx.font =
+    `600 ${subtitleSize}px Arial, Helvetica, sans-serif`;
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.78)";
+
+  ctx.fillText(
+    bottomSubtitle ||
+      "Official Timber Marketplace",
+    padding,
+    height -
+      bottomBarHeight * 0.18
+  );
+
+  // ----------------------------------------------------------
+  // SMALL CORNER BRAND
+  // ----------------------------------------------------------
+
+  const cornerSize =
+    Math.max(
+      12,
+      Math.round(
+        shortSide * 0.022
+      )
+    );
+
+  ctx.font =
+    `800 ${cornerSize}px Arial, Helvetica, sans-serif`;
+
+  ctx.fillStyle =
+    "rgba(255,255,255,0.62)";
+
+  ctx.textAlign = "right";
+
+  ctx.fillText(
+    "TIMBERMART",
+    width - padding,
+    28
+  );
+
+  // ==========================================================
+  // OUTPUT
+  // ==========================================================
+
+  const blob =
+    await canvasToBlob(
+      canvas,
+      "image/jpeg",
+      quality
+    );
+
   const originalName =
-    typeof originalFile?.name === "string" &&
-    originalFile.name.trim() !== ""
-      ? originalFile.name.trim()
-      : "timbermart-image";
-
-  const cleanBaseName =
-    originalName.replace(/\.[^/.]+$/, "").trim() || "timbermart-image";
-
-  const safeSuffix =
-    String(suffix || "timbermart")
-      .replace(/[^a-z0-9-_]/gi, "-")
-      .toLowerCase() || "timbermart";
+    file.name
+      ?.replace(/\.[^/.]+$/, "")
+      ?.trim() ||
+    "timbermart";
 
   return new File(
     [blob],
-    `${cleanBaseName}-${safeSuffix}-${Date.now()}.webp`,
+    `${originalName}-timbermart.jpg`,
     {
-      type: "image/webp",
-      lastModified: Date.now(),
+      type: "image/jpeg",
+      lastModified:
+        Date.now(),
     }
   );
 }
 
-/* ============================================================
-   VALIDATE IMAGE
-============================================================ */
-
-function validateImageFile(file) {
-  if (!(file instanceof Blob)) {
-    throw new Error("Please select a valid image file.");
-  }
-
-  const allowedTypes = [
-    "image/jpeg",
-    "image/jpg",
-    "image/png",
-    "image/webp",
-    "image/gif",
-    "image/bmp",
-  ];
-
-  /*
-   * Some browsers can leave file.type empty.
-   * In that case we still let the browser attempt to read it.
-   */
-  if (file.type && !allowedTypes.includes(file.type.toLowerCase())) {
-    throw new Error(
-      "Unsupported image format. Please select JPG, PNG or WEBP image."
-    );
-  }
-
-  /*
-   * Keep a reasonable maximum source file size.
-   * Watermarking can still compress it afterwards.
-   */
-  const maxInputSize = 15 * 1024 * 1024;
-
-  if (file.size > maxInputSize) {
-    throw new Error(
-      "Image is too large. Please select an image smaller than 15 MB."
-    );
-  }
-}
-
-/* ============================================================
-   MAIN WATERMARK FUNCTION
-============================================================ */
-
-export async function watermarkImage(file, options = {}) {
-  validateImageFile(file);
-
-  if (typeof document === "undefined") {
-    throw new Error(
-      "Watermarking requires a browser environment."
-    );
-  }
-
-  /* ----------------------------------------------------------
-     OPTIONS
-  ---------------------------------------------------------- */
-
-  const {
-    maxWidth = 1800,
-    maxHeight = 1800,
-
-    /*
-     * WebP compression quality
-     * 0.4 = smaller file
-     * 0.95 = higher quality
-     */
-    quality = 0.82,
-
-    /*
-     * Center repeated watermark text
-     */
-    centerText = "TimberMart",
-
-    /*
-     * Bottom branding
-     */
-    bottomTitle = "🌳 TimberMart",
-    bottomSubtitle = "Timber Marketplace",
-
-    /*
-     * Repeated watermark opacity
-     */
-    watermarkOpacity = 0.13,
-
-    /*
-     * Bottom branding opacity
-     */
-    bottomOverlayOpacity = 0.68,
-
-    /*
-     * Angle in degrees
-     */
-    watermarkAngle = -28,
-
-    /*
-     * Add timestamp-style branding if needed
-     * Keep false by default so image remains clean.
-     */
-    showDate = false,
-  } = options;
-
-  /* ----------------------------------------------------------
-     READ IMAGE
-  ---------------------------------------------------------- */
-
-  const source = await loadImageFromBlob(file);
-
-  try {
-    const sourceWidth = Number(source.width) || 0;
-    const sourceHeight = Number(source.height) || 0;
-
-    if (!sourceWidth || !sourceHeight) {
-      throw new Error(
-        "The selected image could not be read correctly."
-      );
-    }
-
-    /* --------------------------------------------------------
-       CALCULATE SCALE
-    -------------------------------------------------------- */
-
-    const widthScale = maxWidth / sourceWidth;
-    const heightScale = maxHeight / sourceHeight;
-
-    const scale = Math.min(
-      1,
-      widthScale,
-      heightScale
-    );
-
-    const width = Math.max(
-      1,
-      Math.round(sourceWidth * scale)
-    );
-
-    const height = Math.max(
-      1,
-      Math.round(sourceHeight * scale)
-    );
-
-    /* --------------------------------------------------------
-       CANVAS
-    -------------------------------------------------------- */
-
-    const canvas = document.createElement("canvas");
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const ctx = canvas.getContext("2d", {
-      alpha: false,
-    });
-
-    if (!ctx) {
-      throw new Error(
-        "Your browser does not support image processing."
-      );
-    }
-
-    /* --------------------------------------------------------
-       HIGH QUALITY IMAGE DRAWING
-    -------------------------------------------------------- */
-
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = "high";
-
-    /*
-     * White background prevents transparent PNG artifacts
-     * when exporting to WebP.
-     */
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(
-      0,
-      0,
-      width,
-      height
-    );
-
-    /*
-     * Draw original image.
-     */
-    ctx.drawImage(
-      source,
-      0,
-      0,
-      width,
-      height
-    );
-
-    /* ========================================================
-       REPEATED DIAGONAL WATERMARK
-    ======================================================== */
-
-    const shortSide = Math.min(
-      width,
-      height
-    );
-
-    const watermarkFontSize = Math.max(
-      18,
-      Math.min(
-        68,
-        Math.round(shortSide * 0.052)
-      )
-    );
-
-    const horizontalGap = Math.max(
-      180,
-      Math.round(width * 0.30)
-    );
-
-    const verticalGap = Math.max(
-      120,
-      Math.round(height * 0.23)
-    );
-
-    const safeOpacity = Math.max(
-      0.04,
-      Math.min(
-        0.28,
-        Number(watermarkOpacity) || 0.13
-      )
-    );
-
-    ctx.save();
-
-    /*
-     * Move origin to center.
-     */
-    ctx.translate(
-      width / 2,
-      height / 2
-    );
-
-    /*
-     * Diagonal watermark.
-     */
-    ctx.rotate(
-      (Number(watermarkAngle) || -28) *
-        (Math.PI / 180)
-    );
-
-    ctx.font = `800 ${watermarkFontSize}px Inter, Arial, sans-serif`;
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-
-    /*
-     * White transparent watermark
-     */
-    ctx.fillStyle = `rgba(255,255,255,${safeOpacity})`;
-
-    /*
-     * Extremely subtle outline.
-     */
-    ctx.strokeStyle =
-      "rgba(0,0,0,0.035)";
-
-    ctx.lineWidth = 1;
-
-    for (
-      let y = -height;
-      y <= height;
-      y += verticalGap
-    ) {
-      for (
-        let x = -width;
-        x <= width;
-        x += horizontalGap
-      ) {
-        ctx.strokeText(
-          centerText,
-          x,
-          y
-        );
-
-        ctx.fillText(
-          centerText,
-          x,
-          y
-        );
-      }
-    }
-
-    ctx.restore();
-
-    /* ========================================================
-       BOTTOM BRANDING STRIP
-    ======================================================== */
-
-    const stripHeight = Math.max(
-      64,
-      Math.round(height * 0.09)
-    );
-
-    const gradient = ctx.createLinearGradient(
-      0,
-      height - stripHeight,
-      width,
-      height
-    );
-
-    const bottomOpacity = Math.max(
-      0.35,
-      Math.min(
-        0.88,
-        Number(bottomOverlayOpacity) || 0.68
-      )
-    );
-
-    gradient.addColorStop(
-      0,
-      `rgba(8,28,18,${
-        bottomOpacity * 0.45
-      })`
-    );
-
-    gradient.addColorStop(
-      0.55,
-      `rgba(8,28,18,${
-        bottomOpacity * 0.72
-      })`
-    );
-
-    gradient.addColorStop(
-      1,
-      `rgba(8,28,18,${
-        bottomOpacity
-      })`
-    );
-
-    ctx.fillStyle = gradient;
-
-    ctx.fillRect(
-      0,
-      height - stripHeight,
-      width,
-      stripHeight
-    );
-
-    /* --------------------------------------------------------
-       BRANDING TEXT SIZES
-    -------------------------------------------------------- */
-
-    const sidePadding = Math.max(
-      18,
-      Math.round(width * 0.028)
-    );
-
-    const titleSize = Math.max(
-      19,
-      Math.round(stripHeight * 0.38)
-    );
-
-    const subtitleSize = Math.max(
-      11,
-      Math.round(stripHeight * 0.18)
-    );
-
-    /* --------------------------------------------------------
-       TITLE
-    -------------------------------------------------------- */
-
-    ctx.textAlign = "left";
-    ctx.textBaseline = "alphabetic";
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.97)";
-
-    ctx.font = `800 ${titleSize}px Inter, Arial, sans-serif`;
-
-    ctx.fillText(
-      bottomTitle,
-      sidePadding,
-      height -
-        Math.round(
-          stripHeight * 0.46
-        )
-    );
-
-    /* --------------------------------------------------------
-       SUBTITLE
-    -------------------------------------------------------- */
-
-    ctx.fillStyle =
-      "rgba(255,255,255,0.82)";
-
-    ctx.font = `600 ${subtitleSize}px Inter, Arial, sans-serif`;
-
-    ctx.fillText(
-      bottomSubtitle,
-      sidePadding,
-      height -
-        Math.round(
-          stripHeight * 0.15
-        )
-    );
-
-    /* ========================================================
-       OPTIONAL DATE / BRANDING
-    ======================================================== */
-
-    if (showDate) {
-      const now = new Date();
-
-      const dateText =
-        now.toLocaleDateString(
-          "en-IN"
-        );
-
-      ctx.textAlign = "right";
-
-      ctx.fillStyle =
-        "rgba(255,255,255,0.70)";
-
-      ctx.font = `600 ${Math.max(
-        9,
-        Math.round(
-          stripHeight * 0.16
-        )
-      )}px Inter, Arial, sans-serif`;
-
-      ctx.fillText(
-        dateText,
-        width - sidePadding,
-        height -
-          Math.round(
-            stripHeight * 0.15
-          )
-      );
-    }
-
-    /* ========================================================
-       EXPORT WEBP
-    ======================================================== */
-
-    const safeQuality = Math.max(
-      0.4,
-      Math.min(
-        0.95,
-        Number(quality) || 0.82
-      )
-    );
-
-    const outputBlob =
-      await new Promise(
-        (resolve, reject) => {
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                resolve(blob);
-              } else {
-                reject(
-                  new Error(
-                    "Unable to create the watermarked image."
-                  )
-                );
-              }
-            },
-            "image/webp",
-            safeQuality
-          );
-        }
-      );
-
-    /* ========================================================
-       FINAL FILE
-    ======================================================== */
-
-    return makeWebpFile(
-      outputBlob,
-      file,
-      "timbermart"
-    );
-  } finally {
-    /*
-     * Close ImageBitmap where supported.
-     */
-    safeCloseImage(source);
-  }
-}
-
-/* ============================================================
-   CREATE WATERMARKED PREVIEW
-============================================================ */
+// ============================================================
+// PREVIEW
+// ============================================================
 
 export async function createWatermarkedPreview(
   file,
   options = {}
 ) {
-  const watermarkedFile =
+  const watermarked =
     await watermarkImage(
       file,
       options
     );
 
-  const url =
-    URL.createObjectURL(
-      watermarkedFile
-    );
-
-  return {
-    file: watermarkedFile,
-    url,
-  };
+  return URL.createObjectURL(
+    watermarked
+  );
 }
 
-/* ============================================================
-   REVOKE PREVIEW URL
-============================================================ */
+// ============================================================
+// REVOKE PREVIEW
+// ============================================================
 
 export function revokeWatermarkedPreview(
   url
 ) {
-  if (
-    typeof url === "string" &&
-    url.trim() !== ""
-  ) {
-    try {
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.warn(
-        "Unable to revoke preview URL:",
-        error
-      );
-    }
+  if (url) {
+    URL.revokeObjectURL(url);
   }
 }
 
-/* ============================================================
-   DEFAULT EXPORT
-============================================================ */
+// ============================================================
+// DEFAULT EXPORT
+// ============================================================
 
 export default watermarkImage;

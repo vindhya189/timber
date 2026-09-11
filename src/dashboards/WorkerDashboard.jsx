@@ -6,6 +6,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
   Clock3,
   Edit3,
   Eye,
@@ -786,6 +787,16 @@ export default function WorkerDashboard() {
   const [jobs, setJobs] = useState([]);
   const [applications, setApplications] = useState([]);
 
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
+  const [countdownTick, setCountdownTick] = useState(Date.now());
+
+  const [chatInbox, setChatInbox] = useState([]);
+  const [showChatInbox, setShowChatInbox] = useState(false);
+  const [chatInboxLoading, setChatInboxLoading] = useState(false);
+  const [chatSearch, setChatSearch] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -805,6 +816,27 @@ export default function WorkerDashboard() {
   useEffect(() => {
     localStorage.setItem("timbermart_worker_language", language);
   }, [language]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCountdownTick(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!session?.user?.id) return undefined;
+    const refresh = () => refreshPremiumStatus(session.user.id);
+    refresh();
+    const timer = window.setInterval(refresh, 10000);
+    const onFocus = () => refresh();
+    const onVisibility = () => { if (document.visibilityState === "visible") refresh(); };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [session?.user?.id]);
 
   const [search, setSearch] = useState("");
 
@@ -907,12 +939,109 @@ export default function WorkerDashboard() {
         loadWorkerProfile(currentSession.user.id),
         loadJobs(),
         loadApplications(currentSession.user.id),
+        refreshPremiumStatus(currentSession.user.id),
       ]);
+
+      loadChatInbox(currentSession.user.id);
     } catch (error) {
       console.error("Worker dashboard error:", error);
     } finally {
       setLoading(false);
     }
+  }
+
+  function getJobExpiry(job) {
+    if (job?.expires_at) {
+      const value = new Date(job.expires_at).getTime();
+      if (Number.isFinite(value)) return value;
+    }
+    if (job?.created_at) {
+      const value = new Date(job.created_at).getTime();
+      if (Number.isFinite(value)) return value + 15 * 86400000;
+    }
+    return Infinity;
+  }
+
+  function getCountdown(expiry) {
+    if (!Number.isFinite(expiry)) return { expired: false, label: "Active" };
+    const diff = expiry - countdownTick;
+    if (diff <= 0) return { expired: true, label: "EXPIRED" };
+    const totalSeconds = Math.floor(diff / 1000);
+    const days = Math.floor(totalSeconds / 86400);
+    const hours = Math.floor((totalSeconds % 86400) / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return { expired: false, label: `${days}d ${hours}h ${minutes}m ${seconds}s` };
+  }
+
+  async function refreshPremiumStatus(userId = session?.user?.id) {
+    if (!userId) return false;
+    const { data, error } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) {
+      console.error("Worker premium status:", error);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      return false;
+    }
+    const active = !!data?.expires_at && new Date(data.expires_at).getTime() > Date.now();
+    setIsPremium(active);
+    setPremiumExpiresAt(active ? data.expires_at : null);
+    setPremiumPlanName(active ? data.plan_name || data.plan_id || "Premium" : "");
+    return active;
+  }
+
+  async function loadChatInbox(userId = session?.user?.id) {
+    if (!userId) return;
+    setChatInboxLoading(true);
+    try {
+      const { data: rows, error } = await supabase
+        .from("messages")
+        .select("id,sender_id,receiver_id,body,created_at")
+        .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const latestByUser = new Map();
+      (rows || []).forEach((row) => {
+        const otherId = row.sender_id === userId ? row.receiver_id : row.sender_id;
+        if (otherId && !latestByUser.has(otherId)) latestByUser.set(otherId, row);
+      });
+      const ids = [...latestByUser.keys()];
+      if (!ids.length) { setChatInbox([]); return; }
+      const { data: people, error: peopleError } = await supabase
+        .from("profiles")
+        .select("id,name,role,location,photo_url,phone")
+        .in("id", ids);
+      if (peopleError) throw peopleError;
+      const peopleMap = new Map((people || []).map((person) => [person.id, person]));
+      setChatInbox(ids.map((id) => ({ user: peopleMap.get(id), lastMessage: latestByUser.get(id) })).filter((item) => item.user));
+    } catch (error) {
+      console.error("Worker chat inbox:", error);
+      setChatInbox([]);
+    } finally {
+      setChatInboxLoading(false);
+    }
+  }
+
+  async function openChatFromInbox(user) {
+    if (!user?.id) return;
+    setShowChatInbox(false);
+    setChatSearch("");
+    await startChat(user.id);
+  }
+
+  function nextJob(step) {
+    if (!selectedJob || filteredJobs.length < 2) return;
+    const index = filteredJobs.findIndex((job) => job.id === selectedJob.id);
+    const nextIndex = (index + step + filteredJobs.length) % filteredJobs.length;
+    openJob(filteredJobs[nextIndex]);
   }
 
   async function loadWorkerProfile(userId) {
@@ -1365,6 +1494,7 @@ export default function WorkerDashboard() {
 
     setMessages((old) => [...old, data]);
     setMessageText("");
+    loadChatInbox();
   }
 
   async function logout() {
@@ -1378,7 +1508,7 @@ export default function WorkerDashboard() {
   const filteredJobs = useMemo(() => {
     const value = search.trim().toLowerCase();
 
-    let result = jobs;
+    let result = jobs.filter((job) => !getCountdown(getJobExpiry(job)).expired);
 
     if (value) {
       result = result.filter((job) =>
@@ -1632,6 +1762,28 @@ export default function WorkerDashboard() {
             <button
               onClick={() => {
                 setMobileMenu(false);
+                setShowChatInbox(true);
+                loadChatInbox();
+              }}
+            >
+              <MessageCircle size={18} />
+              Chats
+            </button>
+
+            <button
+              className={isPremium ? "worker-premium-nav active-premium" : "worker-premium-nav"}
+              onClick={() => {
+                setMobileMenu(false);
+                navigate("/premium");
+              }}
+            >
+              <Star size={18} />
+              {isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}
+            </button>
+
+            <button
+              onClick={() => {
+                setMobileMenu(false);
                 navigate("/settings");
               }}
             >
@@ -1819,6 +1971,16 @@ export default function WorkerDashboard() {
                   <Edit3 size={15} />
                   {t("Profile Incomplete")}
                 </>
+              )}
+            </div>
+
+            <div className={isPremium ? "worker-premium-badge holder" : "worker-premium-badge"}>
+              <Star size={14} />
+              <span>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</span>
+              {isPremium && premiumExpiresAt ? (
+                <small>{premiumPlanName} · valid until {new Date(premiumExpiresAt).toLocaleDateString()}</small>
+              ) : (
+                <button type="button" onClick={() => navigate("/premium")}>Upgrade</button>
               )}
             </div>
 
@@ -2118,6 +2280,12 @@ export default function WorkerDashboard() {
 
                       </div>
 
+
+                      <div className="worker-listing-expiry">
+                        <Clock3 size={14} />
+                        <span>Listing expires in</span>
+                        <strong>{getCountdown(getJobExpiry(job)).label}</strong>
+                      </div>
 
                       <div className="worker-job-footer">
 
@@ -3154,13 +3322,11 @@ export default function WorkerDashboard() {
               </div>
 
 
-              <button
-                onClick={() =>
-                  setShowJob(false)
-                }
-              >
-                <X size={20} />
-              </button>
+              <div className="worker-modal-nav-actions">
+                <button type="button" onClick={() => nextJob(-1)} aria-label="Previous listing"><ChevronLeft size={19} /></button>
+                <button type="button" onClick={() => nextJob(1)} aria-label="Next listing"><ChevronRight size={19} /></button>
+                <button type="button" onClick={() => setShowJob(false)} aria-label="Close"><X size={20} /></button>
+              </div>
 
             </div>
 
@@ -3265,6 +3431,11 @@ export default function WorkerDashboard() {
                     {selectedJob.positions ||
                       "Not specified"}
                   </strong>
+                </div>
+
+                <div className="worker-detail-expiry">
+                  <span>Listing Expiry</span>
+                  <strong>{getCountdown(getJobExpiry(selectedJob)).label}</strong>
                 </div>
 
               </div>
@@ -3525,6 +3696,59 @@ export default function WorkerDashboard() {
 
         </div>
 
+      )}
+
+
+      {/* =====================================================
+          WHATSAPP-STYLE CHAT INBOX
+      ===================================================== */}
+
+      {showChatInbox && (
+        <div className="worker-chat-inbox-overlay" onMouseDown={() => setShowChatInbox(false)}>
+          <aside className="worker-chat-inbox" onMouseDown={(e) => e.stopPropagation()}>
+            <header className="worker-chat-inbox-header">
+              <div><span>MESSAGES</span><h2>Chats</h2></div>
+              <div className="worker-chat-inbox-actions">
+                <button type="button" onClick={() => loadChatInbox()} aria-label="Refresh chats"><RefreshCw size={17} /></button>
+                <button type="button" onClick={() => setShowChatInbox(false)} aria-label="Close"><X size={18} /></button>
+              </div>
+            </header>
+            <div className="worker-chat-search">
+              <Search size={16} />
+              <input value={chatSearch} onChange={(e) => setChatSearch(e.target.value)} placeholder="Search chats..." />
+            </div>
+            <div className="worker-chat-inbox-list">
+              {chatInboxLoading ? (
+                <div className="worker-chat-inbox-empty"><TreeLoader /></div>
+              ) : chatInbox.filter(({ user }) => {
+                const q = chatSearch.trim().toLowerCase();
+                return !q || `${user?.name || ""} ${user?.role || ""} ${user?.location || ""}`.toLowerCase().includes(q);
+              }).length === 0 ? (
+                <div className="worker-chat-inbox-empty">
+                  <MessageCircle size={38} />
+                  <strong>No chats yet</strong>
+                  <span>Start a conversation from a job or employer.</span>
+                </div>
+              ) : (
+                chatInbox.filter(({ user }) => {
+                  const q = chatSearch.trim().toLowerCase();
+                  return !q || `${user?.name || ""} ${user?.role || ""} ${user?.location || ""}`.toLowerCase().includes(q);
+                }).map(({ user, lastMessage }) => (
+                  <button key={user.id} type="button" className="worker-chat-row" onClick={() => openChatFromInbox(user)}>
+                    <span className="worker-chat-row-avatar">
+                      {user.photo_url ? <img src={user.photo_url} alt="" /> : <User size={19} />}
+                    </span>
+                    <span className="worker-chat-row-copy">
+                      <strong>{user.name || "TimberMart User"}</strong>
+                      <small>{lastMessage?.body || "Start conversation"}</small>
+                    </span>
+                    <time>{lastMessage?.created_at ? new Date(lastMessage.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : ""}</time>
+                  </button>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
       )}
 
 

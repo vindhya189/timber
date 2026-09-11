@@ -2969,3 +2969,60 @@ textarea.worker-input {
     padding: 10px;
   }
 }
+
+/* =====================================================
+   WORKER PREMIUM / LISTING COUNTDOWN / CHAT INBOX
+===================================================== */
+.worker-premium-nav { position: relative; }
+.worker-premium-nav.active-premium { background: #eaf7ec !important; color: #116c3a !important; }
+.worker-premium-badge { min-width: 150px; padding: 9px 12px; border-radius: 12px; border: 1px solid #e4d3a3; background: #fffaf0; color: #8a6a1d; display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 900; }
+.worker-premium-badge.holder { border-color: #b8dec1; background: #ecf8ee; color: #176c3b; }
+.worker-premium-badge small { display: block; margin-left: 3px; font-size: 8px; font-weight: 700; color: #6f7e75; }
+.worker-listing-expiry { margin: 11px 0 3px; padding: 8px 9px; border-radius: 9px; background: #f5faf6; border: 1px solid #e0eae3; display: flex; align-items: center; gap: 6px; color: #6d7b74; font-size: 9px; }
+.worker-listing-expiry strong { margin-left: auto; color: #16713d; font-size: 10px; font-variant-numeric: tabular-nums; }
+.worker-listing-expiry.expired { background: #fff2f2; border-color: #efcaca; color: #ae4545; }
+.worker-listing-expiry.expired strong { color: #b52d2d; }
+.worker-detail-expiry strong { font-variant-numeric: tabular-nums; }
+.worker-modal-nav-actions { display: flex; align-items: center; gap: 6px; }
+.worker-modal-nav-actions button { width: 34px; height: 34px; border: 1px solid #d7e4da; border-radius: 9px; background: #fff; color: #1d5c37; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.worker-modal-nav-actions button:hover { background: #edf7ef; border-color: #afd0b8; }
+
+.worker-chat-inbox-overlay { position: fixed; inset: 0; z-index: 3200; background: rgba(9,28,17,.42); display:flex; justify-content:flex-end; }
+.worker-chat-inbox { width: min(420px, 100%); height: 100%; background: #fff; box-shadow: -18px 0 45px rgba(17,46,28,.16); display:flex; flex-direction:column; }
+.worker-chat-inbox-header { padding: 18px 18px 14px; border-bottom:1px solid #e2ebe5; display:flex; align-items:center; justify-content:space-between; }
+.worker-chat-inbox-header span { display:block; color:#19733f; font-size:9px; font-weight:900; letter-spacing:.8px; }
+.worker-chat-inbox-header h2 { margin:4px 0 0; color:#173e2a; font-size:22px; }
+.worker-chat-inbox-actions { display:flex; gap:6px; }
+.worker-chat-inbox-actions button { width:36px; height:36px; border:1px solid #dbe6df; border-radius:9px; background:#fff; color:#235a39; display:grid; place-items:center; cursor:pointer; }
+.worker-chat-search { margin:12px; height:42px; border:1px solid #d8e4dc; border-radius:10px; display:flex; align-items:center; gap:8px; padding:0 11px; color:#87948d; background:#f8fbf9; }
+.worker-chat-search input { flex:1; border:0; outline:0; background:transparent; font-size:11px; color:#193e2c; }
+.worker-chat-inbox-list { flex:1; overflow:auto; padding:0 8px 15px; }
+.worker-chat-row { width:100%; border:0; background:#fff; border-radius:12px; padding:10px; display:grid; grid-template-columns:42px 1fr auto; gap:10px; text-align:left; align-items:center; cursor:pointer; }
+.worker-chat-row:hover { background:#f3f8f4; }
+.worker-chat-row-avatar { width:42px; height:42px; border-radius:50%; overflow:hidden; background:#e7f4e9; color:#17713d; display:grid; place-items:center; }
+.worker-chat-row-avatar img { width:100%; height:100%; object-fit:cover; }
+.worker-chat-row-copy { min-width:0; }
+.worker-chat-row-copy strong { display:block; color:#183e2a; font-size:12px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.worker-chat-row-copy small { display:block; margin-top:4px; color:#818e87; font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.worker-chat-row time { color:#87928d; font-size:9px; align-self:start; margin-top:3px; }
+.worker-chat-inbox-empty { min-height:260px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; color:#85928b; text-align:center; padding:20px; }
+.worker-chat-inbox-empty strong { color:#23472f; font-size:13px; }
+.worker-chat-inbox-empty span { font-size:10px; max-width:240px; line-height:1.5; }
+
+@media (max-width: 800px) {
+  .worker-account-status { flex-wrap:wrap; }
+  .worker-premium-badge { width:100%; justify-content:center; }
+  .worker-listing-expiry { align-items:flex-start; flex-wrap:wrap; }
+  .worker-listing-expiry strong { margin-left:0; width:100%; }
+  .worker-job-modal { max-width: 100%; }
+  .worker-job-modal .worker-modal-header { align-items:center; }
+  .worker-modal-nav-actions button { width:32px; height:32px; }
+  .worker-chat-inbox { width:100%; }
+}
+
+@media (max-width: 560px) {
+  .worker-modal-nav-actions { gap:4px; }
+  .worker-modal-nav-actions button { width:31px; height:31px; }
+  .worker-job-card { padding:14px; }
+  .worker-listing-expiry { padding:9px; }
+}

@@ -32,6 +32,7 @@ import {
 
 import { useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
+import watermarkImage from "../watermarkImage";
 
 import "./FarmerDashboard.css";
 import TreeLoader from "../components/TreeLoader";
@@ -200,7 +201,6 @@ const TM_TRANSLATIONS = {
     "Nearby matches, approvals & chat updates": "సమీప సరిపోలికలు, ఆమోదాలు & చాట్ అప్‌డేట్లు",
     "No notifications yet": "ఇంకా నోటిఫికేషన్లు లేవు",
     "Matching posts within 40 KM will appear here in real time.": "40 KM పరిధిలో సరిపోలే పోస్టులు ఇక్కడ రియల్ టైమ్‌లో కనిపిస్తాయి.",
-    "Requirement Wall": "అవసరాల గోడ",
     "Quick Actions": "త్వరిత చర్యలు",
     "Start managing your timber activities": "మీ కలప కార్యకలాపాలను నిర్వహించడం ప్రారంభించండి",
     "Create a timber listing": "కలప లిస్టింగ్‌ను సృష్టించండి",
@@ -415,7 +415,6 @@ const TM_TRANSLATIONS = {
     "Quick Actions": "விரைவு செயல்கள்",
     "Search timber listings or requirements...": "மர லிஸ்டிங்ஸ் அல்லது தேவைகளைத் தேடுங்கள்...",
     "View All": "அனைத்தையும் காண்க",
-    "Requirement Wall": "தேவைச் சுவர்",
     "No requirements yet": "இன்னும் தேவைகள் இல்லை",
     "Add Requirement": "தேவையைச் சேர்க்கவும்",
     "Timber Listings": "மர லிஸ்டிங்ஸ்",
@@ -839,6 +838,9 @@ export default function FarmerDashboard() {
   // Premium profile-view gate: free users can open 5 unique user profiles/day.
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [profileViewCount, setProfileViewCount] = useState(5);
+  const [isPremium, setIsPremium] = useState(false);
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(null);
+  const [premiumPlanName, setPremiumPlanName] = useState("");
 
   // CHAT STATE
   const [selectedProfile, setSelectedProfile] = useState(null);
@@ -1443,6 +1445,62 @@ export default function FarmerDashboard() {
     Number.isFinite(Number(profile?.latitude)) &&
     Number.isFinite(Number(profile?.longitude));
 
+  async function refreshPremiumStatus(userId = user?.id) {
+    if (!userId) {
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    const { data: premiumSubscription, error: premiumError } = await supabase
+      .from("user_subscriptions")
+      .select("id,plan_id,plan_name,status,started_at,expires_at")
+      .eq("user_id", userId)
+      .eq("status", "active")
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (premiumError) {
+      console.warn("Premium status check skipped:", premiumError.message);
+      setIsPremium(false);
+      setPremiumExpiresAt(null);
+      setPremiumPlanName("");
+      return null;
+    }
+
+    setIsPremium(Boolean(premiumSubscription));
+    setPremiumExpiresAt(premiumSubscription?.expires_at || null);
+    setPremiumPlanName(premiumSubscription?.plan_name || premiumSubscription?.plan_id || "");
+    return premiumSubscription || null;
+  }
+
+  useEffect(() => {
+    if (!user?.id) return;
+
+    refreshPremiumStatus(user.id);
+
+    const interval = window.setInterval(() => {
+      refreshPremiumStatus(user.id);
+    }, 15000);
+
+    const handleFocus = () => refreshPremiumStatus(user.id);
+    const handleVisibility = () => {
+      if (!document.hidden) refreshPremiumStatus(user.id);
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [user?.id]);
+
   async function loadDashboard() {
     try {
       setLoading(true);
@@ -1457,6 +1515,9 @@ export default function FarmerDashboard() {
       }
 
       setUser(session.user);
+
+      // Load the user's current Premium subscription.
+      await refreshPremiumStatus(session.user.id);
 
       const {
         data: profileData,
@@ -1922,43 +1983,102 @@ export default function FarmerDashboard() {
      PHOTO UPLOAD SELECTION
   ======================================================= */
 
-  function handleSellPhotos(event) {
-    const selectedFiles =
-      Array.from(
-        event.target.files || []
-      );
-
-    const validFiles =
-      selectedFiles.filter(
-        (file) => {
-          if (
-            !file.type.startsWith(
-              "image/"
-            )
-          ) {
-            return false;
-          }
-
-          if (
-            file.size >
-            5 * 1024 * 1024
-          ) {
-            return false;
-          }
-
-          return true;
-        }
-      );
-
-    setSellPhotos(
-      (previous) =>
-        [
-          ...previous,
-          ...validFiles,
-        ].slice(0, 6)
+  async function handleSellPhotos(event) {
+    const selectedFiles = Array.from(
+      event.target.files || []
     );
 
     event.target.value = "";
+
+    const validFiles = selectedFiles.filter(
+      (file) => {
+        if (!file?.type?.startsWith("image/")) {
+          return false;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+          return false;
+        }
+
+        return true;
+      }
+    );
+
+    if (!validFiles.length) {
+      setSellError(
+        "Please select valid image files up to 5 MB each."
+      );
+      return;
+    }
+
+    const remainingSlots = Math.max(
+      0,
+      6 - sellPhotos.length
+    );
+
+    if (!remainingSlots) {
+      setSellError("You can upload up to 6 photos.");
+      return;
+    }
+
+    try {
+      setSellError("");
+
+      const filesToProcess =
+        validFiles.slice(0, remainingSlots);
+
+      // IMPORTANT:
+      // Watermark every selected photo BEFORE it is stored in state.
+      // This makes the preview and the final Supabase upload use
+      // the exact same watermarked WebP file.
+      const watermarkedFiles =
+  await Promise.all(
+    filesToProcess.map(
+      (file) =>
+        watermarkImage(
+          file,
+          {
+            centerText:
+              "TimberMart",
+
+            bottomTitle:
+              "TIMBERMART",
+
+            bottomSubtitle:
+              "Official Timber Marketplace",
+
+            watermarkOpacity:
+              0.12,
+
+            quality:
+              0.92,
+          }
+        )
+    )
+  );
+
+setSellPhotos(
+  (previous) => [
+    ...previous,
+    ...watermarkedFiles,
+  ]
+);
+
+      setSellPhotos((previous) => [
+        ...previous,
+        ...watermarkedFiles,
+      ]);
+    } catch (error) {
+      console.error(
+        "Watermark processing error:",
+        error
+      );
+
+      setSellError(
+        error?.message ||
+          "Unable to add the TimberMart watermark to the selected image."
+      );
+    }
   }
 
 
@@ -2169,32 +2289,55 @@ export default function FarmerDashboard() {
         index < sellPhotos.length;
         index++
       ) {
-        const file =
+        const originalFile =
           sellPhotos[index];
 
+        // Photos are already watermarked when selected.
+        // Keep a safety fallback for any older/non-watermarked file.
+        // ========================================================
+// ALWAYS APPLY WATERMARK AGAIN BEFORE UPLOAD
+// ========================================================
+
+const file =
+  await watermarkImage(
+    sellPhotos[index],
+    {
+      centerText: "TimberMart",
+
+      bottomTitle:
+        "TIMBERMART",
+
+      bottomSubtitle:
+        "Official Timber Marketplace",
+
+      // Light repeated watermark
+      watermarkOpacity: 0.12,
+
+      quality: 0.92,
+    }
+  );
+
         const extension =
-          file.name
-            .split(".")
-            .pop() || "jpg";
+  file.name
+    .split(".")
+    .pop() || "jpg";
 
-        const storagePath =
-          `${user.id}/${newListing.id}/${Date.now()}-${index}.${extension}`;
+const storagePath =
+  `${user.id}/${newListing.id}/${Date.now()}-${index}.${extension}`;
 
-        const {
-          error: uploadError,
-        } = await supabase.storage
-          .from("listing-photos")
-          .upload(
-            storagePath,
-            file,
-            {
-              cacheControl:
-                "3600",
-              upsert: false,
-              contentType:
-                file.type,
-            }
-          );
+const {
+  error: uploadError,
+} = await supabase.storage
+  .from("listing-photos")
+  .upload(
+    storagePath,
+    file,
+    {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type,
+    }
+  );
 
         if (uploadError) {
           console.error(
@@ -2379,6 +2522,12 @@ export default function FarmerDashboard() {
     if (!owner?.id) return;
 
     if (user?.id && owner.id === user.id) {
+      setSelectedOwner(owner);
+      return;
+    }
+
+    // Active Premium users have unlimited profile viewing.
+    if (isPremium) {
       setSelectedOwner(owner);
       return;
     }
@@ -2989,6 +3138,23 @@ export default function FarmerDashboard() {
 
           </div>
 
+          <button
+            type="button"
+            className={`farmer-top-premium-badge ${isPremium ? "active" : "inactive"}`}
+            onClick={() => navigate("/premium")}
+            title={isPremium ? "Premium subscription active" : "Open Premium plans"}
+          >
+            <span className="farmer-top-premium-crown">♛</span>
+            <span className="farmer-top-premium-copy">
+              <strong>{isPremium ? "PREMIUM HOLDER" : "GO PREMIUM"}</strong>
+              <small>
+                {isPremium
+                  ? `${premiumPlanName || "Premium plan"} · ${premiumExpiresAt ? `Until ${new Date(premiumExpiresAt).toLocaleDateString()}` : "Active"}`
+                  : "Unlimited profile viewing"}
+              </small>
+            </span>
+          </button>
+
 
           <div className="farmer-top-actions">
 
@@ -3235,12 +3401,18 @@ export default function FarmerDashboard() {
               type="button"
               className="farmer-dashboard-premium-button"
               onClick={() => { setMenuOpen(false); navigate("/premium"); }}
-              aria-label="Open Premium plans"
+              aria-label={isPremium ? "Premium subscription active" : "Open Premium plans"}
             >
               <span className="farmer-dashboard-premium-icon">♛</span>
               <span>
-                <strong>Go Premium</strong>
-                <small>Unlimited profile viewing</small>
+                <strong>{isPremium ? "Premium Holder" : "Go Premium"}</strong>
+                <small>
+                  {isPremium
+                    ? premiumExpiresAt
+                      ? `Unlimited profile viewing · Until ${new Date(premiumExpiresAt).toLocaleDateString()}`
+                      : "Unlimited profile viewing"
+                    : "Unlimited profile viewing"}
+                </small>
               </span>
               <ArrowRight size={17} />
             </button>
@@ -3982,7 +4154,7 @@ export default function FarmerDashboard() {
       ===================================================== */}
 
       <PremiumLimitModal
-        open={showPremiumModal}
+        open={showPremiumModal && !isPremium}
         onClose={() => setShowPremiumModal(false)}
         viewedCount={profileViewCount}
         dailyLimit={5}

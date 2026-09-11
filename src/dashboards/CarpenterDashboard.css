@@ -1237,3 +1237,200 @@ body,
     border-radius:18px;
   }
 }
+
+
+/* =========================================================
+   PREMIUM ACCOUNT
+========================================================= */
+.carpenter-premium-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+  min-height:42px;
+  padding:6px 11px;
+  border-radius:13px;
+  border:1px solid #d9c27a;
+  background:linear-gradient(135deg,#fffaf0 0%,#f9edc8 100%);
+  color:#5a450b;
+  box-shadow:0 5px 18px rgba(94,70,10,.08);
+  text-align:left;
+  margin-left:auto;
+  margin-right:10px;
+}
+.carpenter-premium-badge.inactive{
+  border-color:#dbe6df;
+  background:#f8fbf9;
+  color:var(--carp-green-800);
+}
+.carpenter-premium-crown{
+  width:30px;
+  height:30px;
+  border-radius:9px;
+  background:var(--carp-green-900);
+  color:#f5d56e;
+  display:grid;
+  place-items:center;
+  font-size:17px;
+  flex:0 0 30px;
+}
+.carpenter-premium-copy{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+}
+.carpenter-premium-copy strong{
+  font-size:10px;
+  letter-spacing:.6px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.carpenter-premium-copy small{
+  font-size:8px;
+  margin-top:2px;
+  color:#7b6b39;
+  white-space:nowrap;
+}
+.carpenter-premium-badge.inactive .carpenter-premium-copy small{
+  color:var(--carp-muted);
+}
+
+/* =========================================================
+   LISTING WATERMARK
+========================================================= */
+.carpenter-watermark-container{
+  position:relative;
+}
+.carpenter-watermark-overlay{
+  position:absolute;
+  inset:0;
+  z-index:4;
+  pointer-events:none;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  grid-template-rows:repeat(2,1fr);
+  align-items:center;
+  justify-items:center;
+}
+.carpenter-watermark-overlay span{
+  color:rgba(255,255,255,.72);
+  font-size:clamp(16px,2.4vw,34px);
+  font-weight:1000;
+  letter-spacing:2px;
+  transform:rotate(-28deg);
+  text-shadow:
+    0 1px 2px rgba(0,0,0,.42),
+    1px 1px 0 rgba(0,0,0,.14);
+  opacity:.62;
+  white-space:nowrap;
+}
+.carpenter-watermark-bottom{
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:0;
+  z-index:5;
+  pointer-events:none;
+  padding:8px 11px;
+  background:rgba(5,28,21,.88);
+  color:#fff;
+  font-size:9px;
+  font-weight:1000;
+  letter-spacing:1.2px;
+  text-align:center;
+}
+
+/* =========================================================
+   PREMIUM MODAL
+========================================================= */
+.carpenter-premium-modal{
+  position:relative;
+  width:min(470px,92vw);
+  background:#fff;
+  border-radius:22px;
+  padding:30px 25px 24px;
+  box-shadow:0 30px 90px rgba(0,0,0,.28);
+  text-align:center;
+}
+.carpenter-premium-modal-icon{
+  width:56px;
+  height:56px;
+  margin:0 auto 10px;
+  border-radius:17px;
+  background:var(--carp-green-900);
+  color:#f5d56e;
+  display:grid;
+  place-items:center;
+  font-size:29px;
+}
+.carpenter-premium-modal-kicker{
+  display:block;
+  color:#8a6b18;
+  font-size:9px;
+  letter-spacing:1.6px;
+  font-weight:1000;
+}
+.carpenter-premium-modal h2{
+  margin:7px 0 8px;
+  color:var(--carp-ink);
+  font-size:22px;
+}
+.carpenter-premium-modal p{
+  margin:0 auto;
+  max-width:390px;
+  color:var(--carp-muted);
+  font-size:11px;
+  line-height:1.65;
+}
+.carpenter-premium-modal-actions{
+  display:flex;
+  gap:8px;
+  margin-top:19px;
+}
+.carpenter-premium-modal-actions button{
+  flex:1;
+  border-radius:10px;
+  padding:11px 13px;
+  font-size:10px;
+  font-weight:900;
+}
+.carpenter-premium-primary{
+  border:0;
+  background:var(--carp-green-800);
+  color:#fff;
+}
+.carpenter-premium-secondary{
+  border:1px solid var(--carp-border);
+  background:#f7faf8;
+  color:var(--carp-green-800);
+}
+
+@media (max-width:900px){
+  .carpenter-premium-badge{
+    min-height:38px;
+    margin-right:6px;
+    padding:5px 8px;
+  }
+  .carpenter-premium-copy small{
+    display:none;
+  }
+  .carpenter-premium-crown{
+    width:28px;
+    height:28px;
+    flex-basis:28px;
+  }
+}
+@media (max-width:640px){
+  .carpenter-premium-badge{
+    margin-left:0;
+  }
+  .carpenter-premium-copy strong{
+    font-size:8px;
+  }
+  .carpenter-header{
+    padding:0 12px;
+  }
+  .carpenter-premium-modal-actions{
+    flex-direction:column;
+  }
+}
