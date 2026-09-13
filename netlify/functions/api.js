@@ -1810,23 +1810,23 @@ app.post(
     .insert({
       user_id: userId,
 
-      // REQUIRED DATABASE COLUMN
+      // REQUIRED
       plan_code: planId,
 
-      // EXISTING COLUMNS
+      // PLAN DETAILS
       plan_id: planId,
       plan_name: plan.name,
-
       amount: plan.amount,
+
       status: "active",
 
       started_at: startedAt.toISOString(),
       expires_at: expiresAt.toISOString(),
 
+      // AUTOMATIC RAZORPAY DETAILS
       payment_id: razorpay_payment_id,
       order_id: razorpay_order_id,
 
-      // DATABASE HAS THESE AS NOT NULL
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
@@ -1834,6 +1834,22 @@ app.post(
       "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
     )
     .single();
+
+if (subscriptionError) {
+  console.error(
+    "Premium activation database error:",
+    subscriptionError
+  );
+
+  return res.status(500).json({
+    success: false,
+    verified: true,
+    activated: false,
+    message:
+      "Payment verified, but Premium activation could not be saved.",
+    error: subscriptionError.message,
+  });
+}
 
       if (subscriptionError) {
         console.error(
@@ -1933,6 +1949,452 @@ app.post(
         message:
           error?.message ||
           "Unable to verify payment.",
+      });
+    }
+  }
+);
+// ============================================================
+// RECOVER EXISTING RAZORPAY PAYMENT
+// POST /api/payment/recover
+// ============================================================
+
+app.post(
+  "/api/payment/recover",
+  async (req, res) => {
+    try {
+      // --------------------------------------------------------
+      // 1. CHECK CONFIGURATION
+      // --------------------------------------------------------
+
+      if (!razorpay) {
+        return res.status(500).json({
+          success: false,
+          activated: false,
+          message: "Razorpay configuration is missing.",
+        });
+      }
+
+      if (!supabaseAdmin) {
+        return res.status(500).json({
+          success: false,
+          activated: false,
+          message:
+            "Supabase Admin configuration is missing.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 2. GET LOGGED-IN USER
+      // --------------------------------------------------------
+
+      const authorization =
+        req.headers.authorization || "";
+
+      const accessToken =
+        authorization
+          .replace(/^Bearer\s+/i, "")
+          .trim();
+
+      if (!accessToken) {
+        return res.status(401).json({
+          success: false,
+          activated: false,
+          message:
+            "Login session is missing. Please login again.",
+        });
+      }
+
+      const {
+        data: authData,
+        error: authError,
+      } =
+        await supabaseAdmin.auth.getUser(
+          accessToken
+        );
+
+      if (
+        authError ||
+        !authData?.user?.id
+      ) {
+        return res.status(401).json({
+          success: false,
+          activated: false,
+          message:
+            "Unable to identify your account.",
+        });
+      }
+
+      const user =
+        authData.user;
+
+      const userId =
+        user.id;
+
+      const userEmail =
+        String(user.email || "")
+          .trim()
+          .toLowerCase();
+
+      if (!userEmail) {
+        return res.status(400).json({
+          success: false,
+          activated: false,
+          message:
+            "Your account email could not be identified.",
+        });
+      }
+
+      console.log(
+        "PREMIUM RECOVERY REQUEST:",
+        userEmail
+      );
+
+      // --------------------------------------------------------
+      // 3. GET RECENT RAZORPAY PAYMENTS
+      // --------------------------------------------------------
+
+      const payments =
+        await razorpay.payments.all({
+          count: 100,
+        });
+
+      const paymentList =
+        payments?.items || [];
+
+      // --------------------------------------------------------
+      // 4. FIND LATEST CAPTURED PAYMENT
+      //    MATCHING THIS USER'S EMAIL
+      // --------------------------------------------------------
+
+      const userPayments =
+        paymentList
+          .filter((payment) => {
+            const paymentEmail =
+              String(
+                payment?.email || ""
+              )
+                .trim()
+                .toLowerCase();
+
+            return (
+              payment?.status === "captured" &&
+              paymentEmail === userEmail
+            );
+          })
+          .sort(
+            (a, b) =>
+              Number(b.created_at || 0) -
+              Number(a.created_at || 0)
+          );
+
+      if (!userPayments.length) {
+        return res.status(404).json({
+          success: false,
+          activated: false,
+          message:
+            "No successful Razorpay payment was found for your account.",
+        });
+      }
+
+      const payment =
+        userPayments[0];
+
+      const paymentId =
+        payment.id;
+
+      const orderId =
+        payment.order_id;
+
+      const paymentAmount =
+        Number(payment.amount);
+
+      console.log(
+        "RECOVERY PAYMENT FOUND:",
+        {
+          paymentId,
+          orderId,
+          amount: paymentAmount,
+          email: userEmail,
+        }
+      );
+
+      // --------------------------------------------------------
+      // 5. DETERMINE PREMIUM PLAN FROM PAID AMOUNT
+      // --------------------------------------------------------
+
+      const PLAN_DETAILS = {
+        19900: {
+          id: "premium_monthly",
+          name: "Premium Monthly",
+          amount: 199,
+          months: 1,
+        },
+
+        49900: {
+          id: "premium_3_months",
+          name: "Premium 3 Months",
+          amount: 499,
+          months: 3,
+        },
+
+        149900: {
+          id: "premium_yearly",
+          name: "Premium Yearly",
+          amount: 1499,
+          months: 12,
+        },
+      };
+
+      const plan =
+        PLAN_DETAILS[paymentAmount];
+
+      if (!plan) {
+        return res.status(400).json({
+          success: false,
+          activated: false,
+          message:
+            "The successful payment amount does not match a TimberMart Premium plan.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 6. CHECK WHETHER THIS PAYMENT IS ALREADY SAVED
+      // --------------------------------------------------------
+
+      const {
+        data: existingPayment,
+        error: existingPaymentError,
+      } =
+        await supabaseAdmin
+          .from("user_subscriptions")
+          .select(
+            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
+          )
+          .eq(
+            "payment_id",
+            paymentId
+          )
+          .maybeSingle();
+
+      if (existingPaymentError) {
+        console.error(
+          "Recovery existing-payment lookup error:",
+          existingPaymentError
+        );
+      }
+
+      if (existingPayment) {
+        // Security check
+        if (
+          existingPayment.user_id !==
+          userId
+        ) {
+          return res.status(403).json({
+            success: false,
+            activated: false,
+            message:
+              "This payment belongs to another account.",
+          });
+        }
+
+        return res.json({
+          success: true,
+          activated: true,
+          alreadyActivated: true,
+          message:
+            "Your existing Premium payment is already activated.",
+          subscription:
+            existingPayment,
+        });
+      }
+
+      // --------------------------------------------------------
+      // 7. EXPIRE OLD ACTIVE SUBSCRIPTIONS
+      // --------------------------------------------------------
+
+      const {
+        error: deactivateError,
+      } =
+        await supabaseAdmin
+          .from("user_subscriptions")
+          .update({
+            status: "expired",
+            updated_at:
+              new Date().toISOString(),
+          })
+          .eq(
+            "user_id",
+            userId
+          )
+          .eq(
+            "status",
+            "active"
+          );
+
+      if (deactivateError) {
+        console.warn(
+          "Recovery old subscription warning:",
+          deactivateError.message
+        );
+      }
+
+      // --------------------------------------------------------
+      // 8. CREATE PREMIUM SUBSCRIPTION
+      // --------------------------------------------------------
+
+      const startedAt =
+        new Date();
+
+      const expiresAt =
+        new Date(startedAt);
+
+      expiresAt.setMonth(
+        expiresAt.getMonth() +
+          plan.months
+      );
+
+      const {
+        data: subscription,
+        error: subscriptionError,
+      } =
+        await supabaseAdmin
+          .from("user_subscriptions")
+          .insert({
+            user_id: userId,
+
+            plan_code:
+              plan.id,
+
+            plan_id:
+              plan.id,
+
+            plan_name:
+              plan.name,
+
+            amount:
+              plan.amount,
+
+            status:
+              "active",
+
+            started_at:
+              startedAt.toISOString(),
+
+            expires_at:
+              expiresAt.toISOString(),
+
+            payment_id:
+              paymentId,
+
+            order_id:
+              orderId,
+
+            created_at:
+              new Date().toISOString(),
+
+            updated_at:
+              new Date().toISOString(),
+          })
+          .select(
+            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
+          )
+          .single();
+
+      if (subscriptionError) {
+        console.error(
+          "PREMIUM RECOVERY DATABASE ERROR:",
+          subscriptionError
+        );
+
+        return res.status(500).json({
+          success: false,
+          activated: false,
+          message:
+            "Payment found, but Premium could not be saved.",
+          error:
+            subscriptionError.message,
+        });
+      }
+
+      // --------------------------------------------------------
+      // 9. SUCCESS
+      // --------------------------------------------------------
+
+      console.log(
+        "=========================================="
+      );
+
+      console.log(
+        "EXISTING PAYMENT RECOVERED SUCCESSFULLY"
+      );
+
+      console.log(
+        "User:",
+        userId
+      );
+
+      console.log(
+        "Email:",
+        userEmail
+      );
+
+      console.log(
+        "Plan:",
+        plan.name
+      );
+
+      console.log(
+        "Payment:",
+        paymentId
+      );
+
+      console.log(
+        "Order:",
+        orderId
+      );
+
+      console.log(
+        "Expires:",
+        expiresAt.toISOString()
+      );
+
+      console.log(
+        "=========================================="
+      );
+
+      return res.json({
+        success: true,
+        activated: true,
+        alreadyActivated: false,
+        message:
+          "Existing payment recovered and Premium activated successfully.",
+        paymentId:
+          paymentId,
+        orderId:
+          orderId,
+        planId:
+          plan.id,
+        planName:
+          plan.name,
+        amount:
+          plan.amount,
+        subscription:
+          subscription,
+      });
+
+    } catch (error) {
+      console.error(
+        "Premium recovery error:",
+        error
+      );
+
+      return res.status(500).json({
+        success: false,
+        activated: false,
+        message:
+          error?.error?.description ||
+          error?.message ||
+          "Unable to recover existing payment.",
       });
     }
   }
