@@ -168,8 +168,13 @@ function loadRazorpayScript() {
   });
 }
 
-const RAZORPAY_SERVER_URL = (import.meta.env.VITE_RAZORPAY_SERVER_URL || "http://localhost:5000").replace(/\/$/, "");
-
+const RAZORPAY_SERVER_URL = (
+  import.meta.env.VITE_RAZORPAY_SERVER_URL ||
+  (window.location.hostname === "localhost" &&
+  window.location.port === "5173"
+    ? "http://localhost:8888"
+    : "")
+).replace(/\/$/, "");
 export default function PremiumPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -275,151 +280,331 @@ export default function PremiumPage() {
   };
 
   const startRealPayment = async () => {
-    if (!selectedPlan || paying) return;
+  if (!selectedPlan || paying) return;
 
-    setPaying(true);
-    setPaymentStatus("");
-    setError("");
+  setPaying(true);
+  setPaymentStatus("");
+  setError("");
 
-    try {
-      const scriptReady = await loadRazorpayScript();
+  try {
+    // Load Razorpay Checkout script
+    const scriptReady = await loadRazorpayScript();
 
-      if (!scriptReady) {
-        throw new Error("Payment gateway could not be loaded. Check your internet connection.");
-      }
+    if (!scriptReady) {
+      throw new Error(
+        "Payment gateway could not be loaded. Check your internet connection."
+      );
+    }
 
-      // Get the currently authenticated Supabase session.
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    // Get currently logged-in Supabase user/session
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-      if (!session?.user?.id || !session.access_token) {
-        throw new Error("Please login again before purchasing Premium.");
-      }
+    if (!session?.user?.id || !session.access_token) {
+      throw new Error(
+        "Please login again before purchasing Premium."
+      );
+    }
 
-      // IMPORTANT:
-      // Your backend creates the Razorpay order and verifies the payment.
-      // The Supabase access token lets the server identify the logged-in user.
-      // Never put RAZORPAY_KEY_SECRET or the Supabase service-role key in React.
-      const orderResponse = await fetch(`${RAZORPAY_SERVER_URL}/api/payments/create-order`, {
+    // =====================================================
+    // CREATE RAZORPAY ORDER
+    // Backend route:
+    // POST /api/payment/create-order
+    // =====================================================
+
+    const orderResponse = await fetch(
+      `${RAZORPAY_SERVER_URL}/api/payment/create-order`,
+      {
         method: "POST",
+
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session.access_token}`,
         },
+
         body: JSON.stringify({
           planId: selectedPlan.id,
+
+          // IMPORTANT:
+          // Backend expects amount in INR.
+          // Example: ₹199 -> 199
+          amount: selectedPlan.amount,
         }),
-      });
-
-      const orderJson = await orderResponse.json();
-
-      if (!orderResponse.ok || !orderJson?.order?.id) {
-        throw new Error(orderJson?.message || "Unable to create payment order.");
       }
+    );
 
-      const customerName = orderJson?.customer?.name || "";
-      const customerEmail = orderJson?.customer?.email || "";
-      const customerPhone = orderJson?.customer?.phone || "";
+    // Safely read response
+    const orderText = await orderResponse.text();
 
-      const options = {
-        key: orderJson.keyId,
-        amount: orderJson.order.amount,
-        currency: orderJson.order.currency || "INR",
-        name: "TimberMart",
-        description: selectedPlan.title,
-        order_id: orderJson.order.id,
-        prefill: {
-          name: customerName,
-          email: customerEmail,
-          contact: customerPhone,
+    let orderJson = {};
+
+    try {
+      orderJson = orderText
+        ? JSON.parse(orderText)
+        : {};
+    } catch {
+      orderJson = {
+        message:
+          orderText ||
+          `Server returned status ${orderResponse.status}`,
+      };
+    }
+
+    console.log(
+      "Razorpay create-order response:",
+      orderJson
+    );
+
+    if (!orderResponse.ok) {
+      throw new Error(
+        orderJson?.message ||
+          orderJson?.error ||
+          `Unable to create payment order (${orderResponse.status}).`
+      );
+    }
+
+    // Backend returns orderId, amount, currency and keyId directly.
+    // Accept the nested format too, so the frontend stays compatible
+    // if the response shape is changed later.
+    const orderId =
+      orderJson?.orderId ||
+      orderJson?.order?.id ||
+      "";
+
+    const orderAmount =
+      orderJson?.amount ??
+      orderJson?.order?.amount ??
+      0;
+
+    const orderCurrency =
+      orderJson?.currency ||
+      orderJson?.order?.currency ||
+      "INR";
+
+    if (!orderId) {
+      throw new Error(
+        orderJson?.message ||
+          "Razorpay order ID was not returned by the server."
+      );
+    }
+
+    if (!orderAmount || Number(orderAmount) <= 0) {
+      throw new Error(
+        orderJson?.message ||
+          "Invalid Razorpay order amount returned by the server."
+      );
+    }
+
+    // =====================================================
+    // RAZORPAY CHECKOUT OPTIONS
+    // =====================================================
+
+    const options = {
+      key: orderJson.keyId,
+
+      amount: orderAmount,
+
+      currency: orderCurrency,
+
+      name: "TimberMart",
+
+      description:
+        selectedPlan.title,
+
+      order_id: orderId,
+
+      prefill: {},
+
+      notes: {
+        plan_id: selectedPlan.id,
+      },
+
+      theme: {
+        color: "#087343",
+      },
+
+      // Razorpay modal
+      modal: {
+        ondismiss: () => {
+          setPaying(false);
+          setPaymentStatus("");
         },
-        notes: {
-          plan_id: selectedPlan.id,
-        },
-        theme: {
-          color: "#087343",
-        },
+      },
 
-        // Razorpay Checkout will show the payment methods enabled
-        // for your account and route the customer through the chosen
-        // UPI/card/net-banking flow.
-        modal: {
-          ondismiss: () => {
-            setPaying(false);
-            setPaymentStatus("");
-          },
-        },
+      // ===================================================
+      // PAYMENT SUCCESS
+      // ===================================================
 
-        handler: async (response) => {
-          try {
-            const {
-              data: { session: verifySession },
-            } = await supabase.auth.getSession();
+      handler: async (response) => {
+        try {
+          console.log(
+            "Razorpay payment success:",
+            response
+          );
 
-            if (!verifySession?.access_token) {
-              throw new Error("Your login session expired. Please login again.");
-            }
+          // Get fresh Supabase session
+          const {
+            data: { session: verifySession },
+          } = await supabase.auth.getSession();
 
-            const verifyResponse = await fetch(`${RAZORPAY_SERVER_URL}/api/payments/verify`, {
+          if (!verifySession?.access_token) {
+            throw new Error(
+              "Your login session expired. Please login again."
+            );
+          }
+
+          // =================================================
+          // VERIFY PAYMENT
+          // Backend route:
+          // POST /api/payment/verify
+          // =================================================
+
+          const verifyResponse = await fetch(
+            `${RAZORPAY_SERVER_URL}/api/payment/verify`,
+            {
               method: "POST",
+
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type":
+                  "application/json",
+
                 Authorization: `Bearer ${verifySession.access_token}`,
               },
+
               body: JSON.stringify({
-                planId: selectedPlan.id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpayOrderId: response.razorpay_order_id,
-                razorpaySignature: response.razorpay_signature,
+                planId:
+                  selectedPlan.id,
+
+                razorpay_payment_id:
+                  response.razorpay_payment_id,
+
+                razorpay_order_id:
+                  response.razorpay_order_id,
+
+                razorpay_signature:
+                  response.razorpay_signature,
               }),
-            });
-
-            const verifyJson = await verifyResponse.json();
-
-            if (!verifyResponse.ok || !verifyJson?.success) {
-              throw new Error(
-                verifyJson?.message || "Payment verification failed."
-              );
             }
+          );
 
-            setPaymentStatus("Payment successful! Premium activation is complete.");
-            setError("");
+          // Safely read verification response
+          const verifyText =
+            await verifyResponse.text();
 
-            // Refresh Premium status from Supabase immediately.
-            await loadCurrentSubscription();
-          } catch (verificationError) {
-            console.error(verificationError);
-            setError(
-              verificationError?.message ||
-                "Payment completed, but verification failed. Please contact support."
-            );
-            setPaymentStatus("");
-          } finally {
-            setPaying(false);
+          let verifyJson = {};
+
+          try {
+            verifyJson = verifyText
+              ? JSON.parse(verifyText)
+              : {};
+          } catch {
+            verifyJson = {
+              message:
+                verifyText ||
+                `Server returned status ${verifyResponse.status}`,
+            };
           }
-        },
-      };
 
-      const razorpay = new window.Razorpay(options);
+          console.log(
+            "Payment verification response:",
+            verifyJson
+          );
 
-      razorpay.on("payment.failed", (response) => {
-        console.error("Razorpay payment failed:", response?.error);
+          if (
+            !verifyResponse.ok ||
+            !verifyJson?.success
+          ) {
+            throw new Error(
+              verifyJson?.message ||
+                verifyJson?.error ||
+                "Payment verification failed."
+            );
+          }
+
+          // =================================================
+          // PAYMENT COMPLETED
+          // =================================================
+
+          setPaymentStatus(
+            "Payment successful! Premium activation is complete."
+          );
+
+          setError("");
+
+          // Refresh subscription from Supabase
+          await loadCurrentSubscription();
+
+        } catch (verificationError) {
+          console.error(
+            "Payment verification error:",
+            verificationError
+          );
+
+          setError(
+            verificationError?.message ||
+              "Payment completed, but verification failed. Please contact support."
+          );
+
+          setPaymentStatus("");
+
+        } finally {
+          setPaying(false);
+        }
+      },
+    };
+
+    // =====================================================
+    // CREATE RAZORPAY INSTANCE
+    // =====================================================
+
+    const razorpay =
+      new window.Razorpay(options);
+
+    // =====================================================
+    // PAYMENT FAILED
+    // =====================================================
+
+    razorpay.on(
+      "payment.failed",
+      (response) => {
+        console.error(
+          "Razorpay payment failed:",
+          response?.error
+        );
+
         setError(
           response?.error?.description ||
+            response?.error?.reason ||
             "Payment failed. Please try another payment method."
         );
+
         setPaymentStatus("");
         setPaying(false);
-      });
+      }
+    );
 
-      razorpay.open();
-    } catch (paymentError) {
-      console.error("Payment start error:", paymentError);
-      setError(paymentError?.message || "Unable to start payment.");
-      setPaying(false);
-    }
-  };
+    // =====================================================
+    // OPEN RAZORPAY
+    // =====================================================
+
+    razorpay.open();
+
+  } catch (paymentError) {
+    console.error(
+      "Payment start error:",
+      paymentError
+    );
+
+    setError(
+      paymentError?.message ||
+        "Unable to start payment. Please try again."
+    );
+
+    setPaying(false);
+  }
+};
+
 
   return (
     <div className="tm-premium-page">

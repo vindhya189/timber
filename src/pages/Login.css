@@ -1172,3 +1172,354 @@
     font-size: 11px;
   }
 }
+
+/* =========================================================
+   TIMBERMART LOGIN
+   OTP / PHONE VERIFICATION STYLES
+   ========================================================= */
+
+.otp-btn,
+.verify-otp-btn,
+.resend-otp-btn {
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.otp-btn {
+  width: 100%;
+  margin-top: 10px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 18px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1f7a45, #145c35);
+  box-shadow: 0 8px 22px rgba(20, 92, 53, 0.18);
+}
+
+.otp-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 26px rgba(20, 92, 53, 0.25);
+}
+
+.otp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.otp-section {
+  width: 100%;
+  margin-top: 12px;
+  padding: 14px;
+  border: 1px solid rgba(31, 122, 69, 0.16);
+  border-radius: 14px;
+  background: rgba(31, 122, 69, 0.045);
+  box-sizing: border-box;
+}
+
+.otp-section::before {
+  content: "Enter OTP";
+  display: block;
+  margin-bottom: 9px;
+  color: #173c29;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.otp-input-box {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+  width: 100%;
+}
+
+.otp-input-box input {
+  flex: 1;
+  min-width: 0;
+  height: 46px;
+  box-sizing: border-box;
+  border: 1.5px solid #d7e2da;
+  border-radius: 11px;
+  outline: none;
+  background: #fff;
+  color: #17251c;
+  padding: 0 14px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  text-align: center;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.otp-input-box input::placeholder {
+  color: #a6b1aa;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.otp-input-box input:focus {
+  border-color: #1f7a45;
+  box-shadow: 0 0 0 4px rgba(31, 122, 69, 0.10);
+}
+
+.verify-otp-btn {
+  flex: 0 0 auto;
+  min-width: 112px;
+  min-height: 46px;
+  border: 0;
+  border-radius: 11px;
+  padding: 0 15px;
+  background: #173c29;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.verify-otp-btn:hover:not(:disabled) {
+  background: #0f2d1f;
+  transform: translateY(-1px);
+}
+
+.verify-otp-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.resend-otp-btn {
+  display: block;
+  margin: 10px auto 0;
+  border: 0;
+  background: transparent;
+  color: #1f7a45;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 5px 8px;
+}
+
+.resend-otp-btn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.resend-otp-btn:disabled {
+  color: #98a39c;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+
+.phone-verified {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 10px;
+  padding: 11px 13px;
+  border: 1px solid rgba(31, 122, 69, 0.22);
+  border-radius: 11px;
+  background: rgba(31, 122, 69, 0.08);
+  color: #176239;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.phone-verified svg {
+  flex: 0 0 auto;
+}
+
+#recaptcha-container {
+  min-height: 0;
+}
+
+/* Make the phone field look verified/locked after verification. */
+.input-box input:disabled {
+  opacity: 0.78;
+  cursor: not-allowed;
+  background: #f4f7f5;
+}
+
+/* Existing alert classes get a clean OTP-friendly appearance. */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 14px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.alert svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+
+.alert-success {
+  border: 1px solid rgba(31, 122, 69, 0.18);
+  background: rgba(31, 122, 69, 0.08);
+  color: #176239;
+}
+
+.alert-error {
+  border: 1px solid rgba(190, 55, 55, 0.18);
+  background: rgba(190, 55, 55, 0.07);
+  color: #a52f2f;
+}
+
+@media (max-width: 520px) {
+  .otp-input-box {
+    flex-direction: column;
+  }
+
+  .verify-otp-btn {
+    width: 100%;
+  }
+
+  .otp-input-box input {
+    width: 100%;
+  }
+
+  .otp-section {
+    padding: 12px;
+  }
+}
+/* =========================================================
+   TimberMart - Forgot Password OTP UI
+   Add this block at the END of your existing Login.css.
+   Do not delete your existing Login.css styles.
+   ========================================================= */
+
+.forgot-otp-card {
+  width: min(100%, 520px);
+}
+
+.forgot-otp-card h1 {
+  margin-bottom: 10px;
+}
+
+.forgot-otp-card > p {
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.forgot-action-btn {
+  width: 100%;
+  margin-top: 14px;
+}
+
+.forgot-otp-section {
+  margin-top: 22px;
+}
+
+.forgot-otp-section > label,
+.forgot-password-form > label {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.forgot-otp-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.forgot-otp-input {
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  border: 1px solid rgba(120, 130, 145, 0.28);
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 5px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.forgot-otp-input:focus {
+  border-color: #2f7d32;
+  box-shadow: 0 0 0 3px rgba(47, 125, 50, 0.12);
+}
+
+.forgot-verify-btn {
+  min-width: 125px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 18px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.forgot-verify-btn:disabled,
+.forgot-action-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.forgot-verify-btn:not(:disabled):hover,
+.forgot-action-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+}
+
+.forgot-info-row,
+.forgot-success-row {
+  margin-top: 12px;
+}
+
+.forgot-success-row {
+  margin-bottom: 8px;
+}
+
+.forgot-password-form {
+  margin-top: 20px;
+}
+
+.forgot-password-form .input-box {
+  margin-bottom: 4px;
+}
+
+.forgot-password-form .field-hint {
+  display: block;
+  margin-top: 8px;
+  margin-bottom: 6px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .forgot-container {
+    padding: 20px 14px;
+  }
+
+  .forgot-card {
+    width: 100%;
+    padding: 22px 18px;
+  }
+
+  .forgot-otp-row {
+    flex-direction: column;
+  }
+
+  .forgot-otp-input,
+  .forgot-verify-btn {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .forgot-otp-input {
+    flex: none;
+  }
+}
+

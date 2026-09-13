@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import {
   ArrowLeft,
   ArrowRight,
@@ -14,14 +13,22 @@ import {
   CheckCircle2,
   AlertCircle,
 } from "lucide-react";
-
 import { supabase } from "../supabaseClient";
-
 import "./Login.css";
 
-/* =========================================================
-   ROLE INFORMATION
-   ========================================================= */
+/*
+  TimberMart Login / Create Account
+
+  AUTHENTICATION:
+  - Supabase Auth for actual account/session authentication
+  - Gmail addresses only
+  - Custom 6-digit Gmail OTP verification through TimberMart API
+  - Phone number stored in profiles
+  - No phone OTP
+  - Password login
+  - Registered role in profiles is authoritative
+  - One browser/device can be associated with one email
+*/
 
 const ROLE_INFO = {
   farmer: {
@@ -59,11 +66,17 @@ const ROLE_INFO = {
     title: "Buyer / Homeowner",
     description: "Find timber, carpenters and services.",
   },
+
+  admin: {
+    emoji: "🛡️",
+    title: "Administrator",
+    description: "Manage TimberMart platform operations.",
+  },
 };
 
-/* =========================================================
-   NORMALIZE ROLE
-   ========================================================= */
+/* -------------------------------------------------------
+   ROLE HELPERS
+------------------------------------------------------- */
 
 function normalizeRole(role) {
   if (!role) return null;
@@ -87,6 +100,7 @@ function normalizeRole(role) {
   const roleMap = {
     admin: "admin",
     administrator: "admin",
+
     farmer: "farmer",
     farmers: "farmer",
 
@@ -115,21 +129,10 @@ function normalizeRole(role) {
   return roleMap[value] || null;
 }
 
-/* =========================================================
-   GET ROLE FROM URL FIRST
-   ========================================================= */
-
 function getRoleFromUrl(search) {
   const params = new URLSearchParams(search);
-
-  return normalizeRole(
-    params.get("role")
-  );
+  return normalizeRole(params.get("role"));
 }
-
-/* =========================================================
-   GET ROLE FROM LOCAL STORAGE
-   ========================================================= */
 
 function getRoleFromStorage() {
   const keys = [
@@ -146,49 +149,104 @@ function getRoleFromStorage() {
 
     const role = normalizeRole(value);
 
-    if (role) {
-      return role;
-    }
+    if (role) return role;
   }
 
   return null;
 }
 
-/* =========================================================
-   LOGIN COMPONENT
-   ========================================================= */
+/* -------------------------------------------------------
+   EMAIL / PHONE HELPERS
+------------------------------------------------------- */
+
+function isGmailAddress(value) {
+  return /^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(
+    String(value || "").trim()
+  );
+}
+
+function cleanEmail(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function cleanPhone(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .slice(0, 10);
+}
+
+/* -------------------------------------------------------
+   DEVICE HELPERS
+------------------------------------------------------- */
+
+function getDeviceId() {
+  const KEY = "timbermart_device_id";
+
+  let deviceId = localStorage.getItem(KEY);
+
+  if (!deviceId) {
+    deviceId =
+      typeof crypto !== "undefined" && crypto.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}`;
+
+    localStorage.setItem(KEY, deviceId);
+  }
+
+  return deviceId;
+}
+
+function getDeviceOwnerEmail() {
+  return cleanEmail(
+    localStorage.getItem("timbermart_device_owner_email") || ""
+  );
+}
+
+function setDeviceOwnerEmail(email) {
+  localStorage.setItem(
+    "timbermart_device_owner_email",
+    cleanEmail(email)
+  );
+}
+
+/* -------------------------------------------------------
+   COMPONENT
+------------------------------------------------------- */
 
 export default function Login() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  /* -------------------------------------------------------
-     MODE
-     ------------------------------------------------------- */
+  /* ------------------------------
+     Main state
+  ------------------------------ */
 
   const [mode, setMode] = useState("login");
-
-  /* -------------------------------------------------------
-     SELECTED ROLE
-     ------------------------------------------------------- */
-
   const [selectedRole, setSelectedRole] = useState(null);
 
-  /* -------------------------------------------------------
-     FORM
-     ------------------------------------------------------- */
+  /* ------------------------------
+     Signup
+  ------------------------------ */
 
   const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-
   const [email, setEmail] = useState("");
+  const [emailOtp, setEmailOtp] = useState("");
+
+  const [emailVerificationSent, setEmailVerificationSent] =
+    useState(false);
+
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
 
-  /* -------------------------------------------------------
-     STATES
-     ------------------------------------------------------- */
+  /* ------------------------------
+     Loading / messages
+  ------------------------------ */
 
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -196,19 +254,26 @@ export default function Login() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
+  /* ------------------------------
+     Forgot password
+  ------------------------------ */
+
   const [forgotMode, setForgotMode] = useState(false);
 
-  /* =======================================================
-     LOAD SELECTED ROLE
-     ======================================================= */
+  const [forgotOtp, setForgotOtp] = useState("");
+  const [forgotOtpSent, setForgotOtpSent] = useState(false);
+  const [forgotOtpVerified, setForgotOtpVerified] =
+    useState(false);
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  /* -------------------------------------------------------
+     ROLE INITIALIZATION
+  ------------------------------------------------------- */
 
   useEffect(() => {
-    // First priority = URL
-    const urlRole = getRoleFromUrl(
-      location.search
-    );
-
-    // Second priority = localStorage
+    const urlRole = getRoleFromUrl(location.search);
     const savedRole = getRoleFromStorage();
 
     const role = urlRole || savedRole;
@@ -221,38 +286,59 @@ export default function Login() {
       return;
     }
 
-    // Save selected role
     localStorage.setItem(
       "timbermart_selected_role",
       role
     );
 
     setSelectedRole(role);
-  }, [
-    location.search,
-    navigate,
-  ]);
+  }, [location.search, navigate]);
 
-  /* =======================================================
-     CLEAR MESSAGES
-     ======================================================= */
+  /* -------------------------------------------------------
+     MESSAGE HELPERS
+  ------------------------------------------------------- */
 
   const clearMessages = () => {
     setError("");
     setMessage("");
   };
 
-  /* =======================================================
-     SAVE PROFILE TO SUPABASE
-     ======================================================= */
+  /* -------------------------------------------------------
+     API
+  ------------------------------------------------------- */
+
+  const API_BASE = (
+    import.meta.env.VITE_API_BASE || "/api"
+  ).replace(/\/+$/, "");
+
+  const parseApiResponse = async (response) => {
+    const text = await response.text();
+
+    if (!text) {
+      return {};
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return {
+        message:
+          text.trim() ||
+          `Request failed (${response.status})`,
+      };
+    }
+  };
+
+  /* -------------------------------------------------------
+     SAVE PROFILE
+  ------------------------------------------------------- */
 
   const saveProfile = async (
     user,
     role,
     extra = {}
   ) => {
-    const normalizedRole =
-      normalizeRole(role);
+    const normalizedRole = normalizeRole(role);
 
     if (!user?.id) {
       throw new Error(
@@ -266,8 +352,7 @@ export default function Login() {
       );
     }
 
-    const metadata =
-      user.user_metadata || {};
+    const metadata = user.user_metadata || {};
 
     const finalName =
       extra.name ||
@@ -288,7 +373,7 @@ export default function Login() {
 
     const {
       data,
-      error,
+      error: profileError,
     } = await supabase
       .from("profiles")
       .upsert(
@@ -297,8 +382,7 @@ export default function Login() {
           name: finalName,
           role: normalizedRole,
           phone: finalPhone,
-          location:
-            extra.location || null,
+          location: extra.location || null,
           bio: extra.bio || null,
           photo_url: photo,
         },
@@ -309,33 +393,28 @@ export default function Login() {
       .select()
       .single();
 
-    if (error) {
+    if (profileError) {
       console.error(
         "Profile error:",
-        error
+        profileError
       );
 
       throw new Error(
-        error.message
+        profileError.message
       );
     }
 
     return data;
   };
 
-  /* =======================================================
+  /* -------------------------------------------------------
      SAVE LOCAL USER
-     ======================================================= */
+  ------------------------------------------------------- */
 
-  const saveLocalUser = (
-    user,
-    profile
-  ) => {
+  const saveLocalUser = (user, profile) => {
     const localUser = {
       id: user.id,
-
-      email:
-        user.email || "",
+      email: user.email || "",
 
       name:
         profile?.name ||
@@ -347,7 +426,7 @@ export default function Login() {
         profile?.phone || "",
 
       role:
-        profile?.role || "",
+        normalizeRole(profile?.role) || "",
 
       location:
         profile?.location || "",
@@ -360,6 +439,8 @@ export default function Login() {
         user.user_metadata?.avatar_url ||
         user.user_metadata?.picture ||
         "",
+
+      device_id: getDeviceId(),
     };
 
     localStorage.setItem(
@@ -369,24 +450,27 @@ export default function Login() {
 
     localStorage.setItem(
       "timbermart_selected_role",
-      profile?.role ||
+      normalizeRole(profile?.role) ||
         selectedRole ||
         ""
     );
+
+    setDeviceOwnerEmail(
+      user.email || ""
+    );
   };
 
-  /* =======================================================
+  /* -------------------------------------------------------
      OPEN DASHBOARD
-     ======================================================= */
+  ------------------------------------------------------- */
 
   const openDashboard = (
     profile,
     user
   ) => {
-    const role =
-      normalizeRole(
-        profile?.role
-      );
+    const role = normalizeRole(
+      profile?.role
+    );
 
     if (!role) {
       throw new Error(
@@ -399,6 +483,14 @@ export default function Login() {
       profile
     );
 
+    if (role === "admin") {
+      navigate("/admin", {
+        replace: true,
+      });
+
+      return;
+    }
+
     navigate(
       `/dashboard/${role}`,
       {
@@ -407,19 +499,271 @@ export default function Login() {
     );
   };
 
+  /* -------------------------------------------------------
+     DEVICE OWNER CHECK
+  ------------------------------------------------------- */
+
+  const checkDeviceOwner = (
+    loginEmail
+  ) => {
+    const emailValue =
+      cleanEmail(loginEmail);
+
+    const owner =
+      getDeviceOwnerEmail();
+
+    if (
+      owner &&
+      owner !== emailValue
+    ) {
+      throw new Error(
+        `This device is already linked to ${owner}. Please logout/remove the existing account from this browser before using another Gmail account.`
+      );
+    }
+  };
+
   /* =======================================================
-     EMAIL LOGIN
-     ======================================================= */
+     EMAIL OTP
+  ======================================================= */
+
+  /* -------------------------------------------------------
+     SEND EMAIL OTP
+  ------------------------------------------------------- */
+
+  const handleSendEmailVerification =
+    async () => {
+      clearMessages();
+
+      const emailValue =
+        cleanEmail(email);
+
+      if (
+        !isGmailAddress(emailValue)
+      ) {
+        setError(
+          "Please use a Gmail address ending with @gmail.com."
+        );
+
+        return;
+      }
+
+      if (!name.trim()) {
+        setError(
+          "Please enter your name first."
+        );
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response =
+          await fetch(
+            `${API_BASE}/email/send-code`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                email: emailValue,
+                name: name.trim(),
+              }),
+            }
+          );
+
+        const result =
+          await parseApiResponse(
+            response
+          );
+
+        console.log(
+          "SEND OTP RESPONSE:",
+          result
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              result?.error ||
+              "Unable to send verification code."
+          );
+        }
+
+        setEmailVerificationSent(
+          true
+        );
+
+        setEmailVerified(false);
+
+        setEmailOtp("");
+
+        setMessage(
+          "6-digit verification code sent to your Gmail. Please check Inbox/Spam."
+        );
+      } catch (err) {
+        console.error(
+          "Send email OTP error:",
+          err
+        );
+
+        setError(
+          err?.message ||
+            "Unable to send the verification code."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* -------------------------------------------------------
+     VERIFY EMAIL OTP
+     
+     IMPORTANT:
+     Backend expects:
+       {
+         email,
+         code
+       }
+
+     NOT:
+       {
+         email,
+         name
+       }
+  ------------------------------------------------------- */
+
+  const handleCheckEmailVerification =
+    async () => {
+      clearMessages();
+
+      const emailValue =
+        cleanEmail(email);
+
+      const codeValue =
+        String(emailOtp || "")
+          .replace(/\D/g, "")
+          .trim();
+
+      console.log(
+        "VERIFY EMAIL:",
+        emailValue
+      );
+
+      console.log(
+        "VERIFY CODE:",
+        codeValue
+      );
+
+      console.log(
+        "VERIFY CODE LENGTH:",
+        codeValue.length
+      );
+
+      if (
+        !isGmailAddress(emailValue)
+      ) {
+        setError(
+          "Please use a Gmail address ending with @gmail.com."
+        );
+
+        return;
+      }
+
+      if (!/^\d{6}$/.test(codeValue)) {
+        setError(
+          "Please enter the 6-digit verification code."
+        );
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response =
+          await fetch(
+            `${API_BASE}/email/verify-code`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                email: emailValue,
+
+                /* FIXED */
+                code: codeValue,
+              }),
+            }
+          );
+
+        const result =
+          await parseApiResponse(
+            response
+          );
+
+        console.log(
+          "VERIFY OTP RESPONSE:",
+          result
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              result?.error ||
+              `Server error (${response.status})`
+          );
+        }
+
+        setEmailVerified(true);
+
+        setMessage(
+          "Gmail verified successfully. You can now create your account."
+        );
+      } catch (err) {
+        console.error(
+          "Verify email OTP error:",
+          err
+        );
+
+        setEmailVerified(false);
+
+        setError(
+          err?.message ||
+            "Invalid or expired verification code."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* =======================================================
+     LOGIN
+  ======================================================= */
 
   const handleLogin = async (e) => {
     e.preventDefault();
 
     clearMessages();
 
-    if (!email.trim()) {
+    const emailValue =
+      cleanEmail(email);
+
+    if (
+      !isGmailAddress(emailValue)
+    ) {
       setError(
-        "Please enter your email."
+        "Please use a Gmail address ending with @gmail.com."
       );
+
       return;
     }
 
@@ -427,6 +771,7 @@ export default function Login() {
       setError(
         "Please enter your password."
       );
+
       return;
     }
 
@@ -434,15 +779,16 @@ export default function Login() {
       setError(
         "Please select your role."
       );
+
       return;
     }
 
     try {
       setLoading(true);
 
-      /* ---------------------------------------------------
-         SUPABASE LOGIN
-         --------------------------------------------------- */
+      checkDeviceOwner(
+        emailValue
+      );
 
       const {
         data,
@@ -450,7 +796,7 @@ export default function Login() {
       } =
         await supabase.auth.signInWithPassword(
           {
-            email: email.trim(),
+            email: emailValue,
             password,
           }
         );
@@ -467,19 +813,22 @@ export default function Login() {
 
       const user = data.user;
 
-      /* ---------------------------------------------------
-         GET PROFILE
-         --------------------------------------------------- */
+      if (!user.email_confirmed_at) {
+        await supabase.auth.signOut();
+
+        throw new Error(
+          "Please verify your Gmail address before logging in."
+        );
+      }
 
       let {
         data: profile,
         error: profileError,
-      } =
-        await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .maybeSingle();
+      } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .maybeSingle();
 
       if (profileError) {
         console.error(
@@ -488,15 +837,41 @@ export default function Login() {
         );
       }
 
-      /* ---------------------------------------------------
-         CREATE PROFILE IF NOT EXISTS
-         --------------------------------------------------- */
+      /* --------------------------------
+         Create profile if missing
+      -------------------------------- */
 
       if (!profile) {
+        const metadataRole =
+          normalizeRole(
+            user.user_metadata?.role
+          );
+
+        if (!metadataRole) {
+          await supabase.auth.signOut();
+
+          throw new Error(
+            "Your account does not have a registered role. Please create the account again from Role Select."
+          );
+        }
+
+        if (
+          metadataRole !==
+            "admin" &&
+          metadataRole !==
+            selectedRole
+        ) {
+          await supabase.auth.signOut();
+
+          throw new Error(
+            `This account is registered as "${ROLE_INFO[metadataRole]?.title || metadataRole}". Please select that role and login again.`
+          );
+        }
+
         profile =
           await saveProfile(
             user,
-            selectedRole,
+            metadataRole,
             {
               name:
                 user.user_metadata
@@ -509,84 +884,39 @@ export default function Login() {
 
               phone:
                 user.user_metadata
-                  ?.phone || "",
+                  ?.phone ||
+                "",
             }
           );
       }
 
-      /* ---------------------------------------------------
-         IMPORTANT:
-         LOGIN ROLE SHOULD BE SELECTED ROLE
-         --------------------------------------------------- */
+      const profileRole =
+        normalizeRole(
+          profile?.role
+        );
 
-      /* ---------------------------------------------------
-         STRICT ROLE VALIDATION
-         --------------------------------------------------- */
+      if (!profileRole) {
+        await supabase.auth.signOut();
 
-      const profileRole = normalizeRole(profile?.role);
-
-if (!profileRole) {
-  await supabase.auth.signOut();
-
-  throw new Error(
-    "Your account does not have a registered role. Please contact support."
-  );
-}
-
-/*
-  Admin accounts can use the admin login flow.
-  Normal users MUST login using the role selected
-  on the Role Select page.
-*/
-
-if (profileRole !== "admin" && profileRole !== selectedRole) {
-  await supabase.auth.signOut();
-
-  const registeredRoleTitle =
-    ROLE_INFO[profileRole]?.title || profileRole;
-
-  throw new Error(
-    `This account is registered as "${registeredRoleTitle}". Please select "${registeredRoleTitle}" from Role Select and login again.`
-  );
-}
-
-/*
-  IMPORTANT:
-  Never change profile.role during login.
-*/
-
-      
-      /* ---------------------------------------------------
-         PROFILE ROLE IS AUTHORITATIVE
-         --------------------------------------------------- */
-
-      /* ---------------------------------------------------
-         ADMIN DIRECT LOGIN
-         ---------------------------------------------------
-         Admin role comes from Supabase profiles.role.
-         Never overwrite it with the Role Select value.
-         --------------------------------------------------- */
-
-      if (normalizeRole(profile?.role) === "admin") {
-        const adminProfile = {
-          ...profile,
-          role: "admin",
-        };
-
-        saveLocalUser(user, adminProfile);
-
-        setMessage("Admin login successful!");
-
-        setTimeout(() => {
-          navigate("/admin", { replace: true });
-        }, 300);
-
-        return;
+        throw new Error(
+          "Your account does not have a registered role. Please contact support."
+        );
       }
 
-      /* ---------------------------------------------------
-         SAVE LOCAL USER
-         --------------------------------------------------- */
+      /* --------------------------------
+         Role security
+      -------------------------------- */
+
+      if (
+        profileRole !== "admin" &&
+        profileRole !== selectedRole
+      ) {
+        await supabase.auth.signOut();
+
+        throw new Error(
+          `This account is registered as "${ROLE_INFO[profileRole]?.title || profileRole}". Please select "${ROLE_INFO[profileRole]?.title || profileRole}" from Role Select and login again.`
+        );
+      }
 
       saveLocalUser(
         user,
@@ -594,31 +924,50 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
       );
 
       setMessage(
-        "Login successful!"
+        profileRole === "admin"
+          ? "Admin login successful!"
+          : "Login successful!"
       );
-
-      /* ---------------------------------------------------
-         OPEN SELECTED DASHBOARD
-         --------------------------------------------------- */
 
       setTimeout(() => {
         openDashboard(
           profile,
           user
         );
-      }, 500);
-
+      }, 300);
     } catch (err) {
       console.error(
         "Login error:",
         err
       );
 
-      setError(
-        err?.message ||
-        "Invalid email or password."
-      );
+      const text =
+        String(
+          err?.message || ""
+        ).toLowerCase();
 
+      if (
+        text.includes(
+          "email not confirmed"
+        )
+      ) {
+        setError(
+          "Please verify your Gmail address first. Check your Gmail inbox or spam folder."
+        );
+      } else if (
+        text.includes(
+          "invalid login credentials"
+        )
+      ) {
+        setError(
+          "Invalid Gmail or password."
+        );
+      } else {
+        setError(
+          err?.message ||
+            "Unable to login."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -626,17 +975,24 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
 
   /* =======================================================
      SIGNUP
-     ======================================================= */
+  ======================================================= */
 
   const handleSignup = async (e) => {
     e.preventDefault();
 
     clearMessages();
 
+    const emailValue =
+      cleanEmail(email);
+
+    const phoneValue =
+      cleanPhone(phone);
+
     if (!selectedRole) {
       setError(
         "Please select your role first."
       );
+
       return;
     }
 
@@ -644,20 +1000,37 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
       setError(
         "Please enter your name."
       );
+
       return;
     }
 
-    if (!phone.trim()) {
+    if (
+      !isGmailAddress(emailValue)
+    ) {
       setError(
-        "Please enter your phone number."
+        "Please use a Gmail address ending with @gmail.com."
       );
+
       return;
     }
 
-    if (!email.trim()) {
+    if (!emailVerified) {
       setError(
-        "Please enter your email."
+        "Please verify your Gmail first. Enter the 6-digit verification code sent to your Gmail and click Verify Code."
       );
+
+      return;
+    }
+
+    if (
+      !/^[6-9]\d{9}$/.test(
+        phoneValue
+      )
+    ) {
+      setError(
+        "Please enter a valid 10-digit Indian mobile number."
+      );
+
       return;
     }
 
@@ -665,41 +1038,47 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
       setError(
         "Password must contain at least 6 characters."
       );
+
       return;
     }
 
     try {
       setLoading(true);
 
-      /* ---------------------------------------------------
-         CREATE SUPABASE ACCOUNT
-         --------------------------------------------------- */
+      checkDeviceOwner(
+        emailValue
+      );
 
       const {
         data,
         error: signupError,
       } =
-        await supabase.auth.signUp({
-          email: email.trim(),
+        await supabase.auth.signUp(
+          {
+            email: emailValue,
 
-          password,
+            password,
 
-          options: {
-            data: {
-              full_name:
-                name.trim(),
+            options: {
+              data: {
+                full_name:
+                  name.trim(),
 
-              name:
-                name.trim(),
+                name:
+                  name.trim(),
 
-              phone:
-                phone.trim(),
+                phone:
+                  phoneValue,
 
-              role:
-                selectedRole,
+                role:
+                  selectedRole,
+
+                custom_email_verified:
+                  true,
+              },
             },
-          },
-        });
+          }
+        );
 
       if (signupError) {
         throw signupError;
@@ -711,25 +1090,12 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
         );
       }
 
-      /* ---------------------------------------------------
-         EMAIL CONFIRMATION
-         --------------------------------------------------- */
-
-      if (!data.session) {
-        setMessage(
-          "Account created! Please check your email and confirm your account."
-        );
-
-        setMode("login");
-
-        setPassword("");
-
-        return;
-      }
-
-      /* ---------------------------------------------------
-         CREATE PROFILE
-         --------------------------------------------------- */
+      /*
+        IMPORTANT:
+        Supabase Email Confirmation
+        should be OFF if you want only
+        our custom 6-digit OTP flow.
+      */
 
       const profile =
         await saveProfile(
@@ -740,13 +1106,9 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
               name.trim(),
 
             phone:
-              phone.trim(),
+              phoneValue,
           }
         );
-
-      /* ---------------------------------------------------
-         SAVE LOCAL USER
-         --------------------------------------------------- */
 
       saveLocalUser(
         data.user,
@@ -757,40 +1119,44 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
         "Account created successfully!"
       );
 
-      /* ---------------------------------------------------
-         OPEN DASHBOARD
-         --------------------------------------------------- */
-
       setTimeout(() => {
         openDashboard(
           profile,
           data.user
         );
-      }, 500);
-
+      }, 300);
     } catch (err) {
       console.error(
         "Signup error:",
         err
       );
 
-      const errorMessage = String(err?.message || "");
+      const text =
+        String(
+          err?.message || ""
+        ).toLowerCase();
 
       if (
-        errorMessage.toLowerCase().includes("user already registered")
+        text.includes(
+          "user already registered"
+        ) ||
+        text.includes(
+          "already registered"
+        )
       ) {
         setError(
-          "This email is already registered. Please switch to Login and use your existing password."
+          "This Gmail is already registered. Please switch to Login."
         );
+
         setMode("login");
+
         setPassword("");
       } else {
         setError(
-          errorMessage ||
-          "Unable to create account."
+          err?.message ||
+            "Unable to create account."
         );
       }
-
     } finally {
       setLoading(false);
     }
@@ -798,77 +1164,83 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
 
   /* =======================================================
      GOOGLE LOGIN
-     ======================================================= */
+  ======================================================= */
 
-  const handleGoogleLogin = async () => {
-    clearMessages();
+  const handleGoogleLogin =
+    async () => {
+      clearMessages();
 
-    if (!selectedRole) {
-      setError(
-        "Please select a role first."
-      );
-      return;
-    }
-
-    try {
-      setGoogleLoading(true);
-
-      /* ---------------------------------------------------
-         SAVE ROLE BEFORE GOOGLE REDIRECT
-         --------------------------------------------------- */
-
-      localStorage.setItem(
-        "timbermart_selected_role",
-        selectedRole
-      );
-
-      /* ---------------------------------------------------
-         GOOGLE REDIRECT
-         --------------------------------------------------- */
-
-      const redirectTo =
-        `${window.location.origin}/login?role=${selectedRole}`;
-
-      const {
-        error,
-      } =
-        await supabase.auth.signInWithOAuth(
-          {
-            provider: "google",
-
-            options: {
-              redirectTo,
-
-              queryParams: {
-                prompt:
-                  "select_account",
-              },
-            },
-          }
+      if (!selectedRole) {
+        setError(
+          "Please select a role first."
         );
 
-      if (error) {
-        throw error;
+        return;
       }
 
-    } catch (err) {
-      console.error(
-        "Google error:",
-        err
-      );
+      try {
+        setGoogleLoading(true);
 
-      setError(
-        err?.message ||
-        "Unable to connect with Google."
-      );
+        const owner =
+          getDeviceOwnerEmail();
 
-      setGoogleLoading(false);
-    }
-  };
+        if (owner) {
+          setError(
+            `This device is already linked to ${owner}. Login with that Gmail instead.`
+          );
+
+          setGoogleLoading(false);
+
+          return;
+        }
+
+        localStorage.setItem(
+          "timbermart_selected_role",
+          selectedRole
+        );
+
+        const redirectTo =
+          `${window.location.origin}/login?role=${selectedRole}`;
+
+        const {
+          error: oauthError,
+        } =
+          await supabase.auth.signInWithOAuth(
+            {
+              provider: "google",
+
+              options: {
+                redirectTo,
+
+                queryParams: {
+                  prompt:
+                    "select_account",
+                },
+              },
+            }
+          );
+
+        if (oauthError) {
+          throw oauthError;
+        }
+      } catch (err) {
+        console.error(
+          "Google error:",
+          err
+        );
+
+        setError(
+          err?.message ||
+            "Unable to connect with Google."
+        );
+
+        setGoogleLoading(false);
+      }
+    };
 
   /* =======================================================
      GOOGLE CALLBACK
-     ======================================================= */
+  ======================================================= */
 
   useEffect(() => {
     let active = true;
@@ -890,10 +1262,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
           const user =
             session.user;
 
-          /* ------------------------------------------------
-             CHECK GOOGLE CALLBACK
-             ------------------------------------------------ */
-
           const params =
             new URLSearchParams(
               window.location.search
@@ -903,9 +1271,7 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
             params.has("code");
 
           const hasOAuthError =
-            params.has(
-              "error"
-            );
+            params.has("error");
 
           if (
             !hasCode &&
@@ -914,15 +1280,31 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
             return;
           }
 
-          if (!active) return;
+          if (!active) {
+            return;
+          }
 
-          setGoogleLoading(true);
+          setGoogleLoading(
+            true
+          );
 
           clearMessages();
 
-          /* ------------------------------------------------
-             GET SELECTED ROLE
-             ------------------------------------------------ */
+          if (
+            !isGmailAddress(
+              user.email
+            )
+          ) {
+            await supabase.auth.signOut();
+
+            throw new Error(
+              "Please use a Gmail account ending with @gmail.com."
+            );
+          }
+
+          checkDeviceOwner(
+            user.email
+          );
 
           const role =
             getRoleFromUrl(
@@ -945,21 +1327,14 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
             return;
           }
 
-          /* ------------------------------------------------
-             SAVE ROLE
-             ------------------------------------------------ */
-
           localStorage.setItem(
             "timbermart_selected_role",
             role
           );
 
-          /* ------------------------------------------------
-             GET PROFILE
-             ------------------------------------------------ */
-
           let {
             data: profile,
+            error: profileError,
           } =
             await supabase
               .from("profiles")
@@ -967,15 +1342,31 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
               .eq("id", user.id)
               .maybeSingle();
 
-          /* ------------------------------------------------
-             CREATE PROFILE
-             ------------------------------------------------ */
+          if (profileError) {
+            console.error(
+              "Google profile fetch error:",
+              profileError
+            );
+          }
+
+          /* --------------------------------
+             Create missing profile
+          -------------------------------- */
 
           if (!profile) {
+            const metadataRole =
+              normalizeRole(
+                user.user_metadata
+                  ?.role
+              );
+
+            const profileRole =
+              metadataRole || role;
+
             profile =
               await saveProfile(
                 user,
-                role,
+                profileRole,
                 {
                   name:
                     user.user_metadata
@@ -984,142 +1375,148 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                       ?.name ||
                     user.email?.split(
                       "@"
-                    )[0] ||
-                    "TimberMart User",
+                    )[0],
 
-                  phone: "",
+                  phone:
+                    user.user_metadata
+                      ?.phone ||
+                    "",
                 }
               );
           } else {
-            /* ----------------------------------------------
-               GOOGLE PROFILE UPDATE
-               ----------------------------------------------
-               Google login may update missing name/photo, but
-               MUST NEVER change the account's registered role.
-               ---------------------------------------------- */
+            const existingRole =
+              normalizeRole(
+                profile.role
+              );
 
-            const updateData = {};
+            if (!existingRole) {
+              await supabase.auth.signOut();
+
+              throw new Error(
+                "This account has no registered role."
+              );
+            }
+
+            if (
+              existingRole !==
+                "admin" &&
+              existingRole !== role
+            ) {
+              await supabase.auth.signOut();
+
+              throw new Error(
+                `This Google account is registered as "${ROLE_INFO[existingRole]?.title || existingRole}". Please select the same role to continue.`
+              );
+            }
+
+            const updateData =
+              {};
 
             const googleName =
-              user.user_metadata?.full_name ||
-              user.user_metadata?.name ||
-              user.email?.split("@")[0];
+              user.user_metadata
+                ?.full_name ||
+              user.user_metadata
+                ?.name ||
+              user.email?.split(
+                "@"
+              )[0];
 
             const googlePhoto =
-              user.user_metadata?.avatar_url ||
-              user.user_metadata?.picture ||
+              user.user_metadata
+                ?.avatar_url ||
+              user.user_metadata
+                ?.picture ||
               null;
 
-            if (!profile.name && googleName) {
-              updateData.name = googleName;
+            if (
+              !profile.name &&
+              googleName
+            ) {
+              updateData.name =
+                googleName;
             }
 
-            if (!profile.photo_url && googlePhoto) {
-              updateData.photo_url = googlePhoto;
+            if (
+              !profile.photo_url &&
+              googlePhoto
+            ) {
+              updateData.photo_url =
+                googlePhoto;
             }
 
-            const existingGoogleRole =
-              normalizeRole(profile?.role);
-
-            if (!existingGoogleRole) {
-              throw new Error(
-                "This account has no registered role. Please create the account again with a valid role."
-              );
-            }
-
-            /* Fixed-role login: selected role must match database role. */
-            if (existingGoogleRole !== role) {
-              throw new Error(
-                `This Google account is registered as ${ROLE_INFO[existingGoogleRole]?.title || existingGoogleRole}. Please select the same role to continue.`
-              );
-            }
-
-            if (Object.keys(updateData).length > 0) {
+            if (
+              Object.keys(
+                updateData
+              ).length > 0
+            ) {
               const {
                 data: updated,
-                error,
-              } = await supabase
-                .from("profiles")
-                .update(updateData)
-                .eq("id", user.id)
-                .select()
-                .single();
+                error:
+                  updateError,
+              } =
+                await supabase
+                  .from("profiles")
+                  .update(
+                    updateData
+                  )
+                  .eq(
+                    "id",
+                    user.id
+                  )
+                  .select()
+                  .single();
 
-              if (error) {
-                throw error;
+              if (updateError) {
+                throw updateError;
               }
 
               if (updated) {
-                profile = updated;
+                profile =
+                  updated;
               }
             }
           }
 
-          /* ------------------------------------------------
-             FALLBACK FOR INCOMPLETE GOOGLE PROFILES
-             ------------------------------------------------ */
+          const profileRole =
+            normalizeRole(
+              profile?.role
+            );
 
-          if (!normalizeRole(profile?.role)) {
-            profile = {
-              ...profile,
-              role,
-            };
+          if (!profileRole) {
+            await supabase.auth.signOut();
+
+            throw new Error(
+              "Your account does not have a registered role."
+            );
           }
-
-          /* ------------------------------------------------
-             SAVE LOCAL USER
-             ------------------------------------------------ */
 
           saveLocalUser(
             user,
             profile
           );
 
-          /* ------------------------------------------------
-             CLEAN URL
-             ------------------------------------------------ */
-
           window.history.replaceState(
             {},
             document.title,
-            `/login?role=${role}`
+            `/login?role=${profileRole}`
           );
-
-          /* ------------------------------------------------
-             ADMIN DIRECT GOOGLE LOGIN
-             ------------------------------------------------ */
-
-          if (normalizeRole(profile?.role) === "admin") {
-            setMessage("Admin login successful!");
-
-            setTimeout(() => {
-              if (!active) return;
-
-              navigate("/admin", {
-                replace: true,
-              });
-            }, 300);
-
-            return;
-          }
 
           setMessage(
-            "Google login successful!"
+            profileRole === "admin"
+              ? "Admin login successful!"
+              : "Google login successful!"
           );
 
-          /* ------------------------------------------------
-             OPEN NORMAL DASHBOARD
-             ------------------------------------------------ */
-
           setTimeout(() => {
-            if (!active) return;
+            if (!active) {
+              return;
+            }
 
             openDashboard(
               profile,
               user
             );
-          }, 500);
-
+          }, 300);
         } catch (err) {
           console.error(
             "Google callback error:",
@@ -1129,13 +1526,14 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
           if (active) {
             setError(
               err?.message ||
-              "Google login completed but profile setup failed."
+                "Google login completed but profile setup failed."
             );
           }
-
         } finally {
           if (active) {
-            setGoogleLoading(false);
+            setGoogleLoading(
+              false
+            );
           }
         }
       };
@@ -1148,55 +1546,302 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
   }, [navigate]);
 
   /* =======================================================
-     FORGOT PASSWORD
-     ======================================================= */
+     FORGOT PASSWORD - SEND OTP
+  ======================================================= */
 
-  const handleForgotPassword =
+  const handleSendForgotOtp =
     async (e) => {
       e.preventDefault();
 
       clearMessages();
 
-      if (!email.trim()) {
+      const emailValue =
+        cleanEmail(email);
+
+      if (
+        !isGmailAddress(emailValue)
+      ) {
         setError(
-          "Enter your email address first."
+          "Please enter your registered Gmail address."
         );
+
         return;
       }
 
       try {
         setLoading(true);
 
-        const {
-          error,
-        } =
-          await supabase.auth.resetPasswordForEmail(
-            email.trim(),
+        const response =
+          await fetch(
+            `${API_BASE}/password/send-code`,
             {
-              redirectTo:
-                `${window.location.origin}/login`,
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                email: emailValue,
+              }),
             }
           );
 
-        if (error) {
-          throw error;
+        const result =
+          await parseApiResponse(
+            response
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              "Unable to send verification code."
+          );
         }
 
-        setMessage(
-          "Password reset link sent to your email."
+        setForgotOtpSent(
+          true
         );
 
+        setForgotOtpVerified(
+          false
+        );
+
+        setForgotOtp("");
+
+        setNewPassword("");
+
+        setConfirmPassword("");
+
+        setMessage(
+          "6-digit password reset code sent to your Gmail. Please check Inbox/Spam."
+        );
       } catch (err) {
         console.error(
-          "Reset password error:",
+          "Forgot password OTP error:",
           err
         );
 
         setError(
           err?.message ||
-          "Unable to send reset email."
+            "Unable to send password reset code."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* =======================================================
+     FORGOT PASSWORD - VERIFY OTP
+  ======================================================= */
+
+  const handleVerifyForgotOtp =
+    async () => {
+      clearMessages();
+
+      const emailValue =
+        cleanEmail(email);
+
+      const codeValue =
+        String(forgotOtp || "")
+          .replace(/\D/g, "")
+          .trim();
+
+      if (
+        !isGmailAddress(emailValue)
+      ) {
+        setError(
+          "Please enter your registered Gmail address."
         );
 
+        return;
+      }
+
+      if (!/^\d{6}$/.test(codeValue)) {
+        setError(
+          "Please enter the 6-digit verification code."
+        );
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response =
+          await fetch(
+            `${API_BASE}/password/verify-code`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                email: emailValue,
+                code: codeValue,
+              }),
+            }
+          );
+
+        const result =
+          await parseApiResponse(
+            response
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              "Invalid verification code."
+          );
+        }
+
+        setForgotOtpVerified(
+          true
+        );
+
+        setMessage(
+          "Code verified successfully. You can now create a new password."
+        );
+      } catch (err) {
+        console.error(
+          "Forgot password verification error:",
+          err
+        );
+
+        setForgotOtpVerified(
+          false
+        );
+
+        setError(
+          err?.message ||
+            "Invalid or expired verification code."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+  /* =======================================================
+     FORGOT PASSWORD - CHANGE
+  ======================================================= */
+
+  const handleChangeForgotPassword =
+    async (e) => {
+      e.preventDefault();
+
+      clearMessages();
+
+      const emailValue =
+        cleanEmail(email);
+
+      if (
+        !isGmailAddress(emailValue)
+      ) {
+        setError(
+          "Please enter your registered Gmail address."
+        );
+
+        return;
+      }
+
+      if (!forgotOtpVerified) {
+        setError(
+          "Please verify the 6-digit OTP first."
+        );
+
+        return;
+      }
+
+      if (
+        newPassword.length < 6
+      ) {
+        setError(
+          "New password must contain at least 6 characters."
+        );
+
+        return;
+      }
+
+      if (
+        newPassword !==
+        confirmPassword
+      ) {
+        setError(
+          "New password and confirm password do not match."
+        );
+
+        return;
+      }
+
+      try {
+        setLoading(true);
+
+        const response =
+          await fetch(
+            `${API_BASE}/password/change`,
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json",
+              },
+
+              body: JSON.stringify({
+                email: emailValue,
+
+                code: forgotOtp,
+
+                newPassword,
+              }),
+            }
+          );
+
+        const result =
+          await parseApiResponse(
+            response
+          );
+
+        if (!response.ok) {
+          throw new Error(
+            result?.message ||
+              "Unable to change password."
+          );
+        }
+
+        setMessage(
+          "Password changed successfully. You can now login with your new password."
+        );
+
+        setForgotMode(false);
+
+        setForgotOtp("");
+
+        setForgotOtpSent(false);
+
+        setForgotOtpVerified(
+          false
+        );
+
+        setNewPassword("");
+
+        setConfirmPassword("");
+
+        setPassword("");
+      } catch (err) {
+        console.error(
+          "Change password error:",
+          err
+        );
+
+        setError(
+          err?.message ||
+            "Unable to change password."
+        );
       } finally {
         setLoading(false);
       }
@@ -1204,12 +1849,11 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
 
   /* =======================================================
      LOADING
-     ======================================================= */
+  ======================================================= */
 
   if (!selectedRole) {
     return (
       <div className="login-loading-page">
-
         <Loader2
           size={34}
           className="login-spin"
@@ -1218,24 +1862,22 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
         <p>
           Loading TimberMart...
         </p>
-
       </div>
     );
   }
 
   const role =
-    ROLE_INFO[selectedRole];
+    ROLE_INFO[selectedRole] ||
+    ROLE_INFO.buyer;
 
   /* =======================================================
      FORGOT PASSWORD PAGE
-     ======================================================= */
+  ======================================================= */
 
   if (forgotMode) {
     return (
       <div className="login-page">
-
         <header className="login-navbar">
-
           <button
             type="button"
             className="login-brand"
@@ -1259,88 +1901,107 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
               navigate("/roles")
             }
           >
-            <ArrowLeft size={17} />
+            <ArrowLeft
+              size={17}
+            />
 
             Change Role
           </button>
-
         </header>
 
         <main className="forgot-container">
-
-          <div className="forgot-card">
-
+          <div className="forgot-card forgot-otp-card">
             <div className="forgot-icon">
               🔐
             </div>
 
             <h1>
-              Reset Password
+              Forgot Password?
             </h1>
 
             <p>
-              Enter your registered email
-              address. We'll send you a
-              password reset link.
+              Reset your TimberMart
+              password securely
+              using a 6-digit Gmail
+              verification code.
             </p>
 
             {error && (
               <div className="alert alert-error">
-
-                <AlertCircle size={18} />
+                <AlertCircle
+                  size={18}
+                />
 
                 <span>
                   {error}
                 </span>
-
               </div>
             )}
 
             {message && (
               <div className="alert alert-success">
-
-                <CheckCircle2 size={18} />
+                <CheckCircle2
+                  size={18}
+                />
 
                 <span>
                   {message}
                 </span>
-
               </div>
             )}
 
-            <form
-              onSubmit={
-                handleForgotPassword
-              }
-            >
+            <label>
+              Gmail Address
+            </label>
 
-              <label>
-                Email Address
-              </label>
+            <div className="input-box">
+              <Mail
+                size={19}
+              />
 
-              <div className="input-box">
+              <input
+                type="email"
+                placeholder="example@gmail.com"
+                value={email}
+                onChange={(e) => {
+                  setEmail(
+                    e.target.value
+                  );
 
-                <Mail size={19} />
+                  setForgotOtp("");
 
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(
-                      e.target.value
-                    )
-                  }
-                />
+                  setForgotOtpSent(
+                    false
+                  );
 
-              </div>
+                  setForgotOtpVerified(
+                    false
+                  );
 
+                  setNewPassword("");
+
+                  setConfirmPassword(
+                    ""
+                  );
+                }}
+                autoComplete="email"
+              />
+            </div>
+
+            {!forgotOtpVerified && (
               <button
-                type="submit"
-                className="primary-btn"
-                disabled={loading}
+                type="button"
+                className="primary-btn forgot-action-btn"
+                onClick={
+                  handleSendForgotOtp
+                }
+                disabled={
+                  loading ||
+                  !isGmailAddress(
+                    email
+                  )
+                }
               >
-
                 {loading ? (
                   <>
                     <Loader2
@@ -1348,56 +2009,228 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                       className="login-spin"
                     />
 
-                    Sending...
+                    Sending Code...
                   </>
                 ) : (
                   <>
-                    Send Reset Link
+                    {forgotOtpSent
+                      ? "Resend Verification Code"
+                      : "Send Verification Code"}
 
                     <ArrowRight
                       size={18}
                     />
                   </>
                 )}
-
               </button>
+            )}
 
-            </form>
+            {forgotOtpSent &&
+              !forgotOtpVerified && (
+                <div className="forgot-otp-section">
+                  <label>
+                    6-Digit Verification Code
+                  </label>
+
+                  <div className="forgot-otp-row">
+                    <input
+                      className="forgot-otp-input"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="Enter 6-digit code"
+                      value={forgotOtp}
+                      onChange={(e) =>
+                        setForgotOtp(
+                          e.target.value
+                            .replace(
+                              /\D/g,
+                              ""
+                            )
+                            .slice(
+                              0,
+                              6
+                            )
+                        )
+                      }
+                    />
+
+                    <button
+                      type="button"
+                      className="verify-otp-btn forgot-verify-btn"
+                      onClick={
+                        handleVerifyForgotOtp
+                      }
+                      disabled={
+                        loading ||
+                        forgotOtp.length !==
+                          6
+                      }
+                    >
+                      {loading
+                        ? "Verifying..."
+                        : "Verify Code"}
+                    </button>
+                  </div>
+
+                  <div className="phone-verified forgot-info-row">
+                    <Mail
+                      size={17}
+                    />
+
+                    <span>
+                      Enter the
+                      6-digit code
+                      sent to your
+                      Gmail.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+            {forgotOtpVerified && (
+              <form
+                onSubmit={
+                  handleChangeForgotPassword
+                }
+                className="forgot-password-form"
+              >
+                <div className="phone-verified forgot-success-row">
+                  <CheckCircle2
+                    size={17}
+                  />
+
+                  <span>
+                    Gmail verification
+                    successful
+                  </span>
+                </div>
+
+                <label>
+                  New Password
+                </label>
+
+                <div className="input-box">
+                  <Lock
+                    size={19}
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="Enter new password"
+                    value={newPassword}
+                    onChange={(e) =>
+                      setNewPassword(
+                        e.target.value
+                      )
+                    }
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <label>
+                  Confirm New Password
+                </label>
+
+                <div className="input-box">
+                  <Lock
+                    size={19}
+                  />
+
+                  <input
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={
+                      confirmPassword
+                    }
+                    onChange={(e) =>
+                      setConfirmPassword(
+                        e.target.value
+                      )
+                    }
+                    autoComplete="new-password"
+                  />
+                </div>
+
+                <small className="field-hint">
+                  Password must contain
+                  at least 6 characters.
+                </small>
+
+                <button
+                  type="submit"
+                  className="primary-btn forgot-action-btn"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2
+                        size={18}
+                        className="login-spin"
+                      />
+
+                      Changing Password...
+                    </>
+                  ) : (
+                    <>
+                      Change Password
+
+                      <CheckCircle2
+                        size={18}
+                      />
+                    </>
+                  )}
+                </button>
+              </form>
+            )}
 
             <button
               type="button"
               className="back-login-btn"
               onClick={() => {
                 clearMessages();
-                setForgotMode(false);
+
+                setForgotMode(
+                  false
+                );
+
+                setForgotOtp("");
+
+                setForgotOtpSent(
+                  false
+                );
+
+                setForgotOtpVerified(
+                  false
+                );
+
+                setNewPassword("");
+
+                setConfirmPassword(
+                  ""
+                );
               }}
             >
-              <ArrowLeft size={17} />
+              <ArrowLeft
+                size={17}
+              />
 
               Back to Login
             </button>
-
           </div>
-
         </main>
-
       </div>
     );
   }
 
   /* =======================================================
-     MAIN LOGIN PAGE
-     ======================================================= */
+     MAIN LOGIN / SIGNUP PAGE
+  ======================================================= */
 
   return (
     <div className="login-page">
-
-      {/* =====================================================
-          NAVBAR
-          ===================================================== */}
-
       <header className="login-navbar">
-
         <button
           type="button"
           className="login-brand"
@@ -1405,7 +2238,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
             navigate("/")
           }
         >
-
           <span className="login-brand-icon">
             🌳
           </span>
@@ -1413,7 +2245,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
           <span>
             TimberMart
           </span>
-
         </button>
 
         <button
@@ -1423,25 +2254,20 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
             navigate("/roles")
           }
         >
-          <ArrowLeft size={17} />
+          <ArrowLeft
+            size={17}
+          />
 
           Change Role
         </button>
-
       </header>
 
-      {/* =====================================================
-          MAIN
-          ===================================================== */}
-
       <main className="login-main">
-
-        {/* ===================================================
+        {/* ===============================================
             LEFT SIDE
-            =================================================== */}
+        =============================================== */}
 
         <section className="login-left">
-
           <div className="selected-role-icon">
             {role.emoji}
           </div>
@@ -1464,9 +2290,7 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
           </p>
 
           <div className="benefit-list">
-
             <div className="benefit-item">
-
               <CheckCircle2
                 size={19}
               />
@@ -1475,11 +2299,9 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 Connect with the
                 timber community
               </span>
-
             </div>
 
             <div className="benefit-item">
-
               <CheckCircle2
                 size={19}
               />
@@ -1488,11 +2310,9 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 Create your own
                 listings
               </span>
-
             </div>
 
             <div className="benefit-item">
-
               <CheckCircle2
                 size={19}
               />
@@ -1501,52 +2321,42 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 Find opportunities
                 and requirements
               </span>
-
             </div>
-
           </div>
-
         </section>
 
-        {/* ===================================================
-            LOGIN CARD
-            =================================================== */}
+        {/* ===============================================
+            RIGHT SIDE
+        =============================================== */}
 
         <section className="login-right">
-
           <div className="login-card">
-
-            {/* CARD HEADER */}
-
             <div className="login-card-header">
-
               <div className="login-card-logo">
                 🌳
               </div>
 
               <div>
-
                 <h2>
-                  {mode === "login"
+                  {mode ===
+                  "login"
                     ? "Welcome Back"
                     : "Create Account"}
                 </h2>
 
                 <p>
-                  {mode === "login"
+                  {mode ===
+                  "login"
                     ? "Login to your TimberMart account"
                     : "Join TimberMart and get started"}
                 </p>
-
               </div>
-
             </div>
 
-            {/* ALERT */}
+            {/* ERROR */}
 
             {error && (
               <div className="alert alert-error">
-
                 <AlertCircle
                   size={18}
                 />
@@ -1554,13 +2364,13 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 <span>
                   {error}
                 </span>
-
               </div>
             )}
 
+            {/* SUCCESS */}
+
             {message && (
               <div className="alert alert-success">
-
                 <CheckCircle2
                   size={18}
                 />
@@ -1568,7 +2378,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 <span>
                   {message}
                 </span>
-
               </div>
             )}
 
@@ -1585,7 +2394,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 loading
               }
             >
-
               {googleLoading ? (
                 <Loader2
                   size={20}
@@ -1602,13 +2410,11 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                   ? "Connecting..."
                   : "Continue with Google"}
               </span>
-
             </button>
 
-            {/* DIVIDER */}
+            {/* OR */}
 
             <div className="or-divider">
-
               <span />
 
               <b>
@@ -1616,30 +2422,35 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
               </b>
 
               <span />
-
             </div>
 
             {/* FORM */}
 
             <form
               onSubmit={
-                mode === "login"
+                mode ===
+                "login"
                   ? handleLogin
                   : handleSignup
               }
             >
+              {/* =========================================
+                  SIGNUP FIELDS
+              ========================================= */}
 
-              {/* NAME */}
-
-              {mode === "signup" && (
+              {mode ===
+                "signup" && (
                 <>
+                  {/* NAME */}
+
                   <label>
                     Full Name
                   </label>
 
                   <div className="input-box">
-
-                    <User size={19} />
+                    <User
+                      size={19}
+                    />
 
                     <input
                       type="text"
@@ -1650,66 +2461,243 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                           e.target.value
                         )
                       }
+                      autoComplete="name"
+                    />
+                  </div>
+
+                  {/* EMAIL */}
+
+                  <label>
+                    Gmail Address
+                  </label>
+
+                  <div className="input-box">
+                    <Mail
+                      size={19}
                     />
 
+                    <input
+                      type="email"
+                      placeholder="example@gmail.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(
+                          e.target.value
+                        );
+
+                        /* Reset OTP when email changes */
+                        setEmailOtp(
+                          ""
+                        );
+
+                        setEmailVerified(
+                          false
+                        );
+
+                        setEmailVerificationSent(
+                          false
+                        );
+
+                        clearMessages();
+                      }}
+                      autoComplete="email"
+                    />
                   </div>
+
+                  {/* EMAIL OTP SEND */}
+
+                  <div className="email-verification-row">
+                    <button
+                      type="button"
+                      className="otp-btn"
+                      onClick={
+                        handleSendEmailVerification
+                      }
+                      disabled={
+                        loading ||
+                        !isGmailAddress(
+                          email
+                        ) ||
+                        !name.trim()
+                      }
+                    >
+                      {loading &&
+                      !emailVerified
+                        ? "Sending Code..."
+                        : emailVerificationSent
+                        ? "Resend Code"
+                        : "Send Verification Code"}
+                    </button>
+                  </div>
+
+                  {/* EMAIL OTP INPUT */}
+
+                  {emailVerificationSent &&
+                    !emailVerified && (
+                      <div className="otp-section">
+                        <div className="otp-input-box">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            placeholder="Enter 6-digit code"
+                            value={emailOtp}
+                            onChange={(e) => {
+                              const value =
+                                e.target.value
+                                  .replace(
+                                    /\D/g,
+                                    ""
+                                  )
+                                  .slice(
+                                    0,
+                                    6
+                                  );
+
+                              setEmailOtp(
+                                value
+                              );
+
+                              /* Clear old OTP error while typing */
+                              if (
+                                error
+                              ) {
+                                setError(
+                                  ""
+                                );
+                              }
+                            }}
+                          />
+
+                          <button
+                            type="button"
+                            className="verify-otp-btn"
+                            onClick={
+                              handleCheckEmailVerification
+                            }
+                            disabled={
+                              loading ||
+                              emailOtp.length !==
+                                6
+                            }
+                          >
+                            {loading
+                              ? "Verifying..."
+                              : "Verify Code"}
+                          </button>
+                        </div>
+
+                        <div className="phone-verified">
+                          <Mail
+                            size={17}
+                          />
+
+                          <span>
+                            Enter the
+                            6-digit code
+                            sent to your
+                            Gmail.
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                  {/* VERIFIED */}
+
+                  {emailVerified && (
+                    <div className="phone-verified">
+                      <CheckCircle2
+                        size={17}
+                      />
+
+                      <span>
+                        Gmail verified
+                        successfully
+                      </span>
+                    </div>
+                  )}
+
+                  {/* PHONE */}
 
                   <label>
                     Phone Number
                   </label>
 
                   <div className="input-box">
-
-                    <Phone size={19} />
+                    <Phone
+                      size={19}
+                    />
 
                     <input
                       type="tel"
-                      placeholder="Enter your phone number"
+                      inputMode="numeric"
+                      placeholder="10-digit mobile number"
                       value={phone}
+                      maxLength={10}
                       onChange={(e) =>
                         setPhone(
+                          cleanPhone(
+                            e.target.value
+                          )
+                        )
+                      }
+                      autoComplete="tel"
+                    />
+                  </div>
+
+                  <small className="field-hint">
+                    Phone number is saved
+                    to your TimberMart
+                    profile. No SMS OTP
+                    is required.
+                  </small>
+                </>
+              )}
+
+              {/* =========================================
+                  LOGIN EMAIL
+              ========================================= */}
+
+              {mode ===
+                "login" && (
+                <>
+                  <label>
+                    Gmail Address
+                  </label>
+
+                  <div className="input-box">
+                    <Mail
+                      size={19}
+                    />
+
+                    <input
+                      type="email"
+                      placeholder="example@gmail.com"
+                      value={email}
+                      onChange={(e) =>
+                        setEmail(
                           e.target.value
                         )
                       }
+                      autoComplete="email"
                     />
-
                   </div>
                 </>
               )}
 
-              {/* EMAIL */}
-
-              <label>
-                Email Address
-              </label>
-
-              <div className="input-box">
-
-                <Mail size={19} />
-
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) =>
-                    setEmail(
-                      e.target.value
-                    )
-                  }
-                  autoComplete="email"
-                />
-
-              </div>
-
-              {/* PASSWORD */}
+              {/* =========================================
+                  PASSWORD
+              ========================================= */}
 
               <label>
                 Password
               </label>
 
               <div className="input-box">
-
-                <Lock size={19} />
+                <Lock
+                  size={19}
+                />
 
                 <input
                   type={
@@ -1718,7 +2706,8 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                       : "password"
                   }
                   placeholder={
-                    mode === "signup"
+                    mode ===
+                    "signup"
                       ? "Create a password"
                       : "Enter your password"
                   }
@@ -1729,7 +2718,8 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                     )
                   }
                   autoComplete={
-                    mode === "signup"
+                    mode ===
+                    "signup"
                       ? "new-password"
                       : "current-password"
                   }
@@ -1740,30 +2730,46 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                   className="password-toggle"
                   onClick={() =>
                     setShowPassword(
-                      !showPassword
+                      (value) =>
+                        !value
                     )
                   }
+                  aria-label={
+                    showPassword
+                      ? "Hide password"
+                      : "Show password"
+                  }
                 >
-
                   {showPassword ? (
-                    <EyeOff size={19} />
+                    <EyeOff
+                      size={19}
+                    />
                   ) : (
-                    <Eye size={19} />
+                    <Eye
+                      size={19}
+                    />
                   )}
-
                 </button>
-
               </div>
+
+              {mode ===
+                "signup" && (
+                <small className="field-hint">
+                  Password must contain
+                  at least 6 characters.
+                </small>
+              )}
 
               {/* FORGOT PASSWORD */}
 
-              {mode === "login" && (
+              {mode ===
+                "login" && (
                 <div className="forgot-row">
-
                   <button
                     type="button"
                     onClick={() => {
                       clearMessages();
+
                       setForgotMode(
                         true
                       );
@@ -1771,7 +2777,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                   >
                     Forgot password?
                   </button>
-
                 </div>
               )}
 
@@ -1785,7 +2790,6 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                   googleLoading
                 }
               >
-
                 {loading ? (
                   <>
                     <Loader2
@@ -1793,13 +2797,15 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                       className="login-spin"
                     />
 
-                    {mode === "login"
+                    {mode ===
+                    "login"
                       ? "Logging in..."
                       : "Creating account..."}
                   </>
                 ) : (
                   <>
-                    {mode === "login"
+                    {mode ===
+                    "login"
                       ? "Login"
                       : "Create Account"}
 
@@ -1808,27 +2814,45 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                     />
                   </>
                 )}
-
               </button>
-
             </form>
 
-            {/* SWITCH LOGIN / SIGNUP */}
+            {/* =========================================
+                SWITCH LOGIN / SIGNUP
+            ========================================= */}
 
             <div className="switch-account">
-
-              {mode === "login" ? (
+              {mode ===
+              "login" ? (
                 <>
                   <span>
-                    Don't have an account?
+                    Don't have an
+                    account?
                   </span>
 
                   <button
                     type="button"
                     onClick={() => {
                       clearMessages();
+
                       setMode(
                         "signup"
+                      );
+
+                      setPassword(
+                        ""
+                      );
+
+                      setEmailOtp(
+                        ""
+                      );
+
+                      setEmailVerified(
+                        false
+                      );
+
+                      setEmailVerificationSent(
+                        false
                       );
                     }}
                   >
@@ -1838,15 +2862,33 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
               ) : (
                 <>
                   <span>
-                    Already have an account?
+                    Already have an
+                    account?
                   </span>
 
                   <button
                     type="button"
                     onClick={() => {
                       clearMessages();
+
                       setMode(
                         "login"
+                      );
+
+                      setPassword(
+                        ""
+                      );
+
+                      setEmailOtp(
+                        ""
+                      );
+
+                      setEmailVerified(
+                        false
+                      );
+
+                      setEmailVerificationSent(
+                        false
                       );
                     }}
                   >
@@ -1854,19 +2896,18 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                   </button>
                 </>
               )}
-
             </div>
 
-            {/* SELECTED ROLE */}
+            {/* =========================================
+                ROLE
+            ========================================= */}
 
             <div className="role-bottom">
-
               <div className="role-bottom-icon">
                 {role.emoji}
               </div>
 
               <div className="role-bottom-text">
-
                 <small>
                   Continuing as
                 </small>
@@ -1874,51 +2915,41 @@ if (profileRole !== "admin" && profileRole !== selectedRole) {
                 <strong>
                   {role.title}
                 </strong>
-
               </div>
 
               <button
                 type="button"
                 onClick={() =>
-                  navigate("/roles")
+                  navigate(
+                    "/roles"
+                  )
                 }
               >
                 Change
               </button>
-
             </div>
 
-            {/* PRIVACY */}
-
             <p className="privacy-text">
-              By continuing, you agree to
-              use TimberMart responsibly and
-              provide accurate account
+              By continuing, you
+              agree to use TimberMart
+              responsibly and provide
+              accurate account
               information.
             </p>
-
           </div>
-
         </section>
-
       </main>
 
-      {/* =====================================================
-          FOOTER
-          ===================================================== */}
-
       <footer className="login-footer">
-
         <strong>
           🌳 TimberMart
         </strong>
 
         <span>
-          Connecting the timber community
+          Connecting the timber
+          community
         </span>
-
       </footer>
-
     </div>
   );
 }
