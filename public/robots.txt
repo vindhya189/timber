@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://timbermart.co.in/sitemap.xml
