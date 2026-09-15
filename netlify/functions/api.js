@@ -91,6 +91,30 @@ const emailOtpStore = new Map();
 const passwordOtpStore = new Map();
 
 // ============================================================
+// PREMIUM PLANS
+// ============================================================
+
+const PLAN_DETAILS = {
+  premium_monthly: {
+    name: "Premium Monthly",
+    amount: 199,
+    months: 1,
+  },
+
+  premium_3_months: {
+    name: "Premium 3 Months",
+    amount: 499,
+    months: 3,
+  },
+
+  premium_yearly: {
+    name: "Premium Yearly",
+    amount: 1499,
+    months: 12,
+  },
+};
+
+// ============================================================
 // HELPERS
 // ============================================================
 
@@ -140,6 +164,47 @@ function escapeHtml(value) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// ============================================================
+// AUTH TOKEN HELPER
+// ============================================================
+
+async function getAuthenticatedUser(req) {
+  if (!supabaseAdmin) {
+    throw new Error(
+      "Supabase Admin configuration is missing."
+    );
+  }
+
+  const authorization =
+    req.headers.authorization || "";
+
+  const accessToken = authorization
+    .replace(/^Bearer\s+/i, "")
+    .trim();
+
+  if (!accessToken) {
+    return null;
+  }
+
+  const {
+    data,
+    error,
+  } = await supabaseAdmin.auth.getUser(
+    accessToken
+  );
+
+  if (error || !data?.user) {
+    console.error(
+      "Authentication error:",
+      error
+    );
+
+    return null;
+  }
+
+  return data.user;
 }
 
 // ============================================================
@@ -502,8 +567,12 @@ app.get("/api/health", (req, res) => {
     success: true,
     message: "TimberMart API is running",
     resendConfigured: Boolean(resend),
-    supabaseConfigured: Boolean(supabaseAdmin),
-    razorpayConfigured: Boolean(razorpay),
+    supabaseConfigured: Boolean(
+      supabaseAdmin
+    ),
+    razorpayConfigured: Boolean(
+      razorpay
+    ),
   });
 });
 
@@ -520,13 +589,16 @@ app.post(
         normalizeEmail(req.body?.email);
 
       const name =
-        String(req.body?.name || "").trim() ||
+        String(
+          req.body?.name || ""
+        ).trim() ||
         "TimberMart User";
 
       if (!email) {
         return res.status(400).json({
           success: false,
-          message: "Gmail address is required.",
+          message:
+            "Gmail address is required.",
         });
       }
 
@@ -551,14 +623,18 @@ app.post(
 
       if (
         existing?.lastSentAt &&
-        Date.now() - existing.lastSentAt < 60000
+        Date.now() -
+          existing.lastSentAt <
+          60000
       ) {
-        const remaining = Math.ceil(
-          (
-            60000 -
-            (Date.now() - existing.lastSentAt)
-          ) / 1000
-        );
+        const remaining =
+          Math.ceil(
+            (
+              60000 -
+              (Date.now() -
+                existing.lastSentAt)
+            ) / 1000
+          );
 
         return res.status(429).json({
           success: false,
@@ -567,14 +643,18 @@ app.post(
         });
       }
 
-      const otp = generateOTP();
+      const otp =
+        generateOTP();
 
       emailOtpStore.set(email, {
-        otpHash: hashOTP(email, otp),
+        otpHash:
+          hashOTP(email, otp),
         expiresAt:
-          Date.now() + 10 * 60 * 1000,
+          Date.now() +
+          10 * 60 * 1000,
         attempts: 0,
-        lastSentAt: Date.now(),
+        lastSentAt:
+          Date.now(),
       });
 
       const html =
@@ -583,7 +663,10 @@ app.post(
           otp,
         });
 
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await resend.emails.send({
           from: RESEND_FROM,
           to: [email],
@@ -593,7 +676,9 @@ app.post(
         });
 
       if (error) {
-        emailOtpStore.delete(email);
+        emailOtpStore.delete(
+          email
+        );
 
         console.error(
           "Resend send error:",
@@ -628,7 +713,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -644,10 +730,14 @@ app.post(
   async (req, res) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       const code =
-        String(req.body?.code || "").trim();
+        String(
+          req.body?.code || ""
+        ).trim();
 
       if (!isGmail(email)) {
         return res.status(400).json({
@@ -697,10 +787,14 @@ app.post(
       }
 
       const submittedHash =
-        hashOTP(email, code);
+        hashOTP(
+          email,
+          code
+        );
 
       if (
-        submittedHash !== record.otpHash
+        submittedHash !==
+        record.otpHash
       ) {
         record.attempts += 1;
 
@@ -710,7 +804,11 @@ app.post(
         );
 
         const remaining =
-          Math.max(0, 5 - record.attempts);
+          Math.max(
+            0,
+            5 -
+              record.attempts
+          );
 
         return res.status(400).json({
           success: false,
@@ -735,7 +833,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -751,10 +850,14 @@ app.post(
   async (req, res) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       const name =
-        String(req.body?.name || "").trim() ||
+        String(
+          req.body?.name || ""
+        ).trim() ||
         "TimberMart User";
 
       if (!isGmail(email)) {
@@ -778,14 +881,18 @@ app.post(
 
       if (
         existing?.lastSentAt &&
-        Date.now() - existing.lastSentAt < 60000
+        Date.now() -
+          existing.lastSentAt <
+          60000
       ) {
-        const remaining = Math.ceil(
-          (
-            60000 -
-            (Date.now() - existing.lastSentAt)
-          ) / 1000
-        );
+        const remaining =
+          Math.ceil(
+            (
+              60000 -
+              (Date.now() -
+                existing.lastSentAt)
+            ) / 1000
+          );
 
         return res.status(429).json({
           success: false,
@@ -794,14 +901,18 @@ app.post(
         });
       }
 
-      const otp = generateOTP();
+      const otp =
+        generateOTP();
 
       emailOtpStore.set(email, {
-        otpHash: hashOTP(email, otp),
+        otpHash:
+          hashOTP(email, otp),
         expiresAt:
-          Date.now() + 10 * 60 * 1000,
+          Date.now() +
+          10 * 60 * 1000,
         attempts: 0,
-        lastSentAt: Date.now(),
+        lastSentAt:
+          Date.now(),
       });
 
       const html =
@@ -810,7 +921,10 @@ app.post(
           otp,
         });
 
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await resend.emails.send({
           from: RESEND_FROM,
           to: [email],
@@ -820,7 +934,9 @@ app.post(
         });
 
       if (error) {
-        emailOtpStore.delete(email);
+        emailOtpStore.delete(
+          email
+        );
 
         return res.status(500).json({
           success: false,
@@ -849,7 +965,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -864,7 +981,9 @@ app.post(
   async (req, res) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       if (!isGmail(email)) {
         return res.status(400).json({
@@ -906,14 +1025,18 @@ app.post(
 
       if (
         existing?.lastSentAt &&
-        Date.now() - existing.lastSentAt < 60000
+        Date.now() -
+          existing.lastSentAt <
+          60000
       ) {
-        const remaining = Math.ceil(
-          (
-            60000 -
-            (Date.now() - existing.lastSentAt)
-          ) / 1000
-        );
+        const remaining =
+          Math.ceil(
+            (
+              60000 -
+              (Date.now() -
+                existing.lastSentAt)
+            ) / 1000
+          );
 
         return res.status(429).json({
           success: false,
@@ -922,14 +1045,18 @@ app.post(
         });
       }
 
-      const otp = generateOTP();
+      const otp =
+        generateOTP();
 
       passwordOtpStore.set(email, {
-        otpHash: hashOTP(email, otp),
+        otpHash:
+          hashOTP(email, otp),
         expiresAt:
-          Date.now() + 10 * 60 * 1000,
+          Date.now() +
+          10 * 60 * 1000,
         attempts: 0,
-        lastSentAt: Date.now(),
+        lastSentAt:
+          Date.now(),
         verified: false,
       });
 
@@ -938,7 +1065,10 @@ app.post(
           otp,
         });
 
-      const { data, error } =
+      const {
+        data,
+        error,
+      } =
         await resend.emails.send({
           from: RESEND_FROM,
           to: [email],
@@ -948,7 +1078,9 @@ app.post(
         });
 
       if (error) {
-        passwordOtpStore.delete(email);
+        passwordOtpStore.delete(
+          email
+        );
 
         console.error(
           "Password reset email error:",
@@ -982,7 +1114,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -998,10 +1131,14 @@ app.post(
   async (req, res) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       const code =
-        String(req.body?.code || "").trim();
+        String(
+          req.body?.code || ""
+        ).trim();
 
       if (!isGmail(email)) {
         return res.status(400).json({
@@ -1031,7 +1168,9 @@ app.post(
       }
 
       if (isExpired(record)) {
-        passwordOtpStore.delete(email);
+        passwordOtpStore.delete(
+          email
+        );
 
         return res.status(400).json({
           success: false,
@@ -1041,7 +1180,9 @@ app.post(
       }
 
       if (record.attempts >= 5) {
-        passwordOtpStore.delete(email);
+        passwordOtpStore.delete(
+          email
+        );
 
         return res.status(429).json({
           success: false,
@@ -1051,10 +1192,14 @@ app.post(
       }
 
       const submittedHash =
-        hashOTP(email, code);
+        hashOTP(
+          email,
+          code
+        );
 
       if (
-        submittedHash !== record.otpHash
+        submittedHash !==
+        record.otpHash
       ) {
         record.attempts += 1;
 
@@ -1066,7 +1211,8 @@ app.post(
         const remaining =
           Math.max(
             0,
-            5 - record.attempts
+            5 -
+              record.attempts
           );
 
         return res.status(400).json({
@@ -1097,7 +1243,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -1113,13 +1260,19 @@ app.post(
   async (req, res) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       const code =
-        String(req.body?.code || "").trim();
+        String(
+          req.body?.code || ""
+        ).trim();
 
       const newPassword =
-        String(req.body?.newPassword || "");
+        String(
+          req.body?.newPassword || ""
+        );
 
       if (!isGmail(email)) {
         return res.status(400).json({
@@ -1165,7 +1318,9 @@ app.post(
       }
 
       if (isExpired(record)) {
-        passwordOtpStore.delete(email);
+        passwordOtpStore.delete(
+          email
+        );
 
         return res.status(400).json({
           success: false,
@@ -1183,10 +1338,14 @@ app.post(
       }
 
       const submittedHash =
-        hashOTP(email, code);
+        hashOTP(
+          email,
+          code
+        );
 
       if (
-        submittedHash !== record.otpHash
+        submittedHash !==
+        record.otpHash
       ) {
         return res.status(400).json({
           success: false,
@@ -1199,7 +1358,9 @@ app.post(
         await findUserByEmail(email);
 
       if (!user) {
-        passwordOtpStore.delete(email);
+        passwordOtpStore.delete(
+          email
+        );
 
         return res.status(404).json({
           success: false,
@@ -1208,11 +1369,14 @@ app.post(
         });
       }
 
-      const { error } =
+      const {
+        error,
+      } =
         await supabaseAdmin.auth.admin.updateUserById(
           user.id,
           {
-            password: newPassword,
+            password:
+              newPassword,
           }
         );
 
@@ -1230,7 +1394,9 @@ app.post(
         });
       }
 
-      passwordOtpStore.delete(email);
+      passwordOtpStore.delete(
+        email
+      );
 
       return res.json({
         success: true,
@@ -1245,7 +1411,8 @@ app.post(
 
       return res.status(500).json({
         success: false,
-        message: safeError(error),
+        message:
+          safeError(error),
       });
     }
   }
@@ -1260,6 +1427,10 @@ app.post(
   "/api/payment/create-order",
   async (req, res) => {
     try {
+      // --------------------------------------------------------
+      // 1. CHECK RAZORPAY
+      // --------------------------------------------------------
+
       if (!razorpay) {
         return res.status(500).json({
           success: false,
@@ -1268,30 +1439,88 @@ app.post(
         });
       }
 
-      const amount =
-        Number(req.body?.amount);
+      // --------------------------------------------------------
+      // 2. AUTHENTICATE USER
+      // --------------------------------------------------------
 
-      if (
-        !Number.isFinite(amount) ||
-        amount <= 0
-      ) {
-        return res.status(400).json({
+      const user =
+        await getAuthenticatedUser(
+          req
+        );
+
+      if (!user) {
+        return res.status(401).json({
           success: false,
           message:
-            "Please provide a valid payment amount.",
+            "Please login before purchasing Premium.",
         });
       }
 
+      // --------------------------------------------------------
+      // 3. GET PLAN ID
+      // --------------------------------------------------------
+
+      const planId =
+        String(
+          req.body?.planId || ""
+        ).trim();
+
+      const plan =
+        PLAN_DETAILS[planId];
+
+      if (!plan) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Invalid Premium plan.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 4. SERVER-SIDE AMOUNT
+      // NEVER TRUST FRONTEND AMOUNT
+      // --------------------------------------------------------
+
       const amountInPaise =
-        Math.round(amount * 100);
+        Math.round(
+          plan.amount * 100
+        );
+
+      // --------------------------------------------------------
+      // 5. CREATE RECEIPT
+      // --------------------------------------------------------
+
+      const receipt =
+        `tm_${Date.now()}_${crypto
+          .randomBytes(4)
+          .toString("hex")}`;
+
+      // --------------------------------------------------------
+      // 6. CREATE RAZORPAY ORDER
+      // --------------------------------------------------------
 
       const options = {
-        amount: amountInPaise,
-        currency: "INR",
-        receipt:
-          `tm_${Date.now()}_${crypto
-            .randomBytes(4)
-            .toString("hex")}`,
+        amount:
+          amountInPaise,
+
+        currency:
+          "INR",
+
+        receipt,
+
+        notes: {
+          user_id:
+            user.id,
+
+          user_email:
+            user.email || "",
+
+          plan_id:
+            planId,
+
+          plan_name:
+            plan.name,
+        },
       };
 
       const order =
@@ -1300,21 +1529,58 @@ app.post(
         );
 
       console.log(
-        "RAZORPAY ORDER CREATED:",
-        order.id,
-        amount
+        "=========================================="
+      );
+
+      console.log(
+        "RAZORPAY ORDER CREATED"
+      );
+
+      console.log(
+        "Order:",
+        order.id
+      );
+
+      console.log(
+        "User:",
+        user.id
+      );
+
+      console.log(
+        "Plan:",
+        planId
+      );
+
+      console.log(
+        "Amount:",
+        plan.amount
+      );
+
+      console.log(
+        "=========================================="
       );
 
       return res.json({
         success: true,
-        orderId: order.id,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: RAZORPAY_KEY_ID,
+
+        orderId:
+          order.id,
+
+        amount:
+          order.amount,
+
+        currency:
+          order.currency,
+
+        keyId:
+          RAZORPAY_KEY_ID,
+
+        planId:
+          planId,
       });
     } catch (error) {
       console.error(
-        "Razorpay order error:",
+        "Razorpay create order error:",
         error
       );
 
@@ -1342,7 +1608,7 @@ app.post(
   async (req, res) => {
     try {
       // --------------------------------------------------------
-      // 1. GET PAYMENT DETAILS FROM RAZORPAY
+      // 1. PAYMENT DETAILS
       // --------------------------------------------------------
 
       const {
@@ -1350,22 +1616,6 @@ app.post(
         razorpay_payment_id,
         razorpay_signature,
       } = req.body || {};
-
-      console.log(
-        "Razorpay verification request received:",
-        {
-          orderId: razorpay_order_id,
-          paymentId: razorpay_payment_id,
-          hasSignature: Boolean(
-            razorpay_signature
-          ),
-          planId: req.body?.planId,
-        }
-      );
-
-      // --------------------------------------------------------
-      // 2. CHECK REQUIRED PAYMENT DETAILS
-      // --------------------------------------------------------
 
       if (
         !razorpay_order_id ||
@@ -1382,16 +1632,16 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 3. CHECK RAZORPAY CONFIGURATION
+      // 2. CHECK CONFIGURATION
       // --------------------------------------------------------
 
-      if (!RAZORPAY_KEY_ID) {
+      if (!razorpay) {
         return res.status(500).json({
           success: false,
           verified: false,
           activated: false,
           message:
-            "Razorpay Key ID is missing.",
+            "Razorpay configuration is missing.",
         });
       }
 
@@ -1405,14 +1655,10 @@ app.post(
         });
       }
 
-      // --------------------------------------------------------
-      // 4. CHECK SUPABASE ADMIN CONFIGURATION
-      // --------------------------------------------------------
-
       if (!supabaseAdmin) {
         return res.status(500).json({
           success: false,
-          verified: true,
+          verified: false,
           activated: false,
           message:
             "Supabase Admin configuration is missing.",
@@ -1420,7 +1666,27 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 5. GENERATE RAZORPAY SIGNATURE
+      // 3. AUTHENTICATE LOGGED-IN USER
+      // --------------------------------------------------------
+
+      const user =
+        await getAuthenticatedUser(req);
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          verified: false,
+          activated: false,
+          message:
+            "Login session is missing or expired. Please login again.",
+        });
+      }
+
+      const userId =
+        user.id;
+
+      // --------------------------------------------------------
+      // 4. VERIFY RAZORPAY SIGNATURE
       // --------------------------------------------------------
 
       const generatedSignature =
@@ -1442,13 +1708,11 @@ app.post(
 
       const receivedBuffer =
         Buffer.from(
-          String(razorpay_signature),
+          String(
+            razorpay_signature
+          ),
           "utf8"
         );
-
-      // --------------------------------------------------------
-      // 6. SAFE SIGNATURE COMPARISON
-      // --------------------------------------------------------
 
       if (
         expectedBuffer.length !==
@@ -1488,140 +1752,13 @@ app.post(
       }
 
       console.log(
-        "Razorpay signature verified successfully:",
+        "Razorpay signature verified:",
         razorpay_payment_id
       );
 
       // --------------------------------------------------------
-      // 7. GET USER ACCESS TOKEN
+      // 5. FETCH RAZORPAY ORDER
       // --------------------------------------------------------
-
-      const authorization =
-        req.headers.authorization || "";
-
-      const accessToken =
-        authorization
-          .replace(
-            /^Bearer\s+/i,
-            ""
-          )
-          .trim();
-
-      if (!accessToken) {
-        return res.status(401).json({
-          success: false,
-          verified: true,
-          activated: false,
-          message:
-            "Login session is missing. Please login again.",
-        });
-      }
-
-      // --------------------------------------------------------
-      // 8. IDENTIFY LOGGED-IN SUPABASE USER
-      // --------------------------------------------------------
-
-      const {
-        data: authData,
-        error: authError,
-      } =
-        await supabaseAdmin.auth.getUser(
-          accessToken
-        );
-
-      if (
-        authError ||
-        !authData?.user?.id
-      ) {
-        console.error(
-          "Supabase user identification error:",
-          authError
-        );
-
-        return res.status(401).json({
-          success: false,
-          verified: true,
-          activated: false,
-          message:
-            "Payment verified, but user session could not be identified.",
-        });
-      }
-
-      const user =
-        authData.user;
-
-      const userId =
-        user.id;
-
-      console.log(
-        "Logged-in user identified:",
-        userId
-      );
-
-      // --------------------------------------------------------
-      // 9. GET PLAN ID
-      // --------------------------------------------------------
-
-      const planId =
-        String(
-          req.body?.planId || ""
-        ).trim();
-
-      // --------------------------------------------------------
-      // 10. SERVER-SIDE PREMIUM PLANS
-      // --------------------------------------------------------
-
-      const PLAN_DETAILS = {
-        premium_monthly: {
-          name: "Premium Monthly",
-          amount: 199,
-          months: 1,
-        },
-
-        premium_3_months: {
-          name: "Premium 3 Months",
-          amount: 499,
-          months: 3,
-        },
-
-        premium_yearly: {
-          name: "Premium Yearly",
-          amount: 1499,
-          months: 12,
-        },
-      };
-
-      const plan =
-        PLAN_DETAILS[planId];
-
-      if (!plan) {
-        return res.status(400).json({
-          success: false,
-          verified: true,
-          activated: false,
-          message:
-            "Invalid Premium plan.",
-        });
-      }
-
-      console.log(
-        "Selected Premium plan:",
-        plan
-      );
-
-      // --------------------------------------------------------
-      // 11. FETCH RAZORPAY ORDER
-      // --------------------------------------------------------
-
-      if (!razorpay) {
-        return res.status(500).json({
-          success: false,
-          verified: true,
-          activated: false,
-          message:
-            "Razorpay configuration is missing.",
-        });
-      }
 
       let razorpayOrder;
 
@@ -1645,8 +1782,73 @@ app.post(
         });
       }
 
+      if (!razorpayOrder) {
+        return res.status(400).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            "Razorpay order not found.",
+        });
+      }
+
       // --------------------------------------------------------
-      // 12. VERIFY ORDER AMOUNT
+      // 6. GET PLAN FROM RAZORPAY ORDER NOTES
+      // --------------------------------------------------------
+
+      const planId =
+        String(
+          razorpayOrder?.notes?.plan_id ||
+          req.body?.planId ||
+          ""
+        ).trim();
+
+      const plan =
+        PLAN_DETAILS[planId];
+
+      if (!plan) {
+        return res.status(400).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            "Premium plan information could not be identified.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 7. VERIFY USER AGAINST ORDER
+      // --------------------------------------------------------
+
+      const orderUserId =
+        String(
+          razorpayOrder?.notes?.user_id ||
+          ""
+        ).trim();
+
+      if (
+        orderUserId &&
+        orderUserId !== userId
+      ) {
+        console.error(
+          "Payment user mismatch:",
+          {
+            orderUserId,
+            userId,
+          }
+        );
+
+        return res.status(403).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            "This payment does not belong to the logged-in account.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 8. VERIFY ORDER AMOUNT
       // --------------------------------------------------------
 
       const expectedAmount =
@@ -1656,7 +1858,7 @@ app.post(
 
       const actualOrderAmount =
         Number(
-          razorpayOrder?.amount
+          razorpayOrder.amount
         );
 
       if (
@@ -1682,12 +1884,12 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 13. CHECK ORDER CURRENCY
+      // 9. VERIFY CURRENCY
       // --------------------------------------------------------
 
       if (
-        razorpayOrder?.currency &&
-        razorpayOrder.currency !== "INR"
+        razorpayOrder.currency !==
+        "INR"
       ) {
         return res.status(400).json({
           success: false,
@@ -1699,7 +1901,85 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 14. CHECK IF THIS PAYMENT WAS ALREADY ACTIVATED
+      // 10. FETCH PAYMENT FROM RAZORPAY
+      // --------------------------------------------------------
+
+      let razorpayPayment;
+
+      try {
+        razorpayPayment =
+          await razorpay.payments.fetch(
+            razorpay_payment_id
+          );
+      } catch (paymentError) {
+        console.error(
+          "Razorpay payment fetch error:",
+          paymentError
+        );
+
+        return res.status(500).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            "Payment verified, but payment status could not be confirmed.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 11. VERIFY PAYMENT STATUS
+      // --------------------------------------------------------
+
+      if (
+        razorpayPayment?.status !==
+        "captured"
+      ) {
+        console.error(
+          "Payment not captured:",
+          razorpayPayment?.status
+        );
+
+        return res.status(400).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            `Payment is not captured. Current status: ${razorpayPayment?.status || "unknown"}.`,
+        });
+      }
+
+      // --------------------------------------------------------
+      // 12. VERIFY PAYMENT AMOUNT
+      // --------------------------------------------------------
+
+      const paymentAmount =
+        Number(
+          razorpayPayment?.amount
+        );
+
+      if (
+        paymentAmount !==
+        expectedAmount
+      ) {
+        console.error(
+          "Payment captured amount mismatch:",
+          {
+            expectedAmount,
+            paymentAmount,
+          }
+        );
+
+        return res.status(400).json({
+          success: false,
+          verified: true,
+          activated: false,
+          message:
+            "Captured payment amount does not match the Premium plan.",
+        });
+      }
+
+      // --------------------------------------------------------
+      // 13. CHECK DUPLICATE PAYMENT
       // --------------------------------------------------------
 
       const {
@@ -1707,9 +1987,11 @@ app.post(
         error: existingPaymentError,
       } =
         await supabaseAdmin
-          .from("user_subscriptions")
+          .from(
+            "user_subscriptions"
+          )
           .select(
-            "id,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
+            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id,created_at,updated_at"
           )
           .eq(
             "payment_id",
@@ -1725,6 +2007,20 @@ app.post(
       }
 
       if (existingPayment) {
+        // Security check
+        if (
+          existingPayment.user_id !==
+          userId
+        ) {
+          return res.status(403).json({
+            success: false,
+            verified: true,
+            activated: false,
+            message:
+              "This payment belongs to another account.",
+          });
+        }
+
         console.log(
           "Payment already activated:",
           razorpay_payment_id
@@ -1753,14 +2049,16 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 15. CALCULATE PREMIUM DATES
+      // 14. CALCULATE SUBSCRIPTION DATES
       // --------------------------------------------------------
 
       const startedAt =
         new Date();
 
       const expiresAt =
-        new Date(startedAt);
+        new Date(
+          startedAt
+        );
 
       expiresAt.setMonth(
         expiresAt.getMonth() +
@@ -1768,18 +2066,23 @@ app.post(
       );
 
       // --------------------------------------------------------
-      // 16. EXPIRE OLD ACTIVE SUBSCRIPTIONS
+      // 15. EXPIRE OLD ACTIVE SUBSCRIPTIONS
       // --------------------------------------------------------
 
       const {
-        error: deactivateError,
+        error:
+          deactivateError,
       } =
         await supabaseAdmin
           .from(
             "user_subscriptions"
           )
           .update({
-            status: "expired",
+            status:
+              "expired",
+
+            updated_at:
+              new Date().toISOString(),
           })
           .eq(
             "user_id",
@@ -1798,73 +2101,122 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 17. SAVE NEW PREMIUM SUBSCRIPTION
+      // 16. INSERT NEW SUBSCRIPTION
       // --------------------------------------------------------
 
+      const now =
+        new Date();
+
       const {
-  data: subscription,
-  error: subscriptionError,
-} =
-  await supabaseAdmin
-    .from("user_subscriptions")
-    .insert({
-      user_id: userId,
+        data: subscription,
+        error:
+          subscriptionError,
+      } =
+        await supabaseAdmin
+          .from(
+            "user_subscriptions"
+          )
+          .insert({
+            user_id:
+              userId,
 
-      // REQUIRED
-      plan_code: planId,
+            // REQUIRED COLUMN
+            plan_code:
+              planId,
 
-      // PLAN DETAILS
-      plan_id: planId,
-      plan_name: plan.name,
-      amount: plan.amount,
+            plan_id:
+              planId,
 
-      status: "active",
+            plan_name:
+              plan.name,
 
-      started_at: startedAt.toISOString(),
-      expires_at: expiresAt.toISOString(),
+            amount:
+              plan.amount,
 
-      // AUTOMATIC RAZORPAY DETAILS
-      payment_id: razorpay_payment_id,
-      order_id: razorpay_order_id,
+            status:
+              "active",
 
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    })
-    .select(
-      "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
-    )
-    .single();
+            started_at:
+              startedAt.toISOString(),
 
-if (subscriptionError) {
-  console.error(
-    "Premium activation database error:",
-    subscriptionError
-  );
+            expires_at:
+              expiresAt.toISOString(),
 
-  return res.status(500).json({
-    success: false,
-    verified: true,
-    activated: false,
-    message:
-      "Payment verified, but Premium activation could not be saved.",
-    error: subscriptionError.message,
-  });
-}
+            payment_id:
+              razorpay_payment_id,
+
+            order_id:
+              razorpay_order_id,
+
+            // REQUIRED COLUMN
+            created_at:
+              now.toISOString(),
+
+            // REQUIRED COLUMN
+            updated_at:
+              now.toISOString(),
+          })
+          .select(
+            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id,created_at,updated_at"
+          )
+          .single();
+
+      // --------------------------------------------------------
+      // 17. DATABASE ERROR
+      // --------------------------------------------------------
 
       if (subscriptionError) {
         console.error(
-          "Premium activation database error:",
-          subscriptionError
+          "=========================================="
+        );
+
+        console.error(
+          "PREMIUM DATABASE INSERT ERROR"
+        );
+
+        console.error(
+          "Message:",
+          subscriptionError.message
+        );
+
+        console.error(
+          "Details:",
+          subscriptionError.details
+        );
+
+        console.error(
+          "Hint:",
+          subscriptionError.hint
+        );
+
+        console.error(
+          "Code:",
+          subscriptionError.code
+        );
+
+        console.error(
+          "=========================================="
         );
 
         return res.status(500).json({
           success: false,
           verified: true,
           activated: false,
+
           message:
             "Payment verified, but Premium activation could not be saved.",
-          error:
+
+          dbError:
             subscriptionError.message,
+
+          dbDetails:
+            subscriptionError.details,
+
+          dbHint:
+            subscriptionError.hint,
+
+          dbCode:
+            subscriptionError.code,
         });
       }
 
@@ -1906,13 +2258,22 @@ if (subscriptionError) {
       );
 
       console.log(
+        "Subscription ID:",
+        subscription?.id
+      );
+
+      console.log(
         "=========================================="
       );
 
       return res.json({
         success: true,
+
         verified: true,
+
         activated: true,
+
+        alreadyActivated: false,
 
         message:
           "Payment verified and Premium activated successfully.",
@@ -1935,11 +2296,18 @@ if (subscriptionError) {
         subscription:
           subscription,
       });
-
     } catch (error) {
       console.error(
-        "Razorpay verification error:",
+        "=========================================="
+      );
+
+      console.error(
+        "RAZORPAY VERIFY ERROR:",
         error
+      );
+
+      console.error(
+        "=========================================="
       );
 
       return res.status(500).json({
@@ -1953,9 +2321,19 @@ if (subscriptionError) {
     }
   }
 );
+
 // ============================================================
-// RECOVER EXISTING RAZORPAY PAYMENT
+// PART 3 END
+// ============================================================
+// ============================================================
+// PREMIUM PAYMENT RECOVERY
 // POST /api/payment/recover
+//
+// Purpose:
+// User already paid earlier, but subscription row was not
+// created in Supabase. This route searches recent captured
+// Razorpay payments and activates Premium if a matching payment
+// belongs to the logged-in user's email.
 // ============================================================
 
 app.post(
@@ -1970,7 +2348,8 @@ app.post(
         return res.status(500).json({
           success: false,
           activated: false,
-          message: "Razorpay configuration is missing.",
+          message:
+            "Razorpay configuration is missing.",
         });
       }
 
@@ -1984,54 +2363,28 @@ app.post(
       }
 
       // --------------------------------------------------------
-      // 2. GET LOGGED-IN USER
+      // 2. AUTHENTICATE USER
       // --------------------------------------------------------
 
-      const authorization =
-        req.headers.authorization || "";
-
-      const accessToken =
-        authorization
-          .replace(/^Bearer\s+/i, "")
-          .trim();
-
-      if (!accessToken) {
-        return res.status(401).json({
-          success: false,
-          activated: false,
-          message:
-            "Login session is missing. Please login again.",
-        });
-      }
-
-      const {
-        data: authData,
-        error: authError,
-      } =
-        await supabaseAdmin.auth.getUser(
-          accessToken
-        );
-
-      if (
-        authError ||
-        !authData?.user?.id
-      ) {
-        return res.status(401).json({
-          success: false,
-          activated: false,
-          message:
-            "Unable to identify your account.",
-        });
-      }
-
       const user =
-        authData.user;
+        await getAuthenticatedUser(req);
+
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          activated: false,
+          message:
+            "Login session is missing or expired. Please login again.",
+        });
+      }
 
       const userId =
         user.id;
 
       const userEmail =
-        String(user.email || "")
+        String(
+          user.email || ""
+        )
           .trim()
           .toLowerCase();
 
@@ -2045,30 +2398,67 @@ app.post(
       }
 
       console.log(
-        "PREMIUM RECOVERY REQUEST:",
-        userEmail
+        "Premium recovery requested:",
+        {
+          userId,
+          userEmail,
+        }
       );
 
       // --------------------------------------------------------
       // 3. GET RECENT RAZORPAY PAYMENTS
       // --------------------------------------------------------
 
-      const payments =
-        await razorpay.payments.all({
-          count: 100,
+      let paymentsResponse;
+
+      try {
+        paymentsResponse =
+          await razorpay.payments.all({
+            count: 100,
+          });
+      } catch (razorpayError) {
+        console.error(
+          "Razorpay recovery lookup error:",
+          razorpayError
+        );
+
+        return res.status(500).json({
+          success: false,
+          activated: false,
+          message:
+            "Unable to check previous Razorpay payments.",
         });
+      }
 
-      const paymentList =
-        payments?.items || [];
+      const payments =
+        Array.isArray(
+          paymentsResponse?.items
+        )
+          ? paymentsResponse.items
+          : [];
 
       // --------------------------------------------------------
-      // 4. FIND LATEST CAPTURED PAYMENT
-      //    MATCHING THIS USER'S EMAIL
+      // 4. ALLOWED PREMIUM AMOUNTS
       // --------------------------------------------------------
 
-      const userPayments =
-        paymentList
+      const premiumAmounts = new Set([
+        19900,
+        49900,
+        149900,
+      ]);
+
+      // --------------------------------------------------------
+      // 5. FIND MATCHING PAYMENT
+      // --------------------------------------------------------
+
+      const matchingPayments =
+        payments
           .filter((payment) => {
+            const status =
+              String(
+                payment?.status || ""
+              ).toLowerCase();
+
             const paymentEmail =
               String(
                 payment?.email || ""
@@ -2076,312 +2466,415 @@ app.post(
                 .trim()
                 .toLowerCase();
 
+            const amount =
+              Number(
+                payment?.amount
+              );
+
             return (
-              payment?.status === "captured" &&
-              paymentEmail === userEmail
+              status === "captured" &&
+              paymentEmail ===
+                userEmail &&
+              premiumAmounts.has(
+                amount
+              )
             );
           })
           .sort(
             (a, b) =>
-              Number(b.created_at || 0) -
-              Number(a.created_at || 0)
+              Number(
+                b?.created_at || 0
+              ) -
+              Number(
+                a?.created_at || 0
+              )
           );
 
-      if (!userPayments.length) {
-        return res.status(404).json({
-          success: false,
-          activated: false,
-          message:
-            "No successful Razorpay payment was found for your account.",
-        });
-      }
-
-      const payment =
-        userPayments[0];
-
-      const paymentId =
-        payment.id;
-
-      const orderId =
-        payment.order_id;
-
-      const paymentAmount =
-        Number(payment.amount);
-
       console.log(
-        "RECOVERY PAYMENT FOUND:",
-        {
-          paymentId,
-          orderId,
-          amount: paymentAmount,
-          email: userEmail,
-        }
+        "Matching Premium payments found:",
+        matchingPayments.length
       );
 
-      // --------------------------------------------------------
-      // 5. DETERMINE PREMIUM PLAN FROM PAID AMOUNT
-      // --------------------------------------------------------
-
-      const PLAN_DETAILS = {
-        19900: {
-          id: "premium_monthly",
-          name: "Premium Monthly",
-          amount: 199,
-          months: 1,
-        },
-
-        49900: {
-          id: "premium_3_months",
-          name: "Premium 3 Months",
-          amount: 499,
-          months: 3,
-        },
-
-        149900: {
-          id: "premium_yearly",
-          name: "Premium Yearly",
-          amount: 1499,
-          months: 12,
-        },
-      };
-
-      const plan =
-        PLAN_DETAILS[paymentAmount];
-
-      if (!plan) {
-        return res.status(400).json({
-          success: false,
+      if (
+        matchingPayments.length ===
+        0
+      ) {
+        return res.json({
+          success: true,
           activated: false,
           message:
-            "The successful payment amount does not match a TimberMart Premium plan.",
+            "No previous Premium payment was found for this account.",
         });
       }
 
       // --------------------------------------------------------
-      // 6. CHECK WHETHER THIS PAYMENT IS ALREADY SAVED
+      // 6. TRY MATCHING PAYMENTS ONE BY ONE
       // --------------------------------------------------------
 
-      const {
-        data: existingPayment,
-        error: existingPaymentError,
-      } =
-        await supabaseAdmin
-          .from("user_subscriptions")
-          .select(
-            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
-          )
-          .eq(
-            "payment_id",
-            paymentId
-          )
-          .maybeSingle();
+      for (
+        const payment of matchingPayments
+      ) {
+        const paymentId =
+          payment?.id;
 
-      if (existingPaymentError) {
-        console.error(
-          "Recovery existing-payment lookup error:",
-          existingPaymentError
-        );
-      }
+        if (!paymentId) {
+          continue;
+        }
 
-      if (existingPayment) {
-        // Security check
+        // ------------------------------------------------------
+        // CHECK WHETHER PAYMENT IS ALREADY IN SUBSCRIPTIONS
+        // ------------------------------------------------------
+
+        const {
+          data: existingSubscription,
+          error:
+            existingSubscriptionError,
+        } =
+          await supabaseAdmin
+            .from(
+              "user_subscriptions"
+            )
+            .select(
+              "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id,created_at,updated_at"
+            )
+            .eq(
+              "payment_id",
+              paymentId
+            )
+            .maybeSingle();
+
         if (
-          existingPayment.user_id !==
-          userId
+          existingSubscriptionError
         ) {
-          return res.status(403).json({
+          console.warn(
+            "Recovery subscription lookup warning:",
+            existingSubscriptionError.message
+          );
+        }
+
+        if (
+          existingSubscription
+        ) {
+          // Never activate another user's payment.
+          if (
+            existingSubscription.user_id ===
+            userId
+          ) {
+            return res.json({
+              success: true,
+              activated: true,
+              alreadyActivated: true,
+              message:
+                "Your Premium payment was already activated.",
+              paymentId:
+                paymentId,
+              subscription:
+                existingSubscription,
+            });
+          }
+
+          // Payment belongs to another account.
+          continue;
+        }
+
+        // ------------------------------------------------------
+        // 7. DETERMINE PLAN FROM PAYMENT AMOUNT
+        // ------------------------------------------------------
+
+        let planId = "";
+
+        if (
+          Number(payment.amount) ===
+          19900
+        ) {
+          planId =
+            "premium_monthly";
+        } else if (
+          Number(payment.amount) ===
+          49900
+        ) {
+          planId =
+            "premium_3_months";
+        } else if (
+          Number(payment.amount) ===
+          149900
+        ) {
+          planId =
+            "premium_yearly";
+        }
+
+        const plan =
+          PLAN_DETAILS[planId];
+
+        if (!plan) {
+          continue;
+        }
+
+        // ------------------------------------------------------
+        // 8. GET ORDER ID
+        // ------------------------------------------------------
+
+        const orderId =
+          payment?.order_id ||
+          null;
+
+        // ------------------------------------------------------
+        // 9. CALCULATE SUBSCRIPTION DATES
+        // ------------------------------------------------------
+
+        const startedAt =
+          new Date();
+
+        const expiresAt =
+          new Date(
+            startedAt
+          );
+
+        expiresAt.setMonth(
+          expiresAt.getMonth() +
+            plan.months
+        );
+
+        const now =
+          new Date();
+
+        // ------------------------------------------------------
+        // 10. EXPIRE OLD ACTIVE SUBSCRIPTIONS
+        // ------------------------------------------------------
+
+        const {
+          error:
+            deactivateError,
+        } =
+          await supabaseAdmin
+            .from(
+              "user_subscriptions"
+            )
+            .update({
+              status:
+                "expired",
+
+              updated_at:
+                now.toISOString(),
+            })
+            .eq(
+              "user_id",
+              userId
+            )
+            .eq(
+              "status",
+              "active"
+            );
+
+        if (
+          deactivateError
+        ) {
+          console.warn(
+            "Recovery: previous subscription could not be expired:",
+            deactivateError.message
+          );
+        }
+
+        // ------------------------------------------------------
+        // 11. INSERT RECOVERED PREMIUM SUBSCRIPTION
+        // ------------------------------------------------------
+
+        const {
+          data: subscription,
+          error:
+            subscriptionError,
+        } =
+          await supabaseAdmin
+            .from(
+              "user_subscriptions"
+            )
+            .insert({
+              user_id:
+                userId,
+
+              // Required DB column
+              plan_code:
+                planId,
+
+              plan_id:
+                planId,
+
+              plan_name:
+                plan.name,
+
+              amount:
+                plan.amount,
+
+              status:
+                "active",
+
+              started_at:
+                startedAt.toISOString(),
+
+              expires_at:
+                expiresAt.toISOString(),
+
+              payment_id:
+                paymentId,
+
+              order_id:
+                orderId,
+
+              // Required DB column
+              created_at:
+                now.toISOString(),
+
+              // Required DB column
+              updated_at:
+                now.toISOString(),
+            })
+            .select(
+              "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id,created_at,updated_at"
+            )
+            .single();
+
+        // ------------------------------------------------------
+        // 12. DATABASE INSERT ERROR
+        // ------------------------------------------------------
+
+        if (
+          subscriptionError
+        ) {
+          console.error(
+            "=========================================="
+          );
+
+          console.error(
+            "PREMIUM RECOVERY DATABASE ERROR"
+          );
+
+          console.error(
+            "Message:",
+            subscriptionError.message
+          );
+
+          console.error(
+            "Details:",
+            subscriptionError.details
+          );
+
+          console.error(
+            "Hint:",
+            subscriptionError.hint
+          );
+
+          console.error(
+            "Code:",
+            subscriptionError.code
+          );
+
+          console.error(
+            "=========================================="
+          );
+
+          return res.status(500).json({
             success: false,
             activated: false,
+
             message:
-              "This payment belongs to another account.",
+              "Previous payment was found, but Premium could not be saved.",
+
+            dbError:
+              subscriptionError.message,
+
+            dbDetails:
+              subscriptionError.details,
+
+            dbHint:
+              subscriptionError.hint,
+
+            dbCode:
+              subscriptionError.code,
           });
         }
 
+        // ------------------------------------------------------
+        // 13. RECOVERY SUCCESS
+        // ------------------------------------------------------
+
+        console.log(
+          "=========================================="
+        );
+
+        console.log(
+          "PREVIOUS PREMIUM PAYMENT RECOVERED"
+        );
+
+        console.log(
+          "User:",
+          userId
+        );
+
+        console.log(
+          "Email:",
+          userEmail
+        );
+
+        console.log(
+          "Plan:",
+          plan.name
+        );
+
+        console.log(
+          "Payment:",
+          paymentId
+        );
+
+        console.log(
+          "Expires:",
+          expiresAt.toISOString()
+        );
+
+        console.log(
+          "=========================================="
+        );
+
         return res.json({
           success: true,
+
           activated: true,
-          alreadyActivated: true,
+
+          alreadyActivated:
+            false,
+
           message:
-            "Your existing Premium payment is already activated.",
+            "Your previous Premium payment was found and Premium has been activated successfully.",
+
+          paymentId:
+            paymentId,
+
+          orderId:
+            orderId,
+
+          planId:
+            planId,
+
+          planName:
+            plan.name,
+
+          amount:
+            plan.amount,
+
           subscription:
-            existingPayment,
+            subscription,
         });
       }
 
       // --------------------------------------------------------
-      // 7. EXPIRE OLD ACTIVE SUBSCRIPTIONS
+      // 14. NO USABLE PAYMENT
       // --------------------------------------------------------
-
-      const {
-        error: deactivateError,
-      } =
-        await supabaseAdmin
-          .from("user_subscriptions")
-          .update({
-            status: "expired",
-            updated_at:
-              new Date().toISOString(),
-          })
-          .eq(
-            "user_id",
-            userId
-          )
-          .eq(
-            "status",
-            "active"
-          );
-
-      if (deactivateError) {
-        console.warn(
-          "Recovery old subscription warning:",
-          deactivateError.message
-        );
-      }
-
-      // --------------------------------------------------------
-      // 8. CREATE PREMIUM SUBSCRIPTION
-      // --------------------------------------------------------
-
-      const startedAt =
-        new Date();
-
-      const expiresAt =
-        new Date(startedAt);
-
-      expiresAt.setMonth(
-        expiresAt.getMonth() +
-          plan.months
-      );
-
-      const {
-        data: subscription,
-        error: subscriptionError,
-      } =
-        await supabaseAdmin
-          .from("user_subscriptions")
-          .insert({
-            user_id: userId,
-
-            plan_code:
-              plan.id,
-
-            plan_id:
-              plan.id,
-
-            plan_name:
-              plan.name,
-
-            amount:
-              plan.amount,
-
-            status:
-              "active",
-
-            started_at:
-              startedAt.toISOString(),
-
-            expires_at:
-              expiresAt.toISOString(),
-
-            payment_id:
-              paymentId,
-
-            order_id:
-              orderId,
-
-            created_at:
-              new Date().toISOString(),
-
-            updated_at:
-              new Date().toISOString(),
-          })
-          .select(
-            "id,user_id,plan_code,plan_id,plan_name,amount,status,started_at,expires_at,payment_id,order_id"
-          )
-          .single();
-
-      if (subscriptionError) {
-        console.error(
-          "PREMIUM RECOVERY DATABASE ERROR:",
-          subscriptionError
-        );
-
-        return res.status(500).json({
-          success: false,
-          activated: false,
-          message:
-            "Payment found, but Premium could not be saved.",
-          error:
-            subscriptionError.message,
-        });
-      }
-
-      // --------------------------------------------------------
-      // 9. SUCCESS
-      // --------------------------------------------------------
-
-      console.log(
-        "=========================================="
-      );
-
-      console.log(
-        "EXISTING PAYMENT RECOVERED SUCCESSFULLY"
-      );
-
-      console.log(
-        "User:",
-        userId
-      );
-
-      console.log(
-        "Email:",
-        userEmail
-      );
-
-      console.log(
-        "Plan:",
-        plan.name
-      );
-
-      console.log(
-        "Payment:",
-        paymentId
-      );
-
-      console.log(
-        "Order:",
-        orderId
-      );
-
-      console.log(
-        "Expires:",
-        expiresAt.toISOString()
-      );
-
-      console.log(
-        "=========================================="
-      );
 
       return res.json({
         success: true,
-        activated: true,
-        alreadyActivated: false,
+        activated: false,
         message:
-          "Existing payment recovered and Premium activated successfully.",
-        paymentId:
-          paymentId,
-        orderId:
-          orderId,
-        planId:
-          plan.id,
-        planName:
-          plan.name,
-        amount:
-          plan.amount,
-        subscription:
-          subscription,
+          "No unused Premium payment could be recovered for this account.",
       });
-
     } catch (error) {
       console.error(
         "Premium recovery error:",
@@ -2392,26 +2885,23 @@ app.post(
         success: false,
         activated: false,
         message:
-          error?.error?.description ||
           error?.message ||
-          "Unable to recover existing payment.",
+          "Unable to recover previous Premium payment.",
       });
     }
   }
 );
 
 // ============================================================
-// 404 HANDLER
+// API 404 HANDLER
 // ============================================================
 
 app.use(
   (req, res) => {
-    res.status(404).json({
+    return res.status(404).json({
       success: false,
       message:
-        "API endpoint not found.",
-      path:
-        req.originalUrl,
+        `API route not found: ${req.method} ${req.originalUrl}`,
     });
   }
 );
@@ -2428,11 +2918,20 @@ app.use(
     next
   ) => {
     console.error(
-      "GLOBAL SERVER ERROR:",
+      "GLOBAL API ERROR:",
       error
     );
 
-    res.status(500).json({
+    if (
+      res.headersSent
+    ) {
+      return next(error);
+    }
+
+    return res.status(
+      error?.status ||
+        500
+    ).json({
       success: false,
       message:
         error?.message ||
@@ -2445,5 +2944,20 @@ app.use(
 // NETLIFY SERVERLESS HANDLER
 // ============================================================
 
-export const handler =
+const serverlessHandler =
   serverless(app);
+
+export const handler =
+  async (
+    event,
+    context
+  ) => {
+    return serverlessHandler(
+      event,
+      context
+    );
+  };
+
+// ============================================================
+// PART 4 END
+// ============================================================

@@ -205,10 +205,23 @@ function getDeviceOwnerEmail() {
 }
 
 function setDeviceOwnerEmail(email) {
-  localStorage.setItem(
-    "timbermart_device_owner_email",
-    cleanEmail(email)
-  );
+  const value = cleanEmail(email);
+
+  if (value) {
+    localStorage.setItem(
+      "timbermart_device_owner_email",
+      value
+    );
+  } else {
+    localStorage.removeItem(
+      "timbermart_device_owner_email"
+    );
+  }
+}
+
+function clearDeviceLink() {
+  localStorage.removeItem("timbermart_device_owner_email");
+  localStorage.removeItem("timbermart_current_user");
 }
 
 /* -------------------------------------------------------
@@ -293,6 +306,55 @@ export default function Login() {
 
     setSelectedRole(role);
   }, [location.search, navigate]);
+
+  /* -------------------------------------------------------
+     CLEAR STALE DEVICE LINK AFTER SIGN-OUT
+  ------------------------------------------------------- */
+
+  useEffect(() => {
+    let active = true;
+
+    const syncDeviceLink = async () => {
+      const {
+        data: {
+          session: currentSession,
+        },
+      } = await supabase.auth.getSession();
+
+      if (!active) return;
+
+      /*
+        If the browser has no authenticated TimberMart user,
+        remove the old local device owner marker. This allows
+        another Gmail account to use the same browser after
+        logout.
+      */
+      if (!currentSession?.user) {
+        clearDeviceLink();
+      }
+    };
+
+    syncDeviceLink();
+
+    const {
+      data: {
+        subscription,
+      },
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!active) return;
+
+        if (event === "SIGNED_OUT" || !session?.user) {
+          clearDeviceLink();
+        }
+      }
+    );
+
+    return () => {
+      active = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
 
   /* -------------------------------------------------------
      MESSAGE HELPERS
@@ -503,7 +565,7 @@ export default function Login() {
      DEVICE OWNER CHECK
   ------------------------------------------------------- */
 
-  const checkDeviceOwner = (
+  const checkDeviceOwner = async (
     loginEmail
   ) => {
     const emailValue =
@@ -512,14 +574,42 @@ export default function Login() {
     const owner =
       getDeviceOwnerEmail();
 
-    if (
-      owner &&
-      owner !== emailValue
-    ) {
-      throw new Error(
-        `This device is already linked to ${owner}. Please logout/remove the existing account from this browser before using another Gmail account.`
-      );
+    if (!owner || owner === emailValue) {
+      return;
     }
+
+    /*
+      IMPORTANT:
+      The old implementation blocked every different Gmail
+      forever because timbermart_device_owner_email stayed in
+      localStorage even after Supabase logout.
+
+      Now we first check whether a TimberMart session is still
+      active. If the old account is genuinely logged out, the
+      old browser link is removed automatically and the new
+      Gmail can be used.
+    */
+    const {
+      data: {
+        session: activeSession,
+      },
+    } = await supabase.auth.getSession();
+
+    if (!activeSession?.user) {
+      clearDeviceLink();
+      return;
+    }
+
+    const activeEmail =
+      cleanEmail(activeSession.user.email);
+
+    if (!activeEmail || activeEmail === emailValue) {
+      return;
+    }
+
+    throw new Error(
+      `This device is currently linked to ${activeEmail}. Please logout that account first, then use the new Gmail account.`
+    );
   };
 
   /* =======================================================
@@ -786,7 +876,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      checkDeviceOwner(
+      await checkDeviceOwner(
         emailValue
       );
 
@@ -1045,7 +1135,7 @@ export default function Login() {
     try {
       setLoading(true);
 
-      checkDeviceOwner(
+      await checkDeviceOwner(
         emailValue
       );
 
@@ -1302,7 +1392,7 @@ export default function Login() {
             );
           }
 
-          checkDeviceOwner(
+          await checkDeviceOwner(
             user.email
           );
 
