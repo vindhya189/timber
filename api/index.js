@@ -7,6 +7,8 @@
 import express from "express";
 import cors from "cors";
 import crypto from "crypto";
+import rateLimit from "express-rate-limit";
+import { z } from "zod";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import Razorpay from "razorpay";
@@ -14,8 +16,166 @@ import Razorpay from "razorpay";
 // ============================================================
 // APP
 // ============================================================
+// ===============================
+// SECURITY: INPUT VALIDATION
+// ===============================
 
+const emailSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .email()
+  .max(254);
+
+const otpSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{6}$/, "OTP must be exactly 6 digits.");
+
+const passwordSchema = z
+  .string()
+  .min(8, "Password must contain at least 8 characters.")
+  .max(128, "Password is too long.");
+
+const validateBody = (schema) => {
+  return (req, res, next) => {
+    const result = schema.safeParse(req.body);
+
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid request data.",
+        errors: result.error.issues.map((issue) => ({
+          field: issue.path.join("."),
+          message: issue.message,
+        })),
+      });
+    }
+
+    // Replace body with validated/normalized data
+    req.body = result.data;
+    next();
+  };
+};
 const app = express();
+const RATE_LIMIT_WINDOW_MS = Number(
+  process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000
+);
+
+const OTP_SEND_MAX = Number(
+  process.env.OTP_SEND_MAX || 5
+);
+
+const OTP_VERIFY_MAX = Number(
+  process.env.OTP_VERIFY_MAX || 10
+);
+
+const PASSWORD_RESET_MAX = Number(
+  process.env.PASSWORD_RESET_MAX || 5
+);
+
+const PAYMENT_CREATE_MAX = Number(
+  process.env.PAYMENT_CREATE_MAX || 10
+);
+
+const PAYMENT_VERIFY_MAX = Number(
+  process.env.PAYMENT_VERIFY_MAX || 15
+);
+
+/*
+ * General API limiter.
+ * This is a first protection layer against abusive traffic.
+ */
+const generalLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: 120,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many requests. Please try again later."
+  }
+});
+
+/*
+ * OTP SEND limiter.
+ * Strict because sending emails can be abused.
+ */
+const otpSendLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: OTP_SEND_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many verification requests. Please try again later."
+  }
+});
+
+/*
+ * OTP VERIFY limiter.
+ */
+const otpVerifyLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: OTP_VERIFY_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many verification attempts. Please try again later."
+  }
+});
+
+/*
+ * Password reset limiter.
+ */
+const passwordResetLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: PASSWORD_RESET_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many password reset requests. Please try again later."
+  }
+});
+
+/*
+ * Payment creation limiter.
+ */
+const paymentCreateLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: PAYMENT_CREATE_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many payment requests. Please try again later."
+  }
+});
+
+/*
+ * Payment verification limiter.
+ */
+const paymentVerifyLimiter = rateLimit({
+  windowMs: RATE_LIMIT_WINDOW_MS,
+  limit: PAYMENT_VERIFY_MAX,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+
+  message: {
+    success: false,
+    message: "Too many payment verification attempts. Please try again later."
+  }
+});
+
+/* Apply general protection to API routes */
+app.use("/api/", generalLimiter);
 
 app.use(
   cors({
@@ -582,6 +742,8 @@ app.get("/api/health", (req, res) => {
 
 app.post(
   "/api/email/send-code",
+  otpSendLimiter,
+  validateBody(emailSendSchema),
   async (req, res) => {
     try {
       const email =
@@ -723,9 +885,33 @@ app.post(
 // VERIFY ACCOUNT OTP
 // POST /api/email/verify-code
 // ============================================================
+const emailVerifySchema = z.object({
+  email: emailSchema,
+  code: otpSchema,
+}).strict();
+
+const emailSendSchema = z.object({
+  email: emailSchema,
+  name: z
+    .string()
+    .trim()
+    .min(2, "Name must contain at least 2 characters.")
+    .max(100, "Name is too long."),
+}).strict();
+
+const emailResendSchema = z.object({
+  email: emailSchema,
+}).strict();
+
+const passwordResetSendSchema = z.object({
+  email: emailSchema,
+}).strict();
+
 
 app.post(
   "/api/email/verify-code",
+  otpVerifyLimiter,
+  validateBody(emailVerifySchema),
   async (req, res) => {
     try {
       const email =
@@ -846,6 +1032,8 @@ app.post(
 
 app.post(
   "/api/email/resend-code",
+  otpSendLimiter,
+  validateBody(emailResendSchema),
   async (req, res) => {
     try {
       const email =
@@ -977,6 +1165,8 @@ app.post(
 
 app.post(
   "/api/password/send-code",
+  passwordResetLimiter,
+  validateBody(passwordResetSendSchema),
   async (req, res) => {
     try {
       const email =
@@ -1124,9 +1314,15 @@ app.post(
 // FORGOT PASSWORD - VERIFY OTP
 // POST /api/password/verify-code
 // ============================================================
+const passwordVerifySchema = z.object({
+  email: emailSchema,
+  code: otpSchema,
+}).strict();
 
 app.post(
   "/api/password/verify-code",
+  otpVerifyLimiter,
+  validateBody(passwordVerifySchema),
   async (req, res) => {
     try {
       const email =
@@ -1253,9 +1449,16 @@ app.post(
 // FORGOT PASSWORD - CHANGE PASSWORD
 // POST /api/password/change
 // ============================================================
+const passwordChangeSchema = z.object({
+  email: emailSchema,
+  code: otpSchema,
+  newPassword: passwordSchema,
+}).strict();
 
 app.post(
   "/api/password/change",
+  otpVerifyLimiter,
+  validateBody(passwordChangeSchema),
   async (req, res) => {
     try {
       const email =
@@ -1421,9 +1624,56 @@ app.post(
 // RAZORPAY CREATE ORDER
 // POST /api/payment/create-order
 // ============================================================
+const paymentCreateOrderSchema = z
+  .object({
+    planId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .regex(
+        /^premium_(monthly|3_months|yearly)$/,
+        "Invalid Premium plan."
+      ),
+  })
+  .strict();
 
+const razorpayVerifySchema = z
+  .object({
+    razorpay_order_id: z
+      .string()
+      .trim()
+      .min(10)
+      .max(100)
+      .regex(
+        /^order_[A-Za-z0-9]+$/,
+        "Invalid Razorpay order ID."
+      ),
+
+    razorpay_payment_id: z
+      .string()
+      .trim()
+      .min(10)
+      .max(100)
+      .regex(
+        /^pay_[A-Za-z0-9]+$/,
+        "Invalid Razorpay payment ID."
+      ),
+
+    razorpay_signature: z
+      .string()
+      .trim()
+      .length(64)
+      .regex(
+        /^[a-fA-F0-9]{64}$/,
+        "Invalid Razorpay signature."
+      ),
+  })
+  .strict();
 app.post(
   "/api/payment/create-order",
+  paymentCreateLimiter,
+  validateBody(paymentCreateOrderSchema),
   async (req, res) => {
     try {
       // --------------------------------------------------------
@@ -1604,6 +1854,7 @@ app.post(
 
 app.post(
   "/api/payment/verify",
+  paymentVerifyLimiter,
   async (req, res) => {
     try {
       // --------------------------------------------------------
