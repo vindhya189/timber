@@ -16,9 +16,10 @@ import Razorpay from "razorpay";
 // ============================================================
 // APP
 // ============================================================
-// ===============================
+
+// ============================================================
 // SECURITY: INPUT VALIDATION
-// ===============================
+// ============================================================
 
 const emailSchema = z
   .string()
@@ -30,167 +31,432 @@ const emailSchema = z
 const otpSchema = z
   .string()
   .trim()
-  .regex(/^\d{6}$/, "OTP must be exactly 6 digits.");
+  .regex(
+    /^\d{6}$/,
+    "OTP must be exactly 6 digits."
+  );
 
 const passwordSchema = z
   .string()
-  .min(8, "Password must contain at least 8 characters.")
-  .max(128, "Password is too long.");
+  .min(
+    8,
+    "Password must contain at least 8 characters."
+  )
+  .max(
+    128,
+    "Password is too long."
+  );
+
+const emailVerifySchema = z
+  .object({
+    email: emailSchema,
+    code: otpSchema,
+  })
+  .strict();
+
+const emailSendSchema = z
+  .object({
+    email: emailSchema,
+
+    name: z
+      .string()
+      .trim()
+      .min(
+        2,
+        "Name must contain at least 2 characters."
+      )
+      .max(
+        100,
+        "Name is too long."
+      ),
+  })
+  .strict();
+
+const emailResendSchema = z
+  .object({
+    email: emailSchema,
+
+    name: z
+      .string()
+      .trim()
+      .min(
+        2,
+        "Name must contain at least 2 characters."
+      )
+      .max(
+        100,
+        "Name is too long."
+      )
+      .optional(),
+  })
+  .strict();
+
+const passwordResetSendSchema = z
+  .object({
+    email: emailSchema,
+  })
+  .strict();
+
+const passwordVerifySchema = z
+  .object({
+    email: emailSchema,
+    code: otpSchema,
+  })
+  .strict();
+
+const passwordChangeSchema = z
+  .object({
+    email: emailSchema,
+    code: otpSchema,
+    newPassword: passwordSchema,
+  })
+  .strict();
+
+const paymentCreateOrderSchema = z
+  .object({
+    planId: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .regex(
+        /^premium_(monthly|3_months|yearly)$/,
+        "Invalid Premium plan."
+      ),
+  })
+  .strict();
+
+const razorpayVerifySchema = z
+  .object({
+    razorpay_order_id: z
+      .string()
+      .trim()
+      .min(10)
+      .max(100)
+      .regex(
+        /^order_[A-Za-z0-9]+$/,
+        "Invalid Razorpay order ID."
+      ),
+
+    razorpay_payment_id: z
+      .string()
+      .trim()
+      .min(10)
+      .max(100)
+      .regex(
+        /^pay_[A-Za-z0-9]+$/,
+        "Invalid Razorpay payment ID."
+      ),
+
+    razorpay_signature: z
+      .string()
+      .trim()
+      .length(64)
+      .regex(
+        /^[a-fA-F0-9]{64}$/,
+        "Invalid Razorpay signature."
+      ),
+  })
+  .strict();
 
 const validateBody = (schema) => {
   return (req, res, next) => {
-    const result = schema.safeParse(req.body);
+    const result =
+      schema.safeParse(req.body);
 
     if (!result.success) {
       return res.status(400).json({
         success: false,
-        message: "Invalid request data.",
-        errors: result.error.issues.map((issue) => ({
-          field: issue.path.join("."),
-          message: issue.message,
-        })),
+
+        message:
+          "Invalid request data.",
+
+        errors:
+          result.error.issues.map(
+            (issue) => ({
+              field:
+                issue.path.join("."),
+
+              message:
+                issue.message,
+            })
+          ),
       });
     }
 
-    // Replace body with validated/normalized data
     req.body = result.data;
+
     next();
   };
 };
+
+// ============================================================
+// EXPRESS APP
+// ============================================================
+
 const app = express();
-const RATE_LIMIT_WINDOW_MS = Number(
-  process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000
+
+// ============================================================
+// RATE LIMIT SETTINGS
+// ============================================================
+
+const RATE_LIMIT_WINDOW_MS =
+  Number(
+    process.env.RATE_LIMIT_WINDOW_MS ||
+      15 * 60 * 1000
+  );
+
+const OTP_SEND_MAX =
+  Number(
+    process.env.OTP_SEND_MAX || 5
+  );
+
+const OTP_VERIFY_MAX =
+  Number(
+    process.env.OTP_VERIFY_MAX || 10
+  );
+
+const PASSWORD_RESET_MAX =
+  Number(
+    process.env.PASSWORD_RESET_MAX || 5
+  );
+
+const PAYMENT_CREATE_MAX =
+  Number(
+    process.env.PAYMENT_CREATE_MAX || 10
+  );
+
+const PAYMENT_VERIFY_MAX =
+  Number(
+    process.env.PAYMENT_VERIFY_MAX || 15
+  );
+
+// ============================================================
+// GENERAL API LIMITER
+// ============================================================
+
+const generalLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit: 120,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many requests. Please try again later.",
+    },
+  });
+
+// ============================================================
+// OTP SEND LIMITER
+// ============================================================
+
+const otpSendLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit:
+      OTP_SEND_MAX,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many verification requests. Please try again later.",
+    },
+  });
+
+// ============================================================
+// OTP VERIFY LIMITER
+// ============================================================
+
+const otpVerifyLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit:
+      OTP_VERIFY_MAX,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many verification attempts. Please try again later.",
+    },
+  });
+
+// ============================================================
+// PASSWORD RESET LIMITER
+// ============================================================
+
+const passwordResetLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit:
+      PASSWORD_RESET_MAX,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many password reset requests. Please try again later.",
+    },
+  });
+
+// ============================================================
+// PAYMENT CREATE LIMITER
+// ============================================================
+
+const paymentCreateLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit:
+      PAYMENT_CREATE_MAX,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many payment requests. Please try again later.",
+    },
+  });
+
+// ============================================================
+// PAYMENT VERIFY LIMITER
+// ============================================================
+
+const paymentVerifyLimiter =
+  rateLimit({
+    windowMs:
+      RATE_LIMIT_WINDOW_MS,
+
+    limit:
+      PAYMENT_VERIFY_MAX,
+
+    standardHeaders:
+      "draft-8",
+
+    legacyHeaders:
+      false,
+
+    message: {
+      success: false,
+
+      message:
+        "Too many payment verification attempts. Please try again later.",
+    },
+  });
+
+// ============================================================
+// APPLY GENERAL API LIMITER
+// ============================================================
+
+app.use(
+  "/api/",
+  generalLimiter
 );
 
-const OTP_SEND_MAX = Number(
-  process.env.OTP_SEND_MAX || 5
-);
+// ============================================================
+// CORS
+// ============================================================
 
-const OTP_VERIFY_MAX = Number(
-  process.env.OTP_VERIFY_MAX || 10
-);
-
-const PASSWORD_RESET_MAX = Number(
-  process.env.PASSWORD_RESET_MAX || 5
-);
-
-const PAYMENT_CREATE_MAX = Number(
-  process.env.PAYMENT_CREATE_MAX || 10
-);
-
-const PAYMENT_VERIFY_MAX = Number(
-  process.env.PAYMENT_VERIFY_MAX || 15
-);
-
-/*
- * General API limiter.
- * This is a first protection layer against abusive traffic.
- */
-const generalLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: 120,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many requests. Please try again later."
-  }
-});
-
-/*
- * OTP SEND limiter.
- * Strict because sending emails can be abused.
- */
-const otpSendLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: OTP_SEND_MAX,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many verification requests. Please try again later."
-  }
-});
-
-/*
- * OTP VERIFY limiter.
- */
-const otpVerifyLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: OTP_VERIFY_MAX,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many verification attempts. Please try again later."
-  }
-});
-
-/*
- * Password reset limiter.
- */
-const passwordResetLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: PASSWORD_RESET_MAX,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many password reset requests. Please try again later."
-  }
-});
-
-/*
- * Payment creation limiter.
- */
-const paymentCreateLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: PAYMENT_CREATE_MAX,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many payment requests. Please try again later."
-  }
-});
-
-/*
- * Payment verification limiter.
- */
-const paymentVerifyLimiter = rateLimit({
-  windowMs: RATE_LIMIT_WINDOW_MS,
-  limit: PAYMENT_VERIFY_MAX,
-  standardHeaders: "draft-8",
-  legacyHeaders: false,
-
-  message: {
-    success: false,
-    message: "Too many payment verification attempts. Please try again later."
-  }
-});
-
-/* Apply general protection to API routes */
-app.use("/api/", generalLimiter);
+const allowedOrigins = [
+  "https://timbermart.co.in",
+  "https://www.timbermart.co.in",
+];
 
 app.use(
   cors({
-    origin: true,
+    origin:
+      function (
+        origin,
+        callback
+      ) {
+        // Allow server-to-server / same-origin requests
+        if (!origin) {
+          return callback(
+            null,
+            true
+          );
+        }
+
+        if (
+          allowedOrigins.includes(
+            origin
+          )
+        ) {
+          return callback(
+            null,
+            true
+          );
+        }
+
+        return callback(
+          new Error(
+            "CORS policy: Origin not allowed."
+          )
+        );
+      },
+
     credentials: true,
   })
 );
 
-app.use(express.json({ limit: "1mb" }));
+// ============================================================
+// JSON BODY
+// ============================================================
+
+app.use(
+  express.json({
+    limit: "1mb",
+  })
+);
 
 // ============================================================
 // ENVIRONMENT VARIABLES
 // ============================================================
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_API_KEY =
+  process.env.RESEND_API_KEY;
 
 const RESEND_FROM =
   process.env.RESEND_FROM ||
@@ -198,10 +464,19 @@ const RESEND_FROM =
   "TimberMart <noreply@timbermart.co.in>";
 
 const OTP_SECRET =
-  process.env.OTP_SECRET ||
-  "timbermart-super-secret-otp-key-change-this";
+  process.env.OTP_SECRET;
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
+if (
+  !OTP_SECRET ||
+  OTP_SECRET.length < 32
+) {
+  throw new Error(
+    "OTP_SECRET is not configured securely."
+  );
+}
+
+const SUPABASE_URL =
+  process.env.SUPABASE_URL;
 
 const SUPABASE_SERVICE_ROLE_KEY =
   process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -216,29 +491,40 @@ const RAZORPAY_KEY_SECRET =
 // CLIENTS
 // ============================================================
 
-const resend = RESEND_API_KEY
-  ? new Resend(RESEND_API_KEY)
-  : null;
+const resend =
+  RESEND_API_KEY
+    ? new Resend(
+        RESEND_API_KEY
+      )
+    : null;
 
 const supabaseAdmin =
-  SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+  SUPABASE_URL &&
+  SUPABASE_SERVICE_ROLE_KEY
     ? createClient(
         SUPABASE_URL,
         SUPABASE_SERVICE_ROLE_KEY,
         {
           auth: {
-            autoRefreshToken: false,
-            persistSession: false,
+            autoRefreshToken:
+              false,
+
+            persistSession:
+              false,
           },
         }
       )
     : null;
 
 const razorpay =
-  RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET
+  RAZORPAY_KEY_ID &&
+  RAZORPAY_KEY_SECRET
     ? new Razorpay({
-        key_id: RAZORPAY_KEY_ID,
-        key_secret: RAZORPAY_KEY_SECRET,
+        key_id:
+          RAZORPAY_KEY_ID,
+
+        key_secret:
+          RAZORPAY_KEY_SECRET,
       })
     : null;
 
@@ -246,8 +532,11 @@ const razorpay =
 // OTP STORAGE
 // ============================================================
 
-const emailOtpStore = new Map();
-const passwordOtpStore = new Map();
+const emailOtpStore =
+  new Map();
+
+const passwordOtpStore =
+  new Map();
 
 // ============================================================
 // PREMIUM PLANS
@@ -255,21 +544,36 @@ const passwordOtpStore = new Map();
 
 const PLAN_DETAILS = {
   premium_monthly: {
-    name: "Premium Monthly",
-    amount: 199,
-    months: 1,
+    name:
+      "Premium Monthly",
+
+    amount:
+      199,
+
+    months:
+      1,
   },
 
   premium_3_months: {
-    name: "Premium 3 Months",
-    amount: 499,
-    months: 3,
+    name:
+      "Premium 3 Months",
+
+    amount:
+      499,
+
+    months:
+      3,
   },
 
   premium_yearly: {
-    name: "Premium Yearly",
-    amount: 1499,
-    months: 12,
+    name:
+      "Premium Yearly",
+
+    amount:
+      1499,
+
+    months:
+      12,
   },
 };
 
@@ -277,59 +581,109 @@ const PLAN_DETAILS = {
 // HELPERS
 // ============================================================
 
-function normalizeEmail(email) {
-  return String(email || "")
+function normalizeEmail(
+  email
+) {
+  return String(
+    email || ""
+  )
     .trim()
     .toLowerCase();
 }
 
-function isGmail(email) {
+function isGmail(
+  email
+) {
   return /^[a-zA-Z0-9._%+-]+@gmail\.com$/i.test(
-    String(email || "").trim()
+    String(
+      email || ""
+    ).trim()
   );
 }
 
 function generateOTP() {
   return String(
-    crypto.randomInt(100000, 1000000)
+    crypto.randomInt(
+      100000,
+      1000000
+    )
   );
 }
 
-function hashOTP(email, otp) {
+function hashOTP(
+  email,
+  otp
+) {
   return crypto
-    .createHash("sha256")
+    .createHash(
+      "sha256"
+    )
     .update(
-      `${normalizeEmail(email)}:${otp}:${OTP_SECRET}`
+      `${normalizeEmail(
+        email
+      )}:${otp}:${OTP_SECRET}`
     )
     .digest("hex");
 }
 
-function isExpired(record) {
-  return !record || Date.now() > record.expiresAt;
-}
-
-function safeError(error) {
+function isExpired(
+  record
+) {
   return (
-    error?.message ||
-    error?.error?.message ||
-    "Something went wrong."
+    !record ||
+    Date.now() >
+      record.expiresAt
   );
 }
 
-function escapeHtml(value) {
-  return String(value || "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+function safeError(
+  error
+) {
+  console.error(
+    "Internal API error:",
+    error
+  );
+
+  return (
+    "Something went wrong. Please try again later."
+  );
+}
+
+function escapeHtml(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .replace(
+      /&/g,
+      "&amp;"
+    )
+    .replace(
+      /</g,
+      "&lt;"
+    )
+    .replace(
+      />/g,
+      "&gt;"
+    )
+    .replace(
+      /"/g,
+      "&quot;"
+    )
+    .replace(
+      /'/g,
+      "&#039;"
+    );
 }
 
 // ============================================================
 // AUTH TOKEN HELPER
 // ============================================================
 
-async function getAuthenticatedUser(req) {
+async function getAuthenticatedUser(
+  req
+) {
   if (!supabaseAdmin) {
     throw new Error(
       "Supabase Admin configuration is missing."
@@ -337,11 +691,16 @@ async function getAuthenticatedUser(req) {
   }
 
   const authorization =
-    req.headers.authorization || "";
+    req.headers.authorization ||
+    "";
 
-  const accessToken = authorization
-    .replace(/^Bearer\s+/i, "")
-    .trim();
+  const accessToken =
+    authorization
+      .replace(
+        /^Bearer\s+/i,
+        ""
+      )
+      .trim();
 
   if (!accessToken) {
     return null;
@@ -350,11 +709,15 @@ async function getAuthenticatedUser(req) {
   const {
     data,
     error,
-  } = await supabaseAdmin.auth.getUser(
-    accessToken
-  );
+  } =
+    await supabaseAdmin.auth.getUser(
+      accessToken
+    );
 
-  if (error || !data?.user) {
+  if (
+    error ||
+    !data?.user
+  ) {
     console.error(
       "Authentication error:",
       error
@@ -370,7 +733,9 @@ async function getAuthenticatedUser(req) {
 // FIND USER BY EMAIL
 // ============================================================
 
-async function findUserByEmail(email) {
+async function findUserByEmail(
+  email
+) {
   if (!supabaseAdmin) {
     throw new Error(
       "Supabase Admin configuration is missing."
@@ -378,34 +743,50 @@ async function findUserByEmail(email) {
   }
 
   const normalizedEmail =
-    normalizeEmail(email);
+    normalizeEmail(
+      email
+    );
 
   let page = 1;
 
   while (true) {
-    const { data, error } =
-      await supabaseAdmin.auth.admin.listUsers({
-        page,
-        perPage: 1000,
-      });
+    const {
+      data,
+      error,
+    } =
+      await supabaseAdmin.auth.admin.listUsers(
+        {
+          page,
+
+          perPage:
+            1000,
+        }
+      );
 
     if (error) {
       throw error;
     }
 
-    const users = data?.users || [];
+    const users =
+      data?.users || [];
 
-    const found = users.find(
-      (user) =>
-        normalizeEmail(user.email) ===
-        normalizedEmail
-    );
+    const found =
+      users.find(
+        (user) =>
+          normalizeEmail(
+            user.email
+          ) ===
+          normalizedEmail
+      );
 
     if (found) {
       return found;
     }
 
-    if (users.length < 1000) {
+    if (
+      users.length <
+      1000
+    ) {
       return null;
     }
 
@@ -424,11 +805,20 @@ function createVerificationEmail({
   return `
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-<title>TimberMart Verification</title>
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+TimberMart Verification
+</title>
+
 </head>
 
 <body style="
@@ -457,12 +847,16 @@ color:white;
 <div style="
 font-size:42px;
 margin-bottom:10px;
-">🌳</div>
+">
+🌳
+</div>
 
 <h1 style="
 margin:0;
 font-size:28px;
-">TimberMart</h1>
+">
+TimberMart
+</h1>
 
 <p style="
 margin:8px 0 0;
@@ -473,7 +867,9 @@ Connecting the timber community
 
 </div>
 
-<div style="padding:35px 30px;">
+<div style="
+padding:35px 30px;
+">
 
 <h2 style="
 margin:0 0 15px;
@@ -487,7 +883,9 @@ color:#555;
 font-size:15px;
 line-height:1.6;
 ">
-Hello ${escapeHtml(name)},
+Hello ${escapeHtml(
+    name
+  )},
 </p>
 
 <p style="
@@ -532,7 +930,8 @@ color:#777;
 font-size:14px;
 line-height:1.6;
 ">
-This code is valid for <strong>10 minutes</strong>.
+This code is valid for
+<strong>10 minutes</strong>.
 </p>
 
 <p style="
@@ -553,13 +952,20 @@ text-align:center;
 color:#888;
 font-size:12px;
 ">
-<strong>🌳 TimberMart</strong><br>
+
+<strong>
+🌳 TimberMart
+</strong>
+<br>
+
 Connecting the timber community
+
 </div>
 
 </div>
 
 </body>
+
 </html>
 `;
 }
@@ -574,11 +980,20 @@ function createPasswordResetEmail({
   return `
 <!DOCTYPE html>
 <html>
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, initial-scale=1.0">
-<title>TimberMart Password Reset</title>
+
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+>
+
+<title>
+TimberMart Password Reset
+</title>
+
 </head>
 
 <body style="
@@ -607,7 +1022,9 @@ color:white;
 <div style="
 font-size:42px;
 margin-bottom:10px;
-">🔐</div>
+">
+🔐
+</div>
 
 <h1 style="
 margin:0;
@@ -625,7 +1042,9 @@ Password Reset Verification
 
 </div>
 
-<div style="padding:35px 30px;">
+<div style="
+padding:35px 30px;
+">
 
 <h2 style="
 margin:0 0 15px;
@@ -685,7 +1104,8 @@ color:#777;
 font-size:14px;
 line-height:1.6;
 ">
-This code is valid for <strong>10 minutes</strong>.
+This code is valid for
+<strong>10 minutes</strong>.
 </p>
 
 <p style="
@@ -706,13 +1126,20 @@ text-align:center;
 color:#888;
 font-size:12px;
 ">
-<strong>🌳 TimberMart</strong><br>
+
+<strong>
+🌳 TimberMart
+</strong>
+<br>
+
 Connecting the timber community
+
 </div>
 
 </div>
 
 </body>
+
 </html>
 `;
 }
@@ -721,19 +1148,30 @@ Connecting the timber community
 // HEALTH
 // ============================================================
 
-app.get("/api/health", (req, res) => {
-  res.json({
-    success: true,
-    message: "TimberMart API is running",
-    resendConfigured: Boolean(resend),
-    supabaseConfigured: Boolean(
-      supabaseAdmin
-    ),
-    razorpayConfigured: Boolean(
-      razorpay
-    ),
-  });
-});
+app.get(
+  "/api/health",
+  (req, res) => {
+    res.json({
+      success: true,
+
+      message:
+        "TimberMart API is running",
+
+      resendConfigured:
+        Boolean(resend),
+
+      supabaseConfigured:
+        Boolean(
+          supabaseAdmin
+        ),
+
+      razorpayConfigured:
+        Boolean(
+          razorpay
+        ),
+    });
+  }
+);
 
 // ============================================================
 // SEND ACCOUNT OTP
@@ -742,99 +1180,141 @@ app.get("/api/health", (req, res) => {
 
 app.post(
   "/api/email/send-code",
+
   otpSendLimiter,
-  validateBody(emailSendSchema),
-  async (req, res) => {
+
+  validateBody(
+    emailSendSchema
+  ),
+
+  async (
+    req,
+    res
+  ) => {
     try {
       const email =
-        normalizeEmail(req.body?.email);
+        normalizeEmail(
+          req.body?.email
+        );
 
       const name =
         String(
-          req.body?.name || ""
+          req.body?.name ||
+            ""
         ).trim() ||
         "TimberMart User";
 
       if (!email) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Gmail address is required.",
-        });
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Gmail address is required.",
+          });
       }
 
       if (!isGmail(email)) {
-        return res.status(400).json({
-          success: false,
-          message:
-            "Please use a Gmail address ending with @gmail.com.",
-        });
+        return res
+          .status(400)
+          .json({
+            success: false,
+
+            message:
+              "Please use a Gmail address ending with @gmail.com.",
+          });
       }
 
       if (!resend) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "RESEND_API_KEY is missing in Netlify environment variables.",
-        });
+        return res
+          .status(500)
+          .json({
+            success: false,
+
+            message:
+              "RESEND_API_KEY is missing in Netlify environment variables.",
+          });
       }
 
       const existing =
-        emailOtpStore.get(email);
+        emailOtpStore.get(
+          email
+        );
 
       if (
-        existing?.lastSentAt &&
-        Date.now() -
-          existing.lastSentAt <
-          60000
+        existing &&
+        !isExpired(existing)
       ) {
-        const remaining =
-          Math.ceil(
-            (
-              60000 -
-              (Date.now() -
-                existing.lastSentAt)
-            ) / 1000
-          );
+        return res
+          .status(429)
+          .json({
+            success: false,
 
-        return res.status(429).json({
-          success: false,
-          message:
-            `Please wait ${remaining} seconds before requesting another code.`,
-        });
+            message:
+              "A verification code was already sent. Please check your email.",
+          });
       }
 
       const otp =
         generateOTP();
 
-      emailOtpStore.set(email, {
-        otpHash:
-          hashOTP(email, otp),
-        expiresAt:
-          Date.now() +
-          10 * 60 * 1000,
-        attempts: 0,
-        lastSentAt:
-          Date.now(),
-      });
+      const otpHash =
+        hashOTP(
+          email,
+          otp
+        );
+
+      const expiresAt =
+        Date.now() +
+        10 * 60 * 1000;
+
+      emailOtpStore.set(
+        email,
+        {
+          hash:
+            otpHash,
+
+          otpHash:
+            otpHash,
+
+          expiresAt,
+
+          attempts:
+            0,
+
+          name,
+
+          lastSentAt:
+            Date.now(),
+        }
+      );
 
       const html =
-        createVerificationEmail({
-          name,
-          otp,
-        });
+        createVerificationEmail(
+          {
+            name,
+            otp,
+          }
+        );
 
       const {
         data,
         error,
       } =
-        await resend.emails.send({
-          from: RESEND_FROM,
-          to: [email],
-          subject:
-            `${otp} is your TimberMart verification code`,
-          html,
-        });
+        await resend.emails.send(
+          {
+            from:
+              RESEND_FROM,
+
+            to: [email],
+
+            subject:
+              `${otp} is your TimberMart verification code`,
+
+            html,
+          }
+        );
 
       if (error) {
         emailOtpStore.delete(
@@ -846,23 +1326,27 @@ app.post(
           error
         );
 
-        return res.status(500).json({
-          success: false,
-          message:
-            error.message ||
-            "Failed to send verification email.",
-        });
+        return res
+          .status(500)
+          .json({
+            success: false,
+
+            message:
+              "Unable to send verification email. Please try again later.",
+          });
       }
 
       console.log(
         "ACCOUNT OTP SENT:",
         email,
         "Resend ID:",
-        data?.id || "N/A"
+        data?.id ||
+          "N/A"
       );
 
       return res.json({
         success: true,
+
         message:
           "6-digit verification code sent to your Gmail.",
       });
@@ -872,11 +1356,14 @@ app.post(
         error
       );
 
-      return res.status(500).json({
-        success: false,
-        message:
-          safeError(error),
-      });
+      return res
+        .status(500)
+        .json({
+          success: false,
+
+          message:
+            safeError(error),
+        });
     }
   }
 );
@@ -885,28 +1372,6 @@ app.post(
 // VERIFY ACCOUNT OTP
 // POST /api/email/verify-code
 // ============================================================
-const emailVerifySchema = z.object({
-  email: emailSchema,
-  code: otpSchema,
-}).strict();
-
-const emailSendSchema = z.object({
-  email: emailSchema,
-  name: z
-    .string()
-    .trim()
-    .min(2, "Name must contain at least 2 characters.")
-    .max(100, "Name is too long."),
-}).strict();
-
-const emailResendSchema = z.object({
-  email: emailSchema,
-}).strict();
-
-const passwordResetSendSchema = z.object({
-  email: emailSchema,
-}).strict();
-
 
 app.post(
   "/api/email/verify-code",
@@ -1076,8 +1541,10 @@ app.post(
           Math.ceil(
             (
               60000 -
-              (Date.now() -
-                existing.lastSentAt)
+              (
+                Date.now() -
+                existing.lastSentAt
+              )
             ) / 1000
           );
 
@@ -1093,11 +1560,17 @@ app.post(
 
       emailOtpStore.set(email, {
         otpHash:
-          hashOTP(email, otp),
+          hashOTP(
+            email,
+            otp
+          ),
+
         expiresAt:
           Date.now() +
           10 * 60 * 1000,
+
         attempts: 0,
+
         lastSentAt:
           Date.now(),
       });
@@ -1113,10 +1586,14 @@ app.post(
         error,
       } =
         await resend.emails.send({
-          from: RESEND_FROM,
+          from:
+            RESEND_FROM,
+
           to: [email],
+
           subject:
             `${otp} is your new TimberMart verification code`,
+
           html,
         });
 
@@ -1125,11 +1602,15 @@ app.post(
           email
         );
 
+        console.error(
+          "Resend OTP email error:",
+          error
+        );
+
         return res.status(500).json({
           success: false,
           message:
-            error.message ||
-            "Failed to resend verification code.",
+            "Unable to resend verification code. Please try again later.",
         });
       }
 
@@ -1158,6 +1639,7 @@ app.post(
     }
   }
 );
+
 // ============================================================
 // FORGOT PASSWORD - SEND OTP
 // POST /api/password/send-code
@@ -1166,7 +1648,9 @@ app.post(
 app.post(
   "/api/password/send-code",
   passwordResetLimiter,
-  validateBody(passwordResetSendSchema),
+  validateBody(
+    passwordResetSendSchema
+  ),
   async (req, res) => {
     try {
       const email =
@@ -1199,7 +1683,9 @@ app.post(
       }
 
       const user =
-        await findUserByEmail(email);
+        await findUserByEmail(
+          email
+        );
 
       if (!user) {
         return res.status(404).json({
@@ -1210,7 +1696,9 @@ app.post(
       }
 
       const existing =
-        passwordOtpStore.get(email);
+        passwordOtpStore.get(
+          email
+        );
 
       if (
         existing?.lastSentAt &&
@@ -1222,8 +1710,10 @@ app.post(
           Math.ceil(
             (
               60000 -
-              (Date.now() -
-                existing.lastSentAt)
+              (
+                Date.now() -
+                existing.lastSentAt
+              )
             ) / 1000
           );
 
@@ -1237,17 +1727,28 @@ app.post(
       const otp =
         generateOTP();
 
-      passwordOtpStore.set(email, {
-        otpHash:
-          hashOTP(email, otp),
-        expiresAt:
-          Date.now() +
-          10 * 60 * 1000,
-        attempts: 0,
-        lastSentAt:
-          Date.now(),
-        verified: false,
-      });
+      passwordOtpStore.set(
+        email,
+        {
+          otpHash:
+            hashOTP(
+              email,
+              otp
+            ),
+
+          expiresAt:
+            Date.now() +
+            10 * 60 * 1000,
+
+          attempts: 0,
+
+          lastSentAt:
+            Date.now(),
+
+          verified:
+            false,
+        }
+      );
 
       const html =
         createPasswordResetEmail({
@@ -1259,10 +1760,14 @@ app.post(
         error,
       } =
         await resend.emails.send({
-          from: RESEND_FROM,
+          from:
+            RESEND_FROM,
+
           to: [email],
+
           subject:
             `${otp} is your TimberMart password reset code`,
+
           html,
         });
 
@@ -1279,8 +1784,7 @@ app.post(
         return res.status(500).json({
           success: false,
           message:
-            error.message ||
-            "Failed to send password reset code.",
+            "Unable to send password reset code. Please try again later.",
         });
       }
 
@@ -1314,15 +1818,13 @@ app.post(
 // FORGOT PASSWORD - VERIFY OTP
 // POST /api/password/verify-code
 // ============================================================
-const passwordVerifySchema = z.object({
-  email: emailSchema,
-  code: otpSchema,
-}).strict();
 
 app.post(
   "/api/password/verify-code",
   otpVerifyLimiter,
-  validateBody(passwordVerifySchema),
+  validateBody(
+    passwordVerifySchema
+  ),
   async (req, res) => {
     try {
       const email =
@@ -1352,7 +1854,9 @@ app.post(
       }
 
       const record =
-        passwordOtpStore.get(email);
+        passwordOtpStore.get(
+          email
+        );
 
       if (!record) {
         return res.status(400).json({
@@ -1417,7 +1921,8 @@ app.post(
         });
       }
 
-      record.verified = true;
+      record.verified =
+        true;
 
       passwordOtpStore.set(
         email,
@@ -1449,16 +1954,13 @@ app.post(
 // FORGOT PASSWORD - CHANGE PASSWORD
 // POST /api/password/change
 // ============================================================
-const passwordChangeSchema = z.object({
-  email: emailSchema,
-  code: otpSchema,
-  newPassword: passwordSchema,
-}).strict();
 
 app.post(
   "/api/password/change",
   otpVerifyLimiter,
-  validateBody(passwordChangeSchema),
+  validateBody(
+    passwordChangeSchema
+  ),
   async (req, res) => {
     try {
       const email =
@@ -1492,7 +1994,9 @@ app.post(
         });
       }
 
-      if (newPassword.length < 6) {
+      if (
+        newPassword.length < 6
+      ) {
         return res.status(400).json({
           success: false,
           message:
@@ -1509,7 +2013,9 @@ app.post(
       }
 
       const record =
-        passwordOtpStore.get(email);
+        passwordOtpStore.get(
+          email
+        );
 
       if (!record) {
         return res.status(400).json({
@@ -1557,7 +2063,9 @@ app.post(
       }
 
       const user =
-        await findUserByEmail(email);
+        await findUserByEmail(
+          email
+        );
 
       if (!user) {
         passwordOtpStore.delete(
@@ -1584,15 +2092,14 @@ app.post(
 
       if (error) {
         console.error(
-          "Supabase password update error:",
+          "Password update error:",
           error
         );
 
         return res.status(500).json({
           success: false,
           message:
-            error.message ||
-            "Unable to update password.",
+            "Unable to update password. Please try again later.",
         });
       }
 
@@ -1621,76 +2128,57 @@ app.post(
 );
 
 // ============================================================
-// RAZORPAY CREATE ORDER
+// RAZORPAY CONFIGURATION CHECK
+// ============================================================
+
+function ensureRazorpay(
+  res
+) {
+  if (!razorpay) {
+    res.status(500).json({
+      success: false,
+      message:
+        "Razorpay configuration is missing.",
+    });
+
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================================
+// PREMIUM PLAN HELPER
+// ============================================================
+
+function getPlan(
+  planId
+) {
+  return (
+    PLAN_DETAILS[
+      planId
+    ] || null
+  );
+}
+
+// ============================================================
+// CREATE RAZORPAY ORDER
 // POST /api/payment/create-order
 // ============================================================
-const paymentCreateOrderSchema = z
-  .object({
-    planId: z
-      .string()
-      .trim()
-      .min(1)
-      .max(50)
-      .regex(
-        /^premium_(monthly|3_months|yearly)$/,
-        "Invalid Premium plan."
-      ),
-  })
-  .strict();
 
-const razorpayVerifySchema = z
-  .object({
-    razorpay_order_id: z
-      .string()
-      .trim()
-      .min(10)
-      .max(100)
-      .regex(
-        /^order_[A-Za-z0-9]+$/,
-        "Invalid Razorpay order ID."
-      ),
-
-    razorpay_payment_id: z
-      .string()
-      .trim()
-      .min(10)
-      .max(100)
-      .regex(
-        /^pay_[A-Za-z0-9]+$/,
-        "Invalid Razorpay payment ID."
-      ),
-
-    razorpay_signature: z
-      .string()
-      .trim()
-      .length(64)
-      .regex(
-        /^[a-fA-F0-9]{64}$/,
-        "Invalid Razorpay signature."
-      ),
-  })
-  .strict();
 app.post(
   "/api/payment/create-order",
   paymentCreateLimiter,
-  validateBody(paymentCreateOrderSchema),
+  validateBody(
+    paymentCreateOrderSchema
+  ),
   async (req, res) => {
     try {
-      // --------------------------------------------------------
-      // 1. CHECK RAZORPAY
-      // --------------------------------------------------------
-
-      if (!razorpay) {
-        return res.status(500).json({
-          success: false,
-          message:
-            "Razorpay configuration is missing.",
-        });
+      if (
+        !ensureRazorpay(res)
+      ) {
+        return;
       }
-
-      // --------------------------------------------------------
-      // 2. AUTHENTICATE USER
-      // --------------------------------------------------------
 
       const user =
         await getAuthenticatedUser(
@@ -1701,21 +2189,16 @@ app.post(
         return res.status(401).json({
           success: false,
           message:
-            "Please login before purchasing Premium.",
+            "Please login before starting payment.",
         });
       }
 
-      // --------------------------------------------------------
-      // 3. GET PLAN ID
-      // --------------------------------------------------------
-
-      const planId =
-        String(
-          req.body?.planId || ""
-        ).trim();
+      const {
+        planId,
+      } = req.body;
 
       const plan =
-        PLAN_DETAILS[planId];
+        getPlan(planId);
 
       if (!plan) {
         return res.status(400).json({
@@ -1725,56 +2208,38 @@ app.post(
         });
       }
 
-      // --------------------------------------------------------
-      // 4. SERVER-SIDE AMOUNT
-      // NEVER TRUST FRONTEND AMOUNT
-      // --------------------------------------------------------
-
-      const amountInPaise =
+      const amount =
         Math.round(
           plan.amount * 100
         );
 
-      // --------------------------------------------------------
-      // 5. CREATE RECEIPT
-      // --------------------------------------------------------
-
       const receipt =
-        `tm_${Date.now()}_${crypto
-          .randomBytes(4)
-          .toString("hex")}`;
-
-      // --------------------------------------------------------
-      // 6. CREATE RAZORPAY ORDER
-      // --------------------------------------------------------
-
-      const options = {
-        amount:
-          amountInPaise,
-
-        currency:
-          "INR",
-
-        receipt,
-
-        notes: {
-          user_id:
-            user.id,
-
-          user_email:
-            user.email || "",
-
-          plan_id:
-            planId,
-
-          plan_name:
-            plan.name,
-        },
-      };
+        `tm_${user.id.slice(
+          0,
+          8
+        )}_${Date.now()}`;
 
       const order =
         await razorpay.orders.create(
-          options
+          {
+            amount,
+
+            currency:
+              "INR",
+
+            receipt,
+
+            notes: {
+              userId:
+                user.id,
+
+              userEmail:
+                user.email ||
+                "",
+
+              planId,
+            },
+          }
         );
 
       console.log(
@@ -1824,29 +2289,27 @@ app.post(
         keyId:
           RAZORPAY_KEY_ID,
 
-        planId:
-          planId,
+        planId,
+
+        planName:
+          plan.name,
       });
     } catch (error) {
       console.error(
-        "Razorpay create order error:",
+        "Create Razorpay order error:",
         error
       );
 
       return res.status(500).json({
         success: false,
         message:
-          error?.error?.description ||
-          error?.message ||
-          "Unable to create Razorpay order.",
+          safeError(error),
       });
     }
   }
 );
 
-// ============================================================
-// PART 2 END
-// ============================================================
+
 // ============================================================
 // RAZORPAY VERIFY PAYMENT + PREMIUM ACTIVATION
 // POST /api/payment/verify
@@ -2234,7 +2697,8 @@ app.post(
 
       const {
         data: existingPayment,
-        error: existingPaymentError,
+        error:
+          existingPaymentError,
       } =
         await supabaseAdmin
           .from(
@@ -2249,14 +2713,18 @@ app.post(
           )
           .maybeSingle();
 
-      if (existingPaymentError) {
+      if (
+        existingPaymentError
+      ) {
         console.warn(
           "Existing payment lookup warning:",
           existingPaymentError.message
         );
       }
 
-      if (existingPayment) {
+      if (
+        existingPayment
+      ) {
         // Security check
         if (
           existingPayment.user_id !==
@@ -2343,7 +2811,9 @@ app.post(
             "active"
           );
 
-      if (deactivateError) {
+      if (
+        deactivateError
+      ) {
         console.warn(
           "Previous subscription could not be expired:",
           deactivateError.message
@@ -2415,7 +2885,9 @@ app.post(
       // 17. DATABASE ERROR
       // --------------------------------------------------------
 
-      if (subscriptionError) {
+      if (
+        subscriptionError
+      ) {
         console.error(
           "=========================================="
         );
@@ -2452,21 +2924,8 @@ app.post(
           success: false,
           verified: true,
           activated: false,
-
           message:
-            "Payment verified, but Premium activation could not be saved.",
-
-          dbError:
-            subscriptionError.message,
-
-          dbDetails:
-            subscriptionError.details,
-
-          dbHint:
-            subscriptionError.hint,
-
-          dbCode:
-            subscriptionError.code,
+            "Payment was verified, but we could not activate Premium right now. Please contact TimberMart support.",
         });
       }
 
@@ -2523,7 +2982,8 @@ app.post(
 
         activated: true,
 
-        alreadyActivated: false,
+        alreadyActivated:
+          false,
 
         message:
           "Payment verified and Premium activated successfully.",
@@ -2571,10 +3031,6 @@ app.post(
     }
   }
 );
-
-// ============================================================
-// PART 3 END
-// ============================================================
 // ============================================================
 // PREMIUM PAYMENT RECOVERY
 // POST /api/payment/recover
@@ -2691,11 +3147,12 @@ app.post(
       // 4. ALLOWED PREMIUM AMOUNTS
       // --------------------------------------------------------
 
-      const premiumAmounts = new Set([
-        19900,
-        49900,
-        149900,
-      ]);
+      const premiumAmounts =
+        new Set([
+          19900,
+          49900,
+          149900,
+        ]);
 
       // --------------------------------------------------------
       // 5. FIND MATCHING PAYMENT
@@ -2703,40 +3160,47 @@ app.post(
 
       const matchingPayments =
         payments
-          .filter((payment) => {
-            const status =
-              String(
-                payment?.status || ""
-              ).toLowerCase();
+          .filter(
+            (payment) => {
+              const status =
+                String(
+                  payment?.status ||
+                    ""
+                ).toLowerCase();
 
-            const paymentEmail =
-              String(
-                payment?.email || ""
-              )
-                .trim()
-                .toLowerCase();
+              const paymentEmail =
+                String(
+                  payment?.email ||
+                    ""
+                )
+                  .trim()
+                  .toLowerCase();
 
-            const amount =
-              Number(
-                payment?.amount
+              const amount =
+                Number(
+                  payment?.amount
+                );
+
+              return (
+                status ===
+                  "captured" &&
+                paymentEmail ===
+                  userEmail &&
+                premiumAmounts.has(
+                  amount
+                )
               );
-
-            return (
-              status === "captured" &&
-              paymentEmail ===
-                userEmail &&
-              premiumAmounts.has(
-                amount
-              )
-            );
-          })
+            }
+          )
           .sort(
             (a, b) =>
               Number(
-                b?.created_at || 0
+                b?.created_at ||
+                  0
               ) -
               Number(
-                a?.created_at || 0
+                a?.created_at ||
+                  0
               )
           );
 
@@ -2776,7 +3240,8 @@ app.post(
         // ------------------------------------------------------
 
         const {
-          data: existingSubscription,
+          data:
+            existingSubscription,
           error:
             existingSubscriptionError,
         } =
@@ -2834,27 +3299,32 @@ app.post(
         let planId = "";
 
         if (
-          Number(payment.amount) ===
-          19900
+          Number(
+            payment.amount
+          ) === 19900
         ) {
           planId =
             "premium_monthly";
         } else if (
-          Number(payment.amount) ===
-          49900
+          Number(
+            payment.amount
+          ) === 49900
         ) {
           planId =
             "premium_3_months";
         } else if (
-          Number(payment.amount) ===
-          149900
+          Number(
+            payment.amount
+          ) === 149900
         ) {
           planId =
             "premium_yearly";
         }
 
         const plan =
-          PLAN_DETAILS[planId];
+          PLAN_DETAILS[
+            planId
+          ];
 
         if (!plan) {
           continue;
@@ -3024,22 +3494,10 @@ app.post(
 
           return res.status(500).json({
             success: false,
+            verified: true,
             activated: false,
-
             message:
-              "Previous payment was found, but Premium could not be saved.",
-
-            dbError:
-              subscriptionError.message,
-
-            dbDetails:
-              subscriptionError.details,
-
-            dbHint:
-              subscriptionError.hint,
-
-            dbCode:
-              subscriptionError.code,
+              "Previous payment was found, but Premium could not be activated right now. Please contact TimberMart support.",
           });
         }
 
@@ -3191,10 +3649,11 @@ app.use(
 );
 
 // ============================================================
-// NETLIFY SERVERLESS HANDLER
+// VERCEL SERVERLESS HANDLER
 // ============================================================
 
 export default app;
+
 // ============================================================
 // PART 4 END
 // ============================================================
