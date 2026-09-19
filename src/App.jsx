@@ -11,6 +11,9 @@ import Settings from "./pages/Settings";
 import RequirementWall from "./pages/RequirementWall";
 import AdminDashboard from "./dashboards/AdminDashboard";
 import AdminLogin from "./AdminLogin";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import RefundPolicy from "./pages/RefundPolicy";
 
 import FarmerDashboard from "./dashboards/FarmerDashboard";
 import MerchantDashboard from "./dashboards/MerchantDashboard";
@@ -161,6 +164,10 @@ function DashboardRouter() {
       <Route path="worker" element={<WorkerDashboard />} />
       <Route path="buyer" element={<BuyerDashboard />} />
       <Route path="*" element={<Navigate to="/roles" replace />} />
+      <Route
+  path="/terms-and-conditions"
+  element={<TermsAndConditions />}
+/>
     </Routes>
   );
 }
@@ -201,6 +208,15 @@ export default function App() {
 
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/" replace />} />
+        <Route
+  path="/terms-and-conditions"
+  element={<TermsAndConditions />}
+/>
+        <Route
+  path="/privacy-policy"
+  element={<PrivacyPolicy />}
+/>
+        <Route path="/refund-policy" element={<RefundPolicy />} />
       </Routes>
     </>
   );

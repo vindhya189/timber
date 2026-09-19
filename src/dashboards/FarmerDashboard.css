@@ -4303,3 +4303,98 @@ body.timber-dark-body .farmer-listing-status.rejected {
     font-size: 14px;
   }
 }
+
+.tm-legal-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 22px 20px;
+  margin-top: 30px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.tm-legal-footer button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #356b45;
+}
+
+.tm-legal-footer button:hover {
+  text-decoration: underline;
+}
+
+.farmer-legal-footer {
+  position: fixed;
+  left: 250px;
+  right: 0;
+  bottom: 0;
+  z-index: 900;
+
+  min-height: 58px;
+  padding: 12px 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+
+  background: rgba(255, 255, 255, 0.96);
+  border-top: 1px solid #e3ebe5;
+  box-shadow: 0 -5px 20px rgba(20, 60, 35, 0.05);
+
+  color: #7b8980;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.farmer-legal-links {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.farmer-legal-links button {
+  border: 0;
+  background: transparent;
+
+  color: #39704a;
+  font-size: 12px;
+  font-weight: 700;
+
+  cursor: pointer;
+  padding: 7px 10px;
+  border-radius: 8px;
+}
+
+.farmer-legal-links button:hover {
+  background: #eef7f0;
+  color: #206b36;
+}
+
+
+/* Mobile */
+@media (max-width: 760px) {
+  .farmer-legal-footer {
+    left: 0;
+    padding: 10px 14px;
+    min-height: auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .farmer-legal-links {
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .farmer-legal-links button {
+    font-size: 11px;
+    padding: 5px 6px;
+  }
+}

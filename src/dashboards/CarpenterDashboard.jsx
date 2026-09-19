@@ -2407,9 +2407,48 @@ export default function CarpenterDashboard() {
               </strong>
             </div>
 
-          </footer>
+                    </footer>
 
         </div>
+
+        {/* =====================================================
+            LEGAL FOOTER
+        ===================================================== */}
+
+        <footer className="carpenter-legal-footer">
+          <span>
+            © {new Date().getFullYear()} TimberMart
+          </span>
+
+          <div className="carpenter-legal-links">
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/terms-and-conditions")
+              }
+            >
+              Terms & Conditions
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/privacy-policy")
+              }
+            >
+              Privacy Policy
+            </button>
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate("/refund-policy")
+              }
+            >
+              Cancellation & Refund Policy
+            </button>
+          </div>
+        </footer>
 
       </main>
 
