@@ -1290,7 +1290,7 @@ export default function Login() {
         );
 
         const redirectTo =
-          `${window.location.origin}/login?role=${selectedRole}`;
+          `${window.location.origin}/login?role=${encodeURIComponent(selectedRole)}`;
 
         const {
           error: oauthError,
@@ -2473,46 +2473,10 @@ export default function Login() {
 
             {/* GOOGLE */}
 
-            <button
-              type="button"
-              className="google-btn"
-              onClick={
-                handleGoogleLogin
-              }
-              disabled={
-                googleLoading ||
-                loading
-              }
-            >
-              {googleLoading ? (
-                <Loader2
-                  size={20}
-                  className="login-spin"
-                />
-              ) : (
-                <span className="google-letter">
-                  G
-                </span>
-              )}
-
-              <span>
-                {googleLoading
-                  ? "Connecting..."
-                  : "Continue with Google"}
-              </span>
-            </button>
 
             {/* OR */}
 
-            <div className="or-divider">
-              <span />
-
-              <b>
-                OR
-              </b>
-
-              <span />
-            </div>
+            
 
             {/* FORM */}
 
