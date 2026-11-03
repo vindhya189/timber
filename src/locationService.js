@@ -1,154 +1,99 @@
+```javascript
 // =========================================================
 // TimberMart Location Service
-// GPS based location
+// GPS + Reverse Geocoding
 // IP address is NOT used
 // =========================================================
 
-
 export async function getCurrentLocation() {
-
-  // -------------------------------------------------------
-  // Browser GPS support check
-  // -------------------------------------------------------
-
   if (!navigator.geolocation) {
-
     throw new Error(
       "Your browser does not support GPS location."
     );
-
   }
 
+  const position = await new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      resolve,
+      (error) => {
+        const messages = {
+          1: "Location permission denied. Allow location access in your browser.",
+          2: "Current location is unavailable. Please try again.",
+          3: "Location request timed out. Please try again.",
+        };
 
-  // -------------------------------------------------------
-  // Get GPS coordinates
-  // -------------------------------------------------------
+        reject(
+          new Error(
+            messages[error.code] ||
+              "Unable to get your current location."
+          )
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0,
+      }
+    );
+  });
 
-  const position = await new Promise(
-    (resolve, reject) => {
+  const latitude = position.coords.latitude;
+  const longitude = position.coords.longitude;
 
-      navigator.geolocation.getCurrentPosition(
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude) ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    throw new Error("Invalid GPS coordinates.");
+  }
 
-        resolve,
-
-        reject,
-
-        {
-          enableHighAccuracy: true,
-
-          timeout: 15000,
-
-          maximumAge: 0
-        }
-
-      );
-
-    }
-  );
-
-
-  const latitude =
-    position.coords.latitude;
-
-  const longitude =
-    position.coords.longitude;
-
-
-  // -------------------------------------------------------
-  // Convert GPS → Human readable address
-  // -------------------------------------------------------
-
-  let locationText =
-    "Current Location";
-
+  let locationText = "Current Location";
 
   try {
-
-    const response = await fetch(
-
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
-
-      {
-        headers: {
-          "Accept":
-            "application/json"
-        }
-      }
-
+    const url = new URL(
+      "https://nominatim.openstreetmap.org/reverse"
     );
 
+    url.search = new URLSearchParams({
+      format: "jsonv2",
+      lat: String(latitude),
+      lon: String(longitude),
+      zoom: "18",
+      addressdetails: "1",
+    }).toString();
+
+    const response = await fetch(url);
 
     if (response.ok) {
-
-      const data =
-        await response.json();
-
-
-      const address =
-        data.address || {};
-
+      const data = await response.json();
+      const address = data.address || {};
 
       const parts = [
-
         address.village,
-
         address.town,
-
         address.city,
-
         address.municipality,
-
         address.district,
-
         address.state,
-
-        address.country
-
+        address.country,
       ].filter(Boolean);
 
-
-      // Remove duplicate values
-
-      const uniqueParts =
-        [...new Set(parts)];
-
-
-      if (uniqueParts.length > 0) {
-
-        locationText =
-          uniqueParts.join(", ");
-
-      }
-
-      else if (data.display_name) {
-
-        locationText =
-          data.display_name;
-
-      }
-
+      locationText = [
+        ...new Set(parts),
+      ].join(", ") || data.display_name || locationText;
     }
-
+  } catch (error) {
+    console.warn("Reverse geocoding failed:", error);
   }
-
-  catch (error) {
-
-    console.warn(
-      "Address conversion failed:",
-      error
-    );
-
-  }
-
 
   return {
-
     latitude,
-
     longitude,
-
-    locationText
-
+    locationText,
   };
-
 }
+```
