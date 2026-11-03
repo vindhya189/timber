@@ -3578,6 +3578,45 @@ app.post(
   }
 );
 
+
+// ============================================================
+// MSG91 WHATSAPP WEBHOOK
+// POST /api/whatsapp-webhook
+// ============================================================
+
+app.post("/api/whatsapp-webhook", async (req, res) => {
+  try {
+    const payload = req.body || {};
+
+    const customerNumber = payload.customerNumber || "";
+    const customerName = payload.customerName || "Customer";
+    const messageText = payload.text || "";
+    const contentType =
+      payload.contentType || payload.messageType || "";
+
+    console.log("MSG91 WhatsApp Webhook Received:", {
+      customerNumber,
+      customerName,
+      messageText,
+      contentType,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "TimberMart WhatsApp webhook received successfully",
+    });
+
+  } catch (error) {
+    console.error("MSG91 Webhook Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Webhook processing failed",
+    });
+  }
+});
+
+
 // ============================================================
 // API 404 HANDLER
 // ============================================================
