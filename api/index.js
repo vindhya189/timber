@@ -7,7 +7,7 @@
 import express from "express";
 import cors from "cors";
 import crypto from "crypto";
-import rateLimit from "express-rate-limit";
+import { rateLimit, ipKeyGenerator } from "express-rate-limit";
 import { z } from "zod";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
@@ -195,6 +195,8 @@ const validateBody = (schema) => {
 // ============================================================
 
 const app = express();
+app.set("trust proxy", 1);
+
 
 // ============================================================
 // RATE LIMIT SETTINGS
@@ -237,23 +239,20 @@ const PAYMENT_VERIFY_MAX =
 
 const generalLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
     limit: 120,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many requests. Please try again later.",
+      message: "Too many requests. Please try again later.",
     },
+
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
   });
 
 // ============================================================
@@ -262,24 +261,20 @@ const generalLimiter =
 
 const otpSendLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
-    limit:
-      OTP_SEND_MAX,
+    limit: OTP_SEND_MAX,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many verification requests. Please try again later.",
+      message: "Too many verification requests. Please try again later.",
     },
+
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
   });
 
 // ============================================================
@@ -288,50 +283,41 @@ const otpSendLimiter =
 
 const otpVerifyLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
-    limit:
-      OTP_VERIFY_MAX,
+    limit: OTP_VERIFY_MAX,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many verification attempts. Please try again later.",
+      message: "Too many verification attempts. Please try again later.",
     },
-  });
 
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
+  });
 // ============================================================
 // PASSWORD RESET LIMITER
 // ============================================================
 
 const passwordResetLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
-    limit:
-      PASSWORD_RESET_MAX,
+    limit: PASSWORD_RESET_MAX,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many password reset requests. Please try again later.",
+      message: "Too many password reset requests. Please try again later.",
     },
+
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
   });
 
 // ============================================================
@@ -340,24 +326,20 @@ const passwordResetLimiter =
 
 const paymentCreateLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
-    limit:
-      PAYMENT_CREATE_MAX,
+    limit: PAYMENT_CREATE_MAX,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many payment requests. Please try again later.",
+      message: "Too many payment requests. Please try again later.",
     },
+
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
   });
 
 // ============================================================
@@ -366,24 +348,20 @@ const paymentCreateLimiter =
 
 const paymentVerifyLimiter =
   rateLimit({
-    windowMs:
-      RATE_LIMIT_WINDOW_MS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
 
-    limit:
-      PAYMENT_VERIFY_MAX,
+    limit: PAYMENT_VERIFY_MAX,
 
-    standardHeaders:
-      "draft-8",
+    standardHeaders: "draft-8",
 
-    legacyHeaders:
-      false,
+    legacyHeaders: false,
 
     message: {
       success: false,
-
-      message:
-        "Too many payment verification attempts. Please try again later.",
+      message: "Too many payment verification attempts. Please try again later.",
     },
+
+    keyGenerator: (req) => ipKeyGenerator(req.ip),
   });
 
 // ============================================================
