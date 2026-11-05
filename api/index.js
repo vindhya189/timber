@@ -12,6 +12,13 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
 import Razorpay from "razorpay";
+import {
+  sendWhatsAppText,
+  sendPostApproved,
+  sendPostRejected,
+} from "./whatsapp/sender.js";
+import { findRegisteredUser } from "./whatsapp/user-check.js";
+import { getWhatsAppMenu } from "./whatsapp/menu.js";
 
 // ============================================================
 // APP
@@ -3584,30 +3591,83 @@ app.post(
 // POST /api/whatsapp-webhook
 // ============================================================
 
+
+
 app.post("/api/whatsapp-webhook", async (req, res) => {
   try {
     const payload = req.body || {};
 
     const customerNumber = payload.customerNumber || "";
     const customerName = payload.customerName || "Customer";
-    const messageText = payload.text || "";
+    const messageText = String(payload.text || "").trim();
     const contentType =
       payload.contentType || payload.messageType || "";
 
-    console.log("MSG91 WhatsApp Webhook Received:", {
+    console.log("MSG91 WhatsApp Incoming:", {
       customerNumber,
       customerName,
       messageText,
       contentType,
     });
 
+    // Ignore messages without a sender or text
+    if (!customerNumber || !messageText) {
+      return res.status(200).json({
+        success: true,
+        message: "No text message to process",
+      });
+    }
+
+    // Process only text messages for now
+    if (contentType !== "text") {
+      return res.status(200).json({
+        success: true,
+        message: "Message type not supported yet",
+      });
+    }
+
+    // Check whether the sender is registered
+    const result = await findRegisteredUser(
+      supabaseAdmin,
+      customerNumber
+    );
+
+    let replyMessage;
+
+    if (result.registered) {
+      // Registered user: send TimberMart menu
+      replyMessage = getWhatsAppMenu(result.user);
+    } else {
+      // Unregistered user: ask them to register
+      replyMessage = `
+🌳 Welcome to TimberMart!
+
+Mee mobile number tho account register avvaledhu.
+
+WhatsApp lo timber requirements post cheyyadaniki, timber sell cheyyadaniki mundhu website lo Register / Login avvandi.
+
+🔗 https://www.timbermart.co.in/login
+
+Login successful ayyaka, malli ee WhatsApp ki HI ani message pampandi.
+
+Thank you for choosing TimberMart!
+`;
+    }
+
+    // Send WhatsApp reply
+    await sendWhatsAppText({
+      to: customerNumber,
+      text: replyMessage,
+    });
+
     return res.status(200).json({
       success: true,
-      message: "TimberMart WhatsApp webhook received successfully",
+      message: "WhatsApp reply processed successfully",
+      registered: result.registered,
     });
 
   } catch (error) {
-    console.error("MSG91 Webhook Error:", error);
+    console.error("MSG91 WhatsApp Webhook Error:", error);
 
     return res.status(500).json({
       success: false,
@@ -3615,6 +3675,140 @@ app.post("/api/whatsapp-webhook", async (req, res) => {
     });
   }
 });
+
+
+// ============================================================
+// SUPABASE WHATSAPP APPROVAL NOTIFICATION WEBHOOK
+// ============================================================
+
+app.post("/api/whatsapp/approval-notification", async (req, res) => {
+  try {
+    const secret = process.env.SUPABASE_WEBHOOK_SECRET;
+    const receivedSecret = req.headers["x-timbermart-webhook-secret"];
+
+    if (!secret || !receivedSecret || receivedSecret !== secret) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized webhook request",
+      });
+    }
+
+    if (!supabaseAdmin) {
+      return res.status(500).json({
+        success: false,
+        message: "Supabase configuration missing",
+      });
+    }
+
+    const { type, table, record, old_record } = req.body || {};
+
+    if (type !== "UPDATE" || !record || !old_record) {
+      return res.status(200).json({
+        success: true,
+        message: "Ignored: not a valid update event",
+      });
+    }
+
+    const oldStatus = String(old_record.status || "").toLowerCase();
+    const newStatus = String(record.status || "").toLowerCase();
+
+    if (oldStatus === newStatus) {
+      return res.status(200).json({
+        success: true,
+        message: "No status change",
+      });
+    }
+
+    let ownerId;
+    let postType;
+    let approvedStatus;
+
+    if (table === "buyer_requirements") {
+      ownerId = record.buyer_id;
+      postType = "Buyer Requirement";
+      approvedStatus = "active";
+    } else if (table === "listings") {
+      ownerId = record.user_id;
+      postType = "Timber Listing";
+      approvedStatus = "approved";
+    } else {
+      return res.status(200).json({
+        success: true,
+        message: "Table not supported",
+      });
+    }
+
+    const isApproved = newStatus === approvedStatus;
+    const isRejected = newStatus === "rejected";
+
+    if (!isApproved && !isRejected) {
+      return res.status(200).json({
+        success: true,
+        message: "Status does not require notification",
+      });
+    }
+
+    if (!ownerId) {
+      throw new Error("Post owner ID is missing");
+    }
+
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("whatsapp_number, phone")
+      .eq("id", ownerId)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+
+    const recipient = profile?.whatsapp_number || profile?.phone;
+
+    if (!recipient) {
+      console.log("Approval notification skipped: no phone number");
+      return res.status(200).json({
+        success: true,
+        message: "User has no WhatsApp number",
+      });
+    }
+
+    if (isApproved) {
+      await sendPostApproved({
+        to: recipient,
+        postType,
+      });
+    } else {
+      const reason =
+        table === "listings"
+          ? record.review_note || "Please update your post details"
+          : "Please update your post details";
+
+      await sendPostRejected({
+        to: recipient,
+        postType,
+        reason,
+      });
+    }
+
+    console.log("TimberMart approval WhatsApp notification sent:", {
+      table,
+      postId: record.id,
+      status: newStatus,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "WhatsApp notification sent",
+    });
+  } catch (error) {
+    console.error("Approval WhatsApp notification error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Unable to send approval notification",
+    });
+  }
+});
+
+
 
 
 // ============================================================
