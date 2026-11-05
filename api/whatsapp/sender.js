@@ -264,3 +264,66 @@ export async function sendPostRejected({ to, postType, reason }) {
     return { success: true, response: result };
   }
 }
+
+export async function sendTimberUserFlow({ to, buttonUrlValue }) {
+  const authKey = process.env.MSG91_AUTH_KEY;
+  const integratedNumber = process.env.MSG91_INTEGRATED_NUMBER;
+  const namespace = process.env.MSG91_NAMESPACE;
+
+  if (!authKey || !integratedNumber || !namespace) {
+    throw new Error("Missing MSG91 environment variables");
+  }
+
+  if (!to || !buttonUrlValue) {
+    throw new Error("Phone number and button URL value are required");
+  }
+
+  const response = await fetch(
+    "https://api.msg91.com/api/v5/whatsapp/whatsapp-outbound-message/bulk/",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        authkey: authKey,
+      },
+      body: JSON.stringify({
+        integrated_number: integratedNumber,
+        content_type: "template",
+        payload: {
+          messaging_product: "whatsapp",
+          type: "template",
+          template: {
+            name: "timber_user_flow",
+            language: {
+              code: "en_US",
+              policy: "deterministic",
+            },
+            namespace,
+            to_and_components: [
+              {
+                to: [to],
+                components: {
+                  button_1: {
+                    subtype: "url",
+                    type: "text",
+                    value: buttonUrlValue,
+                  },
+                },
+              },
+            ],
+          },
+        },
+      }),
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(
+      `MSG91 Flow template error: ${JSON.stringify(result)}`
+    );
+  }
+
+  return result;
+}

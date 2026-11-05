@@ -17,8 +17,9 @@ import {
   sendPostApproved,
   sendPostRejected,
 } from "./whatsapp/sender.js";
+
 import { findRegisteredUser } from "./whatsapp/user-check.js";
-import { getWhatsAppMenu } from "./whatsapp/menu.js";
+import { getWhatsAppMenu, getWhatsAppHelp } from "./whatsapp/menu.js";
 
 // ============================================================
 // APP
@@ -3593,88 +3594,329 @@ app.post(
 
 
 
+
+// ============================================================
+// TIMBERMART WHATSAPP CHAT MENU
+// ============================================================
+
 app.post("/api/whatsapp-webhook", async (req, res) => {
   try {
+    if (!supabaseAdmin) {
+      return res.status(500).json({
+        success: false,
+        message: "Supabase configuration missing",
+      });
+    }
+
     const payload = req.body || {};
-
-    const customerNumber = payload.customerNumber || "";
-    const customerName = payload.customerName || "Customer";
+    const customerNumber = String(payload.customerNumber || "").trim();
     const messageText = String(payload.text || "").trim();
-    const contentType =
-      payload.contentType || payload.messageType || "";
+    const contentType = payload.contentType || payload.messageType || "";
 
-    console.log("MSG91 WhatsApp Incoming:", {
-      customerNumber,
-      customerName,
-      messageText,
-      contentType,
-    });
-
-    // Ignore messages without a sender or text
     if (!customerNumber || !messageText) {
+      return res.status(200).json({ success: true });
+    }
+
+    if (contentType && contentType !== "text") {
       return res.status(200).json({
         success: true,
-        message: "No text message to process",
+        message: "Only text messages are supported",
       });
     }
 
-    // Process only text messages for now
-    if (contentType !== "text") {
-      return res.status(200).json({
-        success: true,
-        message: "Message type not supported yet",
-      });
-    }
-
-    // Check whether the sender is registered
     const result = await findRegisteredUser(
       supabaseAdmin,
       customerNumber
     );
 
-    let replyMessage;
+    if (!result.registered || !result.user?.id) {
+      await sendWhatsAppText({
+        to: customerNumber,
+        text:
+          "🌳 Welcome to TimberMart!\n\n" +
+          "Please register/login first:\n" +
+          "https://www.timbermart.co.in/login\n\n" +
+          "After login, send HI again.",
+      });
 
-    if (result.registered) {
-      // Registered user: send TimberMart menu
-      replyMessage = getWhatsAppMenu(result.user);
-    } else {
-      // Unregistered user: ask them to register
-      replyMessage = `
-🌳 Welcome to TimberMart!
-
-Mee mobile number tho account register avvaledhu.
-
-WhatsApp lo timber requirements post cheyyadaniki, timber sell cheyyadaniki mundhu website lo Register / Login avvandi.
-
-🔗 https://www.timbermart.co.in/login
-
-Login successful ayyaka, malli ee WhatsApp ki HI ani message pampandi.
-
-Thank you for choosing TimberMart!
-`;
+      return res.status(200).json({ success: true });
     }
 
-    // Send WhatsApp reply
+    const user = result.user;
+    const message = messageText.trim();
+    const option = message.toLowerCase();
+
+    // MAIN MENU
+    if (["hi", "hello", "menu", "start", "0"].includes(option)) {
+      await sendWhatsAppText({
+        to: customerNumber,
+        text: getWhatsAppMenu(user),
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // OPTION 1 - BUYER REQUIREMENT
+    if (option === "1") {
+      await sendWhatsAppText({
+        to: customerNumber,
+        text:
+          "🌳 *Post Timber Requirement*\n\n" +
+          "Mee requirement details ee format lo send cheyyandi:\n\n" +
+          "REQ | Category | Species | Quantity | Unit | Budget | City | State | Pincode | Description\n\n" +
+          "Example:\n" +
+          "REQ | Timber | Teak | 100 | CFT | 50000 | Anakapalli | Andhra Pradesh | 531001 | Need good quality teak wood\n\n" +
+          "All fields fill chesi one message lo send cheyyandi.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // OPTION 2 - TIMBER LISTING
+    if (option === "2") {
+      await sendWhatsAppText({
+        to: customerNumber,
+        text:
+          "🌳 *Post Timber Listing*\n\n" +
+          "Mee listing details ee format lo send cheyyandi:\n\n" +
+          "LIST | Category | Species | Title | Quantity | Unit | Price | Location | Description\n\n" +
+          "Example:\n" +
+          "LIST | Timber | Teak | Premium Teak Wood | 100 | CFT | 50000 | Anakapalli | Good quality teak wood available\n\n" +
+          "All fields fill chesi one message lo send cheyyandi.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // OPTION 3 - MY REQUIREMENTS
+    if (option === "3") {
+      const { data, error } = await supabaseAdmin
+        .from("buyer_requirements")
+        .select("id,title,category,species,quantity,unit,budget,city,status,created_at")
+        .eq("buyer_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const reply = !data?.length
+        ? "Mee requirements inka levu."
+        : "📋 *My Timber Requirements*\n\n" +
+          data.map((item, index) =>
+            `${index + 1}. ${item.title || item.species || item.category}\n` +
+            `Quantity: ${item.quantity || "-"} ${item.unit || ""}\n` +
+            `Budget: ${item.budget || "-"}\n` +
+            `Location: ${item.city || "-"}\n` +
+            `Status: ${item.status || "pending"}`
+          ).join("\n\n");
+
+      await sendWhatsAppText({
+        to: customerNumber,
+        text: reply + "\n\nReply HI for main menu.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // OPTION 4 - MY LISTINGS
+    if (option === "4") {
+      const { data, error } = await supabaseAdmin
+        .from("listings")
+        .select("id,title,category,tree_type,quantity,quantity_unit,price,location,status,created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      const reply = !data?.length
+        ? "Mee timber listings inka levu."
+        : "🌳 *My Timber Listings*\n\n" +
+          data.map((item, index) =>
+            `${index + 1}. ${item.title || item.tree_type || item.category}\n` +
+            `Quantity: ${item.quantity || "-"} ${item.quantity_unit || ""}\n` +
+            `Price: ${item.price || "-"}\n` +
+            `Location: ${item.location || "-"}\n` +
+            `Status: ${item.status || "pending"}`
+          ).join("\n\n");
+
+      await sendWhatsAppText({
+        to: customerNumber,
+        text: reply + "\n\nReply HI for main menu.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // OPTION 5 - HELP
+    if (option === "5" || option === "help") {
+      await sendWhatsAppText({
+        to: customerNumber,
+        text: getWhatsAppHelp() + "\n\nReply HI for main menu.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // SUBMIT BUYER REQUIREMENT
+    if (message.startsWith("REQ |") || message.startsWith("REQ|")) {
+      const fields = message.split("|").map((v) => v.trim());
+
+      if (fields.length !== 10) {
+        throw new Error("Invalid REQ format. Please send all 10 fields.");
+      }
+
+      const [
+        command,
+        category,
+        species,
+        quantityText,
+        unit,
+        budgetText,
+        city,
+        state,
+        pincode,
+        description,
+      ] = fields;
+
+      const quantity = Number(quantityText);
+      const budget = Number(budgetText);
+
+      if (
+        !category || !species || !unit || !city ||
+        !state || !description ||
+        !Number.isFinite(quantity) || quantity <= 0 ||
+        !Number.isFinite(budget) || budget < 0 ||
+        !/^\d{6}$/.test(pincode)
+      ) {
+        throw new Error("Invalid details. Please check quantity, budget and pincode.");
+      }
+
+      const { error } = await supabaseAdmin
+        .from("buyer_requirements")
+        .insert({
+          buyer_id: user.id,
+          title: `${species} Requirement`,
+          category,
+          species,
+          quantity,
+          unit,
+          budget,
+          city,
+          state,
+          pincode,
+          description,
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      await sendWhatsAppText({
+        to: customerNumber,
+        text:
+          "✅ *Requirement submitted successfully!*\n\n" +
+          "Your requirement is sent for Admin approval.\n" +
+          "Current Status: PENDING\n\n" +
+          "Reply HI for main menu.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // SUBMIT TIMBER LISTING
+    if (message.startsWith("LIST |") || message.startsWith("LIST|")) {
+      const fields = message.split("|").map((v) => v.trim());
+
+      if (fields.length !== 9) {
+        throw new Error("Invalid LIST format. Please send all 9 fields.");
+      }
+
+      const [
+        command,
+        category,
+        species,
+        title,
+        quantityText,
+        unit,
+        priceText,
+        location,
+        description,
+      ] = fields;
+
+      const quantity = Number(quantityText);
+      const price = Number(priceText);
+
+      if (
+        !category || !species || !title ||
+        !unit || !location || !description ||
+        !Number.isFinite(quantity) || quantity <= 0 ||
+        !Number.isFinite(price) || price < 0
+      ) {
+        throw new Error("Invalid listing details. Please check quantity and price.");
+      }
+
+      const { error } = await supabaseAdmin
+        .from("listings")
+        .insert({
+          user_id: user.id,
+          role: user.role || null,
+          title,
+          category,
+          tree_type: species,
+          wood_type: species,
+          quantity,
+          quantity_unit: unit,
+          price,
+          location,
+          description,
+          status: "pending",
+        });
+
+      if (error) throw error;
+
+      await sendWhatsAppText({
+        to: customerNumber,
+        text:
+          "✅ *Timber listing submitted successfully!*\n\n" +
+          "Your listing is sent for Admin approval.\n" +
+          "Current Status: PENDING\n\n" +
+          "Reply HI for main menu.",
+      });
+
+      return res.status(200).json({ success: true });
+    }
+
+    // UNKNOWN MESSAGE
     await sendWhatsAppText({
       to: customerNumber,
-      text: replyMessage,
+      text:
+        "Invalid option or format.\n\n" +
+        getWhatsAppMenu(user),
     });
 
-    return res.status(200).json({
-      success: true,
-      message: "WhatsApp reply processed successfully",
-      registered: result.registered,
-    });
+    return res.status(200).json({ success: true });
 
   } catch (error) {
-    console.error("MSG91 WhatsApp Webhook Error:", error);
+    console.error("TimberMart WhatsApp webhook error:", error);
 
-    return res.status(500).json({
+    // Send a useful validation message without exposing database details
+    const message = error?.message || "";
+
+    await sendWhatsAppText({
+      to: String(req.body?.customerNumber || ""),
+      text:
+        message.startsWith("Invalid ")
+          ? `⚠️ ${message}\n\nPlease try again.`
+          : "Unable to process your message right now. Please try again later.",
+    }).catch(() => {});
+
+    return res.status(200).json({
       success: false,
-      message: "Webhook processing failed",
+      message: "WhatsApp request could not be processed",
     });
   }
 });
+
 
 
 // ============================================================
